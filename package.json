@@ -1,0 +1,10 @@
+{
+  "name": "mentorhub",
+  "version": "1.0.0",
+  "description": "MentorHub — Mentor–Mentee Training & Progress Management Platform",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev.js",
+    "start": "node dev.js"
+  }
+}

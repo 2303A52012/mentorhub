@@ -1,0 +1,606 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  MENTOR
+  MENTEE
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Platform {
+  LEETCODE
+  CODECHEF
+  CODEFORCES
+  HACKERRANK
+  CUSTOM
+}
+
+enum TargetType {
+  INDIVIDUAL
+  SELECTED
+  BATCH
+  ALL
+}
+
+enum TaskStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum MenteeTaskStatus {
+  UPCOMING
+  IN_PROGRESS
+  SUBMITTED
+  UNDER_REVIEW
+  RESUBMISSION_REQUIRED
+  APPROVED
+  OVERDUE
+  CLOSED
+}
+
+enum ReviewDecision {
+  APPROVED
+  RESUBMISSION_REQUIRED
+}
+
+model User {
+  id                 String         @id @default(uuid())
+  name               String
+  email              String         @unique
+  passwordHash       String
+  role               Role           @default(MENTEE)
+  accountStatus      AccountStatus  @default(ACTIVE)
+  mustChangePassword Boolean        @default(false)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  mentorProfile      MentorProfile?
+  menteeProfile      MenteeProfile?
+  codingProfile      CodingProfile?
+
+  createdBatches     Batch[]        @relation("CreatedBatches")
+  mentorBatches      BatchMentor[]
+  menteeBatches      BatchMentee[]
+
+  mentorAssignments  MentorMenteeAssignment[] @relation("MentorAssignments")
+  menteeAssignments  MentorMenteeAssignment[] @relation("MenteeAssignments")
+
+  tasksCreated       Task[]         @relation("CreatedTasks")
+  tasksReviewed      Task[]         @relation("ReviewedTasks")
+
+  menteeTasks        MenteeTask[]   @relation("MenteeTasks")
+  menteeTasksReviewed MenteeTask[]  @relation("MenteeTaskReviewer")
+
+  submissions        TaskSubmission[]
+  reviewsWritten     TaskReview[]   @relation("ReviewerReviews")
+
+  achievements       MenteeAchievement[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]     @relation("ActorAuditLogs")
+  importHistories    ImportHistory[] @relation("ActorImportHistory")
+
+  // Weekly Mocks relations
+  createdMockSections MockSection[]    @relation("CreatedMockSections")
+  evaluatorMockSessions MockSession[]  @relation("MockSessionEvaluator")
+  menteeMockSlots    MockSlot[]        @relation("MenteeMockSlots")
+  evaluatorMockSlots MockSlot[]        @relation("EvaluatorMockSlots")
+  menteeMockEvaluations MockEvaluation[] @relation("MenteeMockEvaluations")
+  evaluatorMockEvaluations MockEvaluation[] @relation("EvaluatorMockEvaluations")
+  mockSlotHistories  MockSlotHistory[] @relation("MockSlotHistoryChanger")
+
+  // Complaints relations
+  createdComplaints        Complaint[]        @relation("CreatedComplaints")
+  mentorAssignedComplaints Complaint[]        @relation("MentorAssignedComplaints")
+  forwardedComplaints      Complaint[]        @relation("ForwardedComplaints")
+  resolvedComplaints       Complaint[]        @relation("ResolvedComplaints")
+  complaintMessages        ComplaintMessage[] @relation("ComplaintMessageSender")
+
+  // Doubt Sessions relations
+  menteeDoubtSessions      DoubtSession[]     @relation("MenteeDoubtSessions")
+  mentorDoubtSessions      DoubtSession[]     @relation("MentorDoubtSessions")
+}
+
+model MentorProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rollNumber  String?  @default("")
+  department  String   @default("Computer Science & Engineering")
+  designation String   @default("Technical Mentor & Faculty Lead")
+  maxMentees  Int      @default(50)
+  bio         String   @default("Specializing in Data Structures, Algorithms, and System Design.")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MenteeProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId    String
+  rollNumber   String
+  mobile       String   @default("")
+  branch       String   @default("Computer Science & Engineering")
+  academicYear Int      @default(2027)
+  section      String   @default("A")
+  skills       String[] @default([])
+  interests    String[] @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Batch {
+  id           String         @id @default(uuid())
+  name         String
+  academicYear Int            @default(2027)
+  description  String         @default("")
+  createdById  String?
+  createdBy    User?          @relation("CreatedBatches", fields: [createdById], references: [id], onDelete: SetNull)
+  mentors      BatchMentor[]
+  mentees      BatchMentee[]
+  assignments  MentorMenteeAssignment[]
+  mockSections MockSection[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model BatchMentor {
+  id       String @id @default(uuid())
+  batchId  String
+  batch    Batch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  mentorId String
+  mentor   User   @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, mentorId])
+}
+
+model BatchMentee {
+  id       String @id @default(uuid())
+  batchId  String
+  batch    Batch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  menteeId String
+  mentee   User   @relation(fields: [menteeId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, menteeId])
+}
+
+model MentorMenteeAssignment {
+  id         String           @id @default(uuid())
+  mentorId   String
+  mentor     User             @relation("MentorAssignments", fields: [mentorId], references: [id], onDelete: Cascade)
+  menteeId   String
+  mentee     User             @relation("MenteeAssignments", fields: [menteeId], references: [id], onDelete: Cascade)
+  batchId    String?
+  batch      Batch?           @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  status     AssignmentStatus @default(ACTIVE)
+  assignedAt DateTime         @default(now())
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([mentorId, menteeId])
+}
+
+model Task {
+  id             String       @id @default(uuid())
+  title          String
+  weekNo         Int
+  assignmentDate DateTime
+  lastDate       DateTime
+  instructions   String       @default("")
+  createdById    String
+  createdBy      User         @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: Cascade)
+  reviewerId     String?
+  reviewer       User?        @relation("ReviewedTasks", fields: [reviewerId], references: [id], onDelete: SetNull)
+  targetType     TargetType   @default(ALL)
+  targetIds      String[]     @default([])
+  status         TaskStatus   @default(PUBLISHED)
+  problems       Problem[]
+  menteeTasks    MenteeTask[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Problem {
+  id         String   @id @default(uuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  name       String
+  problemUrl String
+  platform   Platform @default(LEETCODE)
+  position   Int      @default(1)
+}
+
+model MenteeTask {
+  id              String            @id @default(uuid())
+  taskId          String
+  task            Task              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  menteeId        String
+  mentee          User              @relation("MenteeTasks", fields: [menteeId], references: [id], onDelete: Cascade)
+  reviewerId      String?
+  reviewer        User?             @relation("MenteeTaskReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  status          MenteeTaskStatus  @default(IN_PROGRESS)
+  problemProgress ProblemProgress[]
+  submissions     TaskSubmission[]
+  reviews         TaskReview[]
+  assignedAt      DateTime          @default(now())
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([taskId, menteeId])
+}
+
+model ProblemProgress {
+  id           String     @id @default(uuid())
+  menteeTaskId String
+  menteeTask   MenteeTask @relation(fields: [menteeTaskId], references: [id], onDelete: Cascade)
+  problemId    String
+  notes        String     @default("")
+  savedAt      DateTime   @default(now())
+}
+
+model TaskSubmission {
+  id              String       @id @default(uuid())
+  menteeTaskId    String
+  menteeTask      MenteeTask   @relation(fields: [menteeTaskId], references: [id], onDelete: Cascade)
+  menteeId        String
+  mentee          User         @relation(fields: [menteeId], references: [id], onDelete: Cascade)
+  version         Int          @default(1)
+  problemSnapshot Json         @default("[]")
+  submittedAt     DateTime     @default(now())
+  submittedLate   Boolean      @default(false)
+  reviews         TaskReview[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model TaskReview {
+  id             String         @id @default(uuid())
+  menteeTaskId   String
+  menteeTask     MenteeTask     @relation(fields: [menteeTaskId], references: [id], onDelete: Cascade)
+  submissionId   String
+  submission     TaskSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  reviewerId     String
+  reviewer       User           @relation("ReviewerReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  decision       ReviewDecision
+  overallFeedback String        @default("")
+  score          Float?
+  problemReviews Json           @default("[]")
+  reviewedAt     DateTime       @default(now())
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model CodingProfile {
+  id             String   @id @default(uuid())
+  menteeId       String   @unique
+  mentee         User     @relation(fields: [menteeId], references: [id], onDelete: Cascade)
+  linkedinUrl    String   @default("")
+  githubUrl      String   @default("")
+  leetcodeUrl    String   @default("")
+  codechefUrl    String   @default("")
+  codeforcesUrl  String   @default("")
+  hackerrankUrl  String   @default("")
+  gfgUrl         String   @default("")
+  resumeUrl      String   @default("")
+  customProfiles Json     @default("[]")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Achievement {
+  id          String              @id @default(uuid())
+  name        String
+  code        String              @unique
+  description String
+  icon        String              @default("Award")
+  points      Int                 @default(50)
+  isActive    Boolean             @default(true)
+  mentees     MenteeAchievement[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model MenteeAchievement {
+  id            String      @id @default(uuid())
+  menteeId      String
+  mentee        User        @relation(fields: [menteeId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([menteeId, achievementId])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String
+  link      String    @default("")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorId      String?
+  actor        User?    @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+  action       String
+  resourceType String
+  resourceId   String?
+  details      Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ImportHistory {
+  id                   String   @id @default(uuid())
+  fileName             String
+  fileSize             Int?
+  fileType             String?
+  importMode           String   @default("CREATE")
+  actorId              String
+  actor                User     @relation("ActorImportHistory", fields: [actorId], references: [id], onDelete: Cascade)
+  totalRows            Int      @default(0)
+  validRows            Int      @default(0)
+  invalidRows          Int      @default(0)
+  studentsCreated      Int      @default(0)
+  studentsUpdated      Int      @default(0)
+  studentsSkipped      Int      @default(0)
+  mentorsCreated       Int      @default(0)
+  mentorsUpdated       Int      @default(0)
+  relationshipsCreated Int      @default(0)
+  relationshipsUpdated Int      @default(0)
+  failedCount          Int      @default(0)
+  status               String   @default("COMPLETED")
+  summaryDetails       Json     @default("{}")
+  errorDetails         Json     @default("[]")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model MockSection {
+  id                         String        @id @default(uuid())
+  title                      String
+  weekNumber                 Int
+  mockType                   String        @default("TECHNICAL")
+  description                String        @default("")
+  targetBatchId              String?
+  targetBatch                Batch?        @relation(fields: [targetBatchId], references: [id], onDelete: SetNull)
+  defaultSlotDurationMinutes Int           @default(30)
+  defaultVenue               String        @default("")
+  sessionStartDate           DateTime?
+  sessionEndDate             DateTime?
+  createdById                String
+  createdBy                  User          @relation("CreatedMockSections", fields: [createdById], references: [id], onDelete: Cascade)
+  status                     String        @default("DRAFT") // DRAFT, PUBLISHED, ARCHIVED
+  sessions                   MockSession[]
+  slots                      MockSlot[]
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
+
+  @@index([createdById])
+  @@index([status])
+}
+
+model MockSession {
+  id                         String      @id @default(uuid())
+  sectionId                  String
+  section                    MockSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  sessionDate                DateTime
+  startTime                  String
+  endTime                    String
+  defaultSlotDurationMinutes Int         @default(30)
+  defaultRoom                String?
+  evaluatorId                String?
+  evaluator                  User?       @relation("MockSessionEvaluator", fields: [evaluatorId], references: [id], onDelete: SetNull)
+  slots                      MockSlot[]
+  createdAt                  DateTime    @default(now())
+  updatedAt                  DateTime    @updatedAt
+
+  @@index([sectionId])
+  @@index([sessionDate])
+}
+
+model MockSlot {
+  id          String           @id @default(uuid())
+  sectionId   String
+  section     MockSection      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  sessionId   String?
+  session     MockSession?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  menteeId    String
+  mentee      User             @relation("MenteeMockSlots", fields: [menteeId], references: [id], onDelete: Cascade)
+  evaluatorId String
+  evaluator   User             @relation("EvaluatorMockSlots", fields: [evaluatorId], references: [id], onDelete: Cascade)
+  sessionDate DateTime
+  startTime   String
+  endTime     String
+  roomNumber  String           @default("TBD")
+  status      String           @default("SCHEDULED") // SCHEDULED, COMPLETED, MISSED, CANCELLED
+  evaluation  MockEvaluation?
+  history     MockSlotHistory[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([sectionId])
+  @@index([menteeId])
+  @@index([evaluatorId])
+  @@index([sessionDate])
+  @@index([status])
+}
+
+model MockEvaluation {
+  id                   String   @id @default(uuid())
+  slotId               String   @unique
+  slot                 MockSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  menteeId             String
+  mentee               User     @relation("MenteeMockEvaluations", fields: [menteeId], references: [id], onDelete: Cascade)
+  evaluatorId          String
+  evaluator            User     @relation("EvaluatorMockEvaluations", fields: [evaluatorId], references: [id], onDelete: Cascade)
+  overallScore         Float
+  technicalScore       Float
+  communicationScore   Float
+  problemSolvingScore Float
+  recommendation       String   // STRONGLY_RECOMMENDED, RECOMMENDED, RECOMMENDED_WITH_IMPROVEMENT, NOT_RECOMMENDED_YET
+  notes                String   @default("")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([menteeId])
+  @@index([evaluatorId])
+}
+
+model MockSlotHistory {
+  id                String    @id @default(uuid())
+  slotId            String
+  slot              MockSlot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  action            String
+  previousDate      DateTime?
+  previousStartTime String?
+  previousEndTime   String?
+  previousRoom      String?
+  reason            String?
+  changedById       String
+  changedBy         User      @relation("MockSlotHistoryChanger", fields: [changedById], references: [id], onDelete: Cascade)
+  createdAt         DateTime  @default(now())
+
+  @@index([slotId])
+}
+
+enum ComplaintTarget {
+  MENTOR
+  ADMIN
+}
+
+enum ComplaintStatus {
+  PENDING
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Complaint {
+  id                 String             @id @default(uuid())
+  title              String
+  description        String
+  category           String             @default("GENERAL") // ACADEMIC, MENTORSHIP, TECHNICAL, INFRASTRUCTURE, HARASSMENT, DISCIPLINARY, OTHER
+  priority           ComplaintPriority  @default(MEDIUM)
+  targetType         ComplaintTarget    @default(MENTOR) // MENTOR or ADMIN
+  status             ComplaintStatus    @default(PENDING)
+  creatorId          String
+  creator            User               @relation("CreatedComplaints", fields: [creatorId], references: [id], onDelete: Cascade)
+  mentorId           String?
+  mentor             User?              @relation("MentorAssignedComplaints", fields: [mentorId], references: [id], onDelete: SetNull)
+  isForwardedToAdmin Boolean            @default(false)
+  forwardedAt        DateTime?
+  forwardedById      String?
+  forwardedBy        User?              @relation("ForwardedComplaints", fields: [forwardedById], references: [id], onDelete: SetNull)
+  forwardReason      String?
+  resolutionNotes    String?
+  resolvedById       String?
+  resolvedBy         User?              @relation("ResolvedComplaints", fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolvedAt         DateTime?
+  messages           ComplaintMessage[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([creatorId])
+  @@index([mentorId])
+  @@index([targetType])
+  @@index([status])
+  @@index([isForwardedToAdmin])
+}
+
+model ComplaintMessage {
+  id          String    @id @default(uuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User      @relation("ComplaintMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  message     String
+  createdAt   DateTime  @default(now())
+
+  @@index([complaintId])
+  @@index([senderId])
+}
+
+enum SessionStatus {
+  PENDING
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum SessionMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+}
+
+model DoubtSession {
+  id              String         @id @default(uuid())
+  topic           String
+  description     String
+  preferredDate   DateTime?
+  preferredTime   String?        // e.g. "Morning", "Afternoon", "4:00 PM - 5:00 PM"
+  mode            SessionMode    @default(ONLINE)
+  status          SessionStatus  @default(PENDING)
+  
+  menteeId        String
+  mentee          User           @relation("MenteeDoubtSessions", fields: [menteeId], references: [id], onDelete: Cascade)
+  mentorId        String
+  mentor          User           @relation("MentorDoubtSessions", fields: [mentorId], references: [id], onDelete: Cascade)
+  
+  scheduledDate   DateTime?
+  startTime       String?        // "14:30"
+  endTime         String?        // "15:00"
+  meetLink        String?        @default("")
+  venue           String?        @default("")
+  mentorNotes     String?        @default("")
+  
+  summaryNotes    String?        @default("")
+  completedAt     DateTime?
+  rejectionReason String?        @default("")
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([menteeId])
+  @@index([mentorId])
+  @@index([status])
+  @@index([scheduledDate])
+}
