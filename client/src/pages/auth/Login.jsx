@@ -225,6 +225,10 @@ export const Login = () => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <p className="text-[11px] text-slate-500 pt-0.5">
+                Default password for university accounts:{' '}
+                <span className="font-mono text-indigo-400 font-semibold select-all">Password@123</span>
+              </p>
             </div>
 
             {/* Remember Me */}

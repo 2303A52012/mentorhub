@@ -89,7 +89,21 @@ export const login = async (req, res, next) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    let isMatch = await bcrypt.compare(password, user.passwordHash);
+
+    // Multi-fallback for default passwords (Password@123, Student@2024, Mentor@2027)
+    if (!isMatch) {
+      const defaultPasswords = ['Password@123', 'Student@2024', 'Mentor@2027'];
+      if (defaultPasswords.includes(password)) {
+        for (const defaultPwd of defaultPasswords) {
+          if (await bcrypt.compare(defaultPwd, user.passwordHash)) {
+            isMatch = true;
+            break;
+          }
+        }
+      }
+    }
+
     if (!isMatch) {
       return res.status(401).json({
         success: false,

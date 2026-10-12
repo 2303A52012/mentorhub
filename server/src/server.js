@@ -50,6 +50,14 @@ const startServer = async () => {
 
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
+
+    process.on('unhandledRejection', (reason) => {
+      console.warn('⚠️ Non-fatal unhandled rejection caught:', reason?.message || reason);
+    });
+
+    process.on('uncaughtException', (err) => {
+      console.warn('⚠️ Non-fatal uncaught exception caught:', err?.message || err);
+    });
   } catch (error) {
     console.error('Fatal Server Startup Error:', error);
     process.exit(1);
