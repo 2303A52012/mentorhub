@@ -289,4 +289,4 @@ node test-weekly-mocks.js
 ---
 
 ## 📄 License
-Developed for SR University. All rights reserved. Built with modern full-stack best practices for scalable academic training.
+Developed for SR University by Palakurthi Lalith Prakash. All rights reserved. Built with modern full-stack best practices for scalable academic training.
