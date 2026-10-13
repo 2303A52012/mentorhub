@@ -25,7 +25,7 @@ export const Layout = () => {
   }, [mobileMenuOpen]);
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f19] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       <Navbar
         mobileMenuOpen={mobileMenuOpen}
         onToggleMobileMenu={() => setMobileMenuOpen((prev) => !prev)}

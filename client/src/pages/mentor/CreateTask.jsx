@@ -171,96 +171,96 @@ export const CreateTask = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Create Weekly Task
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Section 7 UI Specification · Publish coding problems and distribute assignments.
           </p>
         </div>
         <Link
           to={user?.role === 'ADMIN' ? '/admin/tasks' : '/mentor/tasks'}
-          className="text-xs text-slate-400 hover:text-white transition flex items-center gap-1"
+          className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition flex items-center gap-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back
         </Link>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300">
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-xs text-rose-700 dark:text-rose-300">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Task Metadata */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-400" /> Task Overview & Scheduling
+        <div className="bg-white dark:bg-slate-900/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> Task Overview & Scheduling
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div className="space-y-1.5 sm:col-span-2">
-              <label className="font-semibold text-slate-300">Task Title</label>
+              <label className="font-semibold text-slate-700 dark:text-slate-300">Task Title</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Week 03 — Stack & Queue Patterns"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-300">Week Number</label>
+              <label className="font-semibold text-slate-700 dark:text-slate-300">Week Number</label>
               <input
                 type="number"
                 min="1"
                 required
                 value={weekNo}
                 onChange={(e) => setWeekNo(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-300">Assignment Date (Start)</label>
+              <label className="font-semibold text-slate-700 dark:text-slate-300">Assignment Date (Start)</label>
               <input
                 type="date"
                 required
                 value={assignmentDate}
                 onChange={(e) => setAssignmentDate(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-300">Last Date (Deadline)</label>
+              <label className="font-semibold text-slate-700 dark:text-slate-300">Last Date (Deadline)</label>
               <input
                 type="date"
                 required
                 value={lastDate}
                 onChange={(e) => setLastDate(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-300">Total Problems</label>
+              <label className="font-semibold text-slate-700 dark:text-slate-300">Total Problems</label>
               <input
                 type="text"
                 disabled
                 value={`${problems.length} problems declared`}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-400 text-xs cursor-not-allowed font-medium"
+                className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-500 dark:text-slate-400 text-xs cursor-not-allowed font-medium"
               />
             </div>
           </div>
 
           <div className="space-y-1.5 pt-2">
-            <label className="font-semibold text-slate-300 text-xs">
+            <label className="font-semibold text-slate-700 dark:text-slate-300 text-xs">
               Instructions & Guidelines (Optional)
             </label>
             <textarea
@@ -268,19 +268,19 @@ export const CreateTask = () => {
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               placeholder="Provide instructions regarding approaches, complexities, or edge case testing..."
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 leading-relaxed"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 leading-relaxed"
             />
           </div>
         </div>
 
         {/* Problems List Section */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <div className="bg-white dark:bg-slate-900/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <ListPlus className="w-4 h-4 text-emerald-400" /> Problems in this Weekly Task
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <ListPlus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Problems in this Weekly Task
               </h2>
-              <span className="text-[11px] text-slate-400">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
                 Each problem requires a name, valid URL, and allowed platform tag.
               </span>
             </div>
@@ -288,7 +288,7 @@ export const CreateTask = () => {
             <button
               type="button"
               onClick={addProblem}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-400 hover:text-indigo-300 font-semibold text-xs transition border border-slate-700 flex items-center gap-1.5"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-semibold text-xs transition border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" /> Add Problem
             </button>
@@ -298,9 +298,9 @@ export const CreateTask = () => {
             {problems.map((prob, idx) => (
               <div
                 key={idx}
-                className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center gap-3 text-xs"
+                className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center gap-3 text-xs"
               >
-                <span className="w-6 h-6 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center font-bold shrink-0">
                   {idx + 1}
                 </span>
 
@@ -311,7 +311,7 @@ export const CreateTask = () => {
                     value={prob.name}
                     onChange={(e) => updateProblem(idx, 'name', e.target.value)}
                     placeholder="Problem Name (e.g. Binary Search)"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
@@ -322,7 +322,7 @@ export const CreateTask = () => {
                     value={prob.problemUrl}
                     onChange={(e) => updateProblem(idx, 'problemUrl', e.target.value)}
                     placeholder="https://leetcode.com/problems/..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
@@ -330,7 +330,7 @@ export const CreateTask = () => {
                   <select
                     value={prob.platform}
                     onChange={(e) => updateProblem(idx, 'platform', e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-300 focus:outline-none focus:border-indigo-500"
                   >
                     <option value="LEETCODE">LeetCode</option>
                     <option value="CODECHEF">CodeChef</option>
@@ -343,7 +343,7 @@ export const CreateTask = () => {
                 <button
                   type="button"
                   onClick={() => removeProblem(idx)}
-                  className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg transition"
+                  className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition"
                   title="Remove problem"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -354,14 +354,14 @@ export const CreateTask = () => {
         </div>
 
         {/* Audience / Assignment Targeting */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-900/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
             Target Mentees & Distribution
           </h2>
 
           <div className="space-y-3 text-xs">
             <div className="flex flex-wrap gap-4">
-              <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+              <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-200">
                 <input
                   type="radio"
                   name="targetType"
@@ -373,7 +373,7 @@ export const CreateTask = () => {
                 All Mentees ({user?.role === 'ADMIN' ? 'All Platform' : 'My Authorized Mentees'})
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+              <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-200">
                 <input
                   type="radio"
                   name="targetType"
@@ -385,7 +385,7 @@ export const CreateTask = () => {
                 Specific Batch
               </label>
 
-              <label className="flex items-center gap-2 cursor-pointer text-slate-200">
+              <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-200">
                 <input
                   type="radio"
                   name="targetType"
@@ -400,13 +400,13 @@ export const CreateTask = () => {
 
             {targetType === 'BATCH' && (
               <div className="pt-2">
-                <label className="font-semibold text-slate-300 block mb-1">
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                   Choose Batch
                 </label>
                 <select
                   value={selectedBatchId}
                   onChange={(e) => setSelectedBatchId(e.target.value)}
-                  className="w-full sm:w-72 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full sm:w-72 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 >
                   <option value="">-- Select a batch --</option>
                   {batches.map((b) => (
@@ -420,14 +420,14 @@ export const CreateTask = () => {
 
             {targetType === 'SELECTED' && (
               <div className="pt-2 space-y-2">
-                <label className="font-semibold text-slate-300 block">
+                <label className="font-semibold text-slate-700 dark:text-slate-300 block">
                   Select Students:
                 </label>
-                <div className="max-h-40 overflow-y-auto space-y-1 p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="max-h-40 overflow-y-auto space-y-1 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                   {mentees.map((m) => (
                     <label
                       key={m._id}
-                      className="flex items-center gap-2 text-slate-300 hover:text-white cursor-pointer py-1"
+                      className="flex items-center gap-2 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white cursor-pointer py-1"
                     >
                       <input
                         type="checkbox"
@@ -441,7 +441,7 @@ export const CreateTask = () => {
                             );
                           }
                         }}
-                        className="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0"
+                        className="rounded bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-0"
                       />
                       <span>
                         {m.name} ({m.profile?.rollNumber || m.email})

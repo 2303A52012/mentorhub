@@ -59,25 +59,25 @@ export const MentorMentees = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Mentee Directory</h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Mentee Directory</h1>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             Manage your assigned cohort, monitor submission completion, and review profiles.
           </p>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col md:flex-row gap-3">
+      <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm flex flex-col md:flex-row gap-3">
         <form onSubmit={handleSearchSubmit} className="flex-1 relative">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by student name or roll number..."
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-xs"
           />
         </form>
 
@@ -85,7 +85,7 @@ export const MentorMentees = () => {
           <select
             value={selectedBatch}
             onChange={(e) => setSelectedBatch(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+            className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 shadow-xs"
           >
             <option value="">All Batches</option>
             {batches.map((b) => (
@@ -98,7 +98,7 @@ export const MentorMentees = () => {
           <select
             value={completionFilter}
             onChange={(e) => setCompletionFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+            className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 shadow-xs"
           >
             <option value="">All Completion Rates</option>
             <option value="at-risk">⚠️ At-Risk Only</option>
@@ -108,7 +108,7 @@ export const MentorMentees = () => {
 
           <button
             onClick={fetchMentees}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition border border-slate-700"
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-white transition border border-slate-200 dark:border-slate-700 shadow-xs"
           >
             Filter
           </button>
@@ -117,16 +117,16 @@ export const MentorMentees = () => {
 
       {/* Table */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Loading mentees...</div>
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">Loading mentees...</div>
       ) : mentees.length === 0 ? (
-        <div className="text-center py-16 glass-panel rounded-2xl border border-slate-800 text-slate-400 text-sm">
+        <div className="text-center py-16 glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm text-slate-500 dark:text-slate-400 text-sm">
           No mentees match your search or filter.
         </div>
       ) : (
-        <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+        <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/80 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+              <thead className="bg-slate-50 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="py-3 px-4">Student</th>
                   <th className="py-3 px-4">Roll No & ID</th>
@@ -137,20 +137,20 @@ export const MentorMentees = () => {
                   <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {mentees.map((mentee) => {
                   const stats = mentee.stats || {};
                   return (
                     <tr
                       key={mentee._id}
-                      className="hover:bg-slate-800/30 transition text-slate-300"
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition text-slate-700 dark:text-slate-300"
                     >
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-white">{mentee.name}</div>
+                        <div className="font-semibold text-slate-900 dark:text-white">{mentee.name}</div>
                         <div className="text-[11px] text-slate-500">{mentee.email}</div>
                       </td>
                       <td className="py-3.5 px-4 font-mono">
-                        <div>{mentee.profile?.rollNumber || 'N/A'}</div>
+                        <div className="text-slate-900 dark:text-white">{mentee.profile?.rollNumber || 'N/A'}</div>
                         <div className="text-[10px] text-slate-500">
                           {mentee.profile?.studentId || ''}
                         </div>
@@ -160,25 +160,25 @@ export const MentorMentees = () => {
                           mentee.batches.map((b) => (
                             <span
                               key={b._id}
-                              className="inline-block bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px] mr-1"
+                              className="inline-block bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded text-[10px] mr-1 border border-slate-200 dark:border-slate-700/60"
                             >
                               {b.name}
                             </span>
                           ))
                         ) : (
-                          <span className="text-slate-500 text-[11px]">Unassigned</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-[11px]">Unassigned</span>
                         )}
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-white">
+                          <span className="font-bold text-slate-900 dark:text-white">
                             {stats.completionRate || 0}%
                           </span>
                           <span className="text-[10px] text-slate-500">
                             ({stats.approvedCount}/{stats.totalAssigned})
                           </span>
                         </div>
-                        <div className="w-20 h-1.5 bg-slate-800 rounded-full mt-1 overflow-hidden">
+                        <div className="w-20 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
                           <div
                             className="h-full bg-indigo-500 rounded-full"
                             style={{ width: `${stats.completionRate || 0}%` }}
@@ -186,22 +186,22 @@ export const MentorMentees = () => {
                         </div>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="text-slate-300 font-medium">
+                        <span className="text-slate-700 dark:text-slate-300 font-medium">
                           {stats.pendingCount || 0} pending
                         </span>
                         {stats.overdueCount > 0 && (
-                          <span className="ml-1.5 text-rose-400 font-bold text-[10px] bg-rose-500/10 px-1.5 py-0.5 rounded">
+                          <span className="ml-1.5 text-rose-600 dark:text-rose-400 font-bold text-[10px] bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
                             {stats.overdueCount} overdue
                           </span>
                         )}
                       </td>
                       <td className="py-3.5 px-4">
                         {stats.isAtRisk ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                             <AlertTriangle className="w-3 h-3" /> At Risk
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                             <CheckCircle2 className="w-3 h-3" /> On Track
                           </span>
                         )}
@@ -214,13 +214,13 @@ export const MentorMentees = () => {
                               setShowResetModal(true);
                             }}
                             title="Reset Mentee Password"
-                            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition text-xs flex items-center gap-1 font-medium"
+                            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 transition text-xs flex items-center gap-1 font-medium"
                           >
                             <Key className="w-3.5 h-3.5" />
                           </button>
                           <Link
                             to={`/mentor/mentees/${mentee._id}`}
-                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-[11px] transition border border-slate-700 inline-flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-medium text-[11px] transition border border-slate-200 dark:border-slate-700 inline-flex items-center gap-1 shadow-xs"
                           >
                             Profile <ArrowRight className="w-3 h-3" />
                           </Link>

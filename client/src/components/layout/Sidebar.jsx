@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import {
   LayoutDashboard,
   Users,
@@ -17,11 +18,14 @@ import {
   User,
   MessageSquareWarning,
   BookOpen,
+  Sun,
+  Moon,
   X
 } from 'lucide-react';
 
 export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
   const { user } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
   const role = user?.role;
 
   let links = [];
@@ -67,9 +71,9 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
   return (
     <>
       {/* Desktop Persistent Sidebar */}
-      <aside className="w-64 border-r border-slate-800 bg-slate-900/60 backdrop-blur min-h-[calc(100vh-4rem)] p-4 flex flex-col justify-between hidden md:flex shrink-0">
+      <aside className="w-64 border-r border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/60 backdrop-blur min-h-[calc(100vh-4rem)] p-4 flex flex-col justify-between hidden md:flex shrink-0 transition-colors duration-200">
         <div className="space-y-1">
-          <div className="px-3 py-2 text-[11px] font-semibold tracking-wider uppercase text-slate-500">
+          <div className="px-3 py-2 text-[11px] font-semibold tracking-wider uppercase text-slate-400 dark:text-slate-500">
             Navigation
           </div>
           {links.map((item) => {
@@ -80,8 +84,8 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
                 to={item.to}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${isActive
-                    ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/20 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-indigo-50 dark:bg-indigo-600/15 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
                   }`
                 }
               >
@@ -97,7 +101,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
       <div className="md:hidden">
         {/* Backdrop */}
         <div
-          className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-50 transition-opacity duration-300 ${
+          className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300 ${
             mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
           }`}
           onClick={onCloseMobileMenu}
@@ -106,20 +110,20 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
 
         {/* Drawer Panel */}
         <aside
-          className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-950/95 border-r border-slate-800 backdrop-blur-xl p-4 flex flex-col justify-between transform transition-transform duration-300 ease-in-out shadow-2xl shadow-indigo-950/50 ${
+          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/95 dark:bg-slate-950/95 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl p-4 flex flex-col justify-between transform transition-transform duration-300 ease-in-out shadow-2xl ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           <div className="space-y-4">
             {/* Drawer Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800/80">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 px-1.5 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
                   <img src="/sru-mark.png" alt="SRU" className="h-4 w-auto object-contain" />
                 </div>
                 <div>
-                  <span className="font-bold text-sm text-white tracking-tight">SRU MentorHub</span>
-                  <span className="ml-1.5 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+                  <span className="font-bold text-sm text-slate-900 dark:text-white tracking-tight">SRU MentorHub</span>
+                  <span className="ml-1.5 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold border border-indigo-200 dark:border-indigo-500/20">
                     {role}
                   </span>
                 </div>
@@ -127,7 +131,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
               <button
                 type="button"
                 onClick={onCloseMobileMenu}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5" />
@@ -135,7 +139,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
             </div>
 
             <div className="space-y-1">
-              <div className="px-3 py-1 text-[11px] font-semibold tracking-wider uppercase text-slate-500">
+              <div className="px-3 py-1 text-[11px] font-semibold tracking-wider uppercase text-slate-400 dark:text-slate-500">
                 Navigation
               </div>
               {links.map((item) => {
@@ -147,12 +151,12 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
                     onClick={onCloseMobileMenu}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${isActive
-                        ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                        ? 'bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 shadow-sm font-semibold'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/60'
                       }`
                     }
                   >
-                    <Icon className="w-4 h-4 text-indigo-400" />
+                    <Icon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                     {item.label}
                   </NavLink>
                 );
@@ -160,15 +164,28 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
             </div>
           </div>
 
-          {/* User Card at Drawer Footer */}
-          <div className="pt-4 border-t border-slate-800/80">
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-xs shrink-0">
+          {/* User Card & Theme Switcher at Drawer Footer */}
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800/80 space-y-2">
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800/80 transition"
+            >
+              <span className="flex items-center gap-2">
+                {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+                <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+              </span>
+              <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                {theme}
+              </span>
+            </button>
+
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+              <div className="w-8 h-8 rounded-full bg-indigo-500/10 dark:bg-indigo-600/30 border border-indigo-200 dark:border-indigo-500/40 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold text-xs shrink-0">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
               <div className="overflow-hidden">
-                <p className="text-xs font-semibold text-white truncate">{user?.name}</p>
-                <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{user?.name}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
               </div>
             </div>
           </div>

@@ -155,14 +155,14 @@ export const MentorProfilePage = () => {
       {paramId && (
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back
         </button>
       )}
 
       {/* Hero Overview Card */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6 relative overflow-hidden">
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-6 relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 border-2 border-indigo-500/30 flex items-center justify-center text-white font-black text-3xl shadow-xl shadow-indigo-600/20 shrink-0">
@@ -170,25 +170,25 @@ export const MentorProfilePage = () => {
             </div>
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold text-white tracking-tight">{mentor.name}</h1>
-                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold uppercase tracking-wider">
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{mentor.name}</h1>
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-xs font-bold uppercase tracking-wider">
                   MENTOR
                 </span>
                 <StatusBadge status={mentor.accountStatus} />
               </div>
-              <p className="text-xs text-slate-300 font-medium flex items-center gap-2">
-                <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
+              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-center gap-2">
+                <Briefcase className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                 <span>{prof.designation || 'Technical Mentor'}</span>
                 <span>&bull;</span>
-                <span className="text-slate-400">{prof.department || 'Computer Science & Engineering'}</span>
+                <span className="text-slate-500 dark:text-slate-400">{prof.department || 'Computer Science & Engineering'}</span>
               </p>
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 pt-1">
                 <span className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-slate-500" /> {mentor.email}
+                  <Mail className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" /> {mentor.email}
                 </span>
                 {prof.rollNumber && (
                   <span className="flex items-center gap-1.5 font-mono">
-                    <IdCard className="w-3.5 h-3.5 text-slate-500" /> ID: {prof.rollNumber}
+                    <IdCard className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" /> ID: {prof.rollNumber}
                   </span>
                 )}
               </div>
@@ -210,9 +210,9 @@ export const MentorProfilePage = () => {
             {isSelf && (
               <button
                 onClick={() => setShowPasswordModal(true)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-xs"
               >
-                <Key className="w-3.5 h-3.5 text-slate-400" />
+                <Key className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                 <span>Change Password</span>
               </button>
             )}
@@ -221,8 +221,8 @@ export const MentorProfilePage = () => {
 
         {/* Bio */}
         {prof.bio && (
-          <div className="pt-4 border-t border-slate-800/80">
-            <p className="text-xs text-slate-300 leading-relaxed max-w-4xl whitespace-pre-line">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800/80">
+            <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed max-w-4xl whitespace-pre-line">
               {prof.bio}
             </p>
           </div>
@@ -231,15 +231,15 @@ export const MentorProfilePage = () => {
 
       {/* Editing Form Panel */}
       {isEditing && (
-        <form onSubmit={handleSaveProfile} className="glass-panel p-6 rounded-3xl border border-indigo-500/40 bg-indigo-500/5 space-y-5 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Edit3 className="w-4 h-4 text-indigo-400" /> Edit Mentor Details
+        <form onSubmit={handleSaveProfile} className="glass-panel p-6 rounded-3xl border border-indigo-500/40 bg-indigo-50/50 dark:bg-indigo-500/5 shadow-sm space-y-5 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Edit3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Edit Mentor Details
             </h2>
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="p-1 text-slate-400 hover:text-white rounded-lg transition"
+              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg transition"
             >
               <X className="w-4 h-4" />
             </button>
@@ -247,67 +247,67 @@ export const MentorProfilePage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-semibold">Full Name *</label>
+              <label className="text-slate-700 dark:text-slate-300 font-semibold">Full Name *</label>
               <input
                 type="text"
                 value={editForm.name}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 shadow-xs"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-semibold">Faculty / Employee ID</label>
+              <label className="text-slate-700 dark:text-slate-300 font-semibold">Faculty / Employee ID</label>
               <input
                 type="text"
                 value={editForm.rollNumber}
                 onChange={(e) => setEditForm({ ...editForm, rollNumber: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 shadow-xs"
                 placeholder="e.g. FAC-2024-01"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-semibold">Department</label>
+              <label className="text-slate-700 dark:text-slate-300 font-semibold">Department</label>
               <input
                 type="text"
                 value={editForm.department}
                 onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 shadow-xs"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-semibold">Designation / Role Title</label>
+              <label className="text-slate-700 dark:text-slate-300 font-semibold">Designation / Role Title</label>
               <input
                 type="text"
                 value={editForm.designation}
                 onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 shadow-xs"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-semibold">Max Mentees Capacity</label>
+              <label className="text-slate-700 dark:text-slate-300 font-semibold">Max Mentees Capacity</label>
               <input
                 type="number"
                 min="1"
                 max="200"
                 value={editForm.maxMentees}
                 onChange={(e) => setEditForm({ ...editForm, maxMentees: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 shadow-xs"
               />
             </div>
           </div>
 
           <div className="space-y-1.5 text-xs">
-            <label className="text-slate-300 font-semibold">Professional Bio & Specializations</label>
+            <label className="text-slate-700 dark:text-slate-300 font-semibold">Professional Bio & Specializations</label>
             <textarea
               rows={3}
               value={editForm.bio}
               onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-indigo-500 leading-relaxed"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 leading-relaxed shadow-xs"
               placeholder="Describe your technical domains, guidance focus, mentoring philosophy..."
             />
           </div>
@@ -316,7 +316,7 @@ export const MentorProfilePage = () => {
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               Cancel
             </button>
@@ -334,42 +334,42 @@ export const MentorProfilePage = () => {
 
       {/* Metrics Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-indigo-400" /> Active Mentees
+        <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Active Mentees
           </div>
-          <div className="text-2xl font-bold text-white font-mono">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
             {stats.activeMenteesCount || assignedMentees.length}
-            <span className="text-xs text-slate-500 font-normal ml-1">/ {prof.maxMentees || 50}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-normal ml-1">/ {prof.maxMentees || 50}</span>
           </div>
         </div>
 
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <FolderGit2 className="w-3.5 h-3.5 text-violet-400" /> Cohort Batches
+        <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <FolderGit2 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" /> Cohort Batches
           </div>
-          <div className="text-2xl font-bold text-white font-mono">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
             {stats.batchesCount || batches.length}
           </div>
         </div>
 
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-amber-400" /> Mock Sections
+        <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Mock Sections
           </div>
-          <div className="text-2xl font-bold text-white font-mono">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
             {stats.mockSectionsCount || mockSections.length}
           </div>
         </div>
 
-        <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Award className="w-3.5 h-3.5 text-emerald-400" /> Evaluations Conducted
+        <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <Award className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Evaluations Conducted
           </div>
-          <div className="text-2xl font-bold text-white font-mono">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
             {stats.evaluationsConducted || 0}
             {stats.avgEvaluationScore && (
-              <span className="text-xs text-emerald-400 font-normal ml-2">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-normal ml-2">
                 (Avg: {stats.avgEvaluationScore}/10)
               </span>
             )}
@@ -378,13 +378,13 @@ export const MentorProfilePage = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
         <button
           onClick={() => setActiveTab('mentees')}
           className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
             activeTab === 'mentees'
-              ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+              ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 dark:bg-indigo-600/15 dark:text-indigo-400 dark:border-indigo-500/20 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900/60'
           }`}
         >
           <Users className="w-3.5 h-3.5" />
@@ -395,8 +395,8 @@ export const MentorProfilePage = () => {
           onClick={() => setActiveTab('batches')}
           className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
             activeTab === 'batches'
-              ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+              ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 dark:bg-indigo-600/15 dark:text-indigo-400 dark:border-indigo-500/20 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900/60'
           }`}
         >
           <FolderGit2 className="w-3.5 h-3.5" />
@@ -407,8 +407,8 @@ export const MentorProfilePage = () => {
           onClick={() => setActiveTab('mocks')}
           className={`px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
             activeTab === 'mocks'
-              ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+              ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 dark:bg-indigo-600/15 dark:text-indigo-400 dark:border-indigo-500/20 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900/60'
           }`}
         >
           <Calendar className="w-3.5 h-3.5" />
@@ -420,25 +420,25 @@ export const MentorProfilePage = () => {
       {activeTab === 'mentees' && (
         <div className="space-y-3">
           {assignedMentees.length === 0 ? (
-            <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center space-y-2">
-              <Users className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="text-xs text-slate-400">No active mentees assigned to this mentor yet.</p>
+            <div className="glass-panel p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm text-center space-y-2">
+              <Users className="w-8 h-8 text-slate-400 dark:text-slate-600 mx-auto" />
+              <p className="text-xs text-slate-500 dark:text-slate-400">No active mentees assigned to this mentor yet.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {assignedMentees.map((m) => (
                 <div
                   key={m.id || m._id}
-                  className="glass-panel p-4 rounded-2xl border border-slate-800 hover:border-slate-700 transition flex items-start justify-between gap-3 group"
+                  className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition flex items-start justify-between gap-3 group"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-xs group-hover:text-indigo-400 transition">
+                      <span className="font-bold text-slate-900 dark:text-white text-xs group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
                         {m.name}
                       </span>
                       <StatusBadge status={m.accountStatus} />
                     </div>
-                    <div className="text-[11px] text-slate-400 font-mono">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                       {m.rollNumber || m.studentId || 'No Roll #'}
                     </div>
                     <div className="text-[11px] text-slate-500">
@@ -448,7 +448,7 @@ export const MentorProfilePage = () => {
 
                   <Link
                     to={user?.role === 'ADMIN' ? `/admin/mentees/${m.id || m._id}` : `/mentor/mentees/${m.id || m._id}`}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-400 hover:text-white transition"
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-600 dark:bg-slate-800 dark:hover:bg-indigo-600 dark:text-slate-400 dark:hover:text-white transition shadow-xs"
                     title="View Mentee Profile"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -464,23 +464,23 @@ export const MentorProfilePage = () => {
       {activeTab === 'batches' && (
         <div className="space-y-3">
           {batches.length === 0 ? (
-            <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center space-y-2">
-              <FolderGit2 className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="text-xs text-slate-400">No batches linked yet.</p>
+            <div className="glass-panel p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm text-center space-y-2">
+              <FolderGit2 className="w-8 h-8 text-slate-400 dark:text-slate-600 mx-auto" />
+              <p className="text-xs text-slate-500 dark:text-slate-400">No batches linked yet.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {batches.map((b) => (
                 <div
                   key={b.id || b._id}
-                  className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3"
+                  className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
-                      <h3 className="font-bold text-white text-sm">{b.name}</h3>
-                      <div className="text-xs text-slate-400">Academic Year: {b.academicYear}</div>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-sm">{b.name}</h3>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">Academic Year: {b.academicYear}</div>
                     </div>
-                    <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-mono font-bold">
+                    <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 text-[10px] font-mono font-bold">
                       {b.menteeCount || 0} students
                     </span>
                   </div>
@@ -495,9 +495,9 @@ export const MentorProfilePage = () => {
       {activeTab === 'mocks' && (
         <div className="space-y-3">
           {mockSections.length === 0 ? (
-            <div className="glass-panel p-8 rounded-2xl border border-slate-800 text-center space-y-2">
-              <Calendar className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="text-xs text-slate-400">No mock interview sections created yet.</p>
+            <div className="glass-panel p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm text-center space-y-2">
+              <Calendar className="w-8 h-8 text-slate-400 dark:text-slate-600 mx-auto" />
+              <p className="text-xs text-slate-500 dark:text-slate-400">No mock interview sections created yet.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -505,22 +505,22 @@ export const MentorProfilePage = () => {
                 <Link
                   key={sec.id}
                   to={`/mentor/mocks/${sec.id}`}
-                  className="glass-panel p-4 rounded-2xl border border-slate-800 hover:border-indigo-500/40 transition flex items-center justify-between gap-3 group"
+                  className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm hover:border-indigo-500/40 transition flex items-center justify-between gap-3 group"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px] font-mono font-bold">
+                      <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-mono font-bold">
                         WEEK {sec.weekNumber}
                       </span>
-                      <span className="font-bold text-white text-xs group-hover:text-indigo-400 transition">
+                      <span className="font-bold text-slate-900 dark:text-white text-xs group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
                         {sec.title}
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
                       Type: {sec.mockType} &bull; Status: {sec.status}
                     </div>
                   </div>
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition" />
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" />
                 </Link>
               ))}
             </div>

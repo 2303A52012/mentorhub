@@ -107,7 +107,7 @@ export const AdminProfilePage = () => {
   return (
     <div className="space-y-6 pb-16">
       {/* Hero Header Card */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6 relative overflow-hidden">
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-6 relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 border-2 border-violet-500/30 flex items-center justify-center text-white font-black text-3xl shadow-xl shadow-violet-600/20 shrink-0">
@@ -115,27 +115,38 @@ export const AdminProfilePage = () => {
             </div>
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold text-white tracking-tight">{admin.name}</h1>
-                <span className="px-2.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/30 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-violet-400" />
-                  ADMINISTRATOR
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{admin.name}</h1>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1 ${
+                  admin.email?.toLowerCase() === 'admin@sru.edu.in'
+                    ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-500/30'
+                    : 'bg-violet-500/10 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-500/30'
+                }`}>
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                  {admin.email?.toLowerCase() === 'admin@sru.edu.in' ? 'SUPER ADMINISTRATOR' : 'ADMINISTRATOR'}
                 </span>
                 <StatusBadge status={admin.accountStatus || 'ACTIVE'} />
               </div>
 
-              <p className="text-xs text-slate-300 font-medium flex items-center gap-2">
-                <Briefcase className="w-3.5 h-3.5 text-violet-400" />
-                <span>{admin.designation || 'Senior Platform Administrator'}</span>
+              <p className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-center gap-2">
+                <Briefcase className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+                <span>
+                  {admin.email?.toLowerCase() === 'admin@sru.edu.in'
+                    ? 'Primary University Super Administrator'
+                    : admin.designation || 'Platform Administrator'}
+                </span>
                 <span>&bull;</span>
-                <span className="text-slate-400">{admin.department || 'Academic Operations & Governance'}</span>
+                <span className="text-slate-500 dark:text-slate-400">{admin.department || 'Academic Operations & Governance'}</span>
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 pt-1">
                 <span className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-slate-500" /> {admin.email}
+                  <Mail className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" /> {admin.email}
                 </span>
-                <span className="flex items-center gap-1.5 text-slate-500">
-                  <Lock className="w-3.5 h-3.5" /> Full System Permissions
+                <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
+                  <Lock className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+                  {admin.email?.toLowerCase() === 'admin@sru.edu.in'
+                    ? 'Super Administrator (Exclusive Admin Appointing & Platform Authority)'
+                    : 'Administrator (Batches, Mentors, Mentees, Tasks & Reports)'}
                 </span>
               </div>
             </div>
@@ -155,9 +166,9 @@ export const AdminProfilePage = () => {
 
             <button
               onClick={() => setShowPasswordModal(true)}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-sm"
             >
-              <Key className="w-3.5 h-3.5 text-slate-400" />
+              <Key className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
               <span>Change Password</span>
             </button>
           </div>
@@ -166,15 +177,15 @@ export const AdminProfilePage = () => {
 
       {/* Edit Form */}
       {isEditing && (
-        <form onSubmit={handleSave} className="glass-panel p-6 rounded-3xl border border-violet-500/40 bg-violet-500/5 space-y-4 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Edit3 className="w-4 h-4 text-violet-400" /> Edit Admin Profile
+        <form onSubmit={handleSave} className="glass-panel p-6 rounded-3xl border border-violet-500/40 bg-violet-50/50 dark:bg-violet-500/5 shadow-sm space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Edit3 className="w-4 h-4 text-violet-600 dark:text-violet-400" /> Edit Admin Profile
             </h2>
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="p-1 text-slate-400 hover:text-white rounded-lg transition"
+              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg transition"
             >
               <X className="w-4 h-4" />
             </button>
@@ -182,23 +193,23 @@ export const AdminProfilePage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-semibold">Administrator Name *</label>
+              <label className="text-slate-700 dark:text-slate-300 font-semibold">Administrator Name *</label>
               <input
                 type="text"
                 value={editForm.name}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-violet-500"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-violet-500 shadow-xs"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-slate-400 font-semibold">System Email (Managed via Identity)</label>
+              <label className="text-slate-500 dark:text-slate-400 font-semibold">System Email (Managed via Identity)</label>
               <input
                 type="text"
                 value={admin.email}
                 disabled
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-500 cursor-not-allowed"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
               />
             </div>
           </div>
@@ -207,7 +218,7 @@ export const AdminProfilePage = () => {
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               Cancel
             </button>
@@ -225,114 +236,114 @@ export const AdminProfilePage = () => {
 
       {/* Platform Telemetry Row */}
       <div className="space-y-3">
-        <h2 className="text-sm font-bold text-white flex items-center gap-2">
-          <Layers className="w-4 h-4 text-violet-400" /> Platform Infrastructure & Telemetry
+        <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <Layers className="w-4 h-4 text-violet-600 dark:text-violet-400" /> Platform Infrastructure & Telemetry
         </h2>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <Users className="w-3 h-3 text-indigo-400" /> Users
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <Users className="w-3 h-3 text-indigo-600 dark:text-indigo-400" /> Users
             </div>
-            <div className="text-xl font-black text-white font-mono">{stats.totalUsers || 0}</div>
+            <div className="text-xl font-black text-slate-900 dark:text-white font-mono">{stats.totalUsers || 0}</div>
           </div>
 
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <User className="w-3 h-3 text-cyan-400" /> Mentees
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <User className="w-3 h-3 text-cyan-600 dark:text-cyan-400" /> Mentees
             </div>
-            <div className="text-xl font-black text-cyan-300 font-mono">{stats.totalMentees || 0}</div>
+            <div className="text-xl font-black text-cyan-600 dark:text-cyan-300 font-mono">{stats.totalMentees || 0}</div>
           </div>
 
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <Briefcase className="w-3 h-3 text-violet-400" /> Mentors
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <Briefcase className="w-3 h-3 text-violet-600 dark:text-violet-400" /> Mentors
             </div>
-            <div className="text-xl font-black text-violet-300 font-mono">{stats.totalMentors || 0}</div>
+            <div className="text-xl font-black text-violet-600 dark:text-violet-300 font-mono">{stats.totalMentors || 0}</div>
           </div>
 
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <FolderGit2 className="w-3 h-3 text-amber-400" /> Batches
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <FolderGit2 className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Batches
             </div>
-            <div className="text-xl font-black text-amber-300 font-mono">{stats.totalBatches || 0}</div>
+            <div className="text-xl font-black text-amber-600 dark:text-amber-300 font-mono">{stats.totalBatches || 0}</div>
           </div>
 
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <CheckSquare className="w-3 h-3 text-emerald-400" /> Tasks
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <CheckSquare className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Tasks
             </div>
-            <div className="text-xl font-black text-emerald-300 font-mono">{stats.totalTasks || 0}</div>
+            <div className="text-xl font-black text-emerald-600 dark:text-emerald-300 font-mono">{stats.totalTasks || 0}</div>
           </div>
 
-          <div className="glass-panel p-4 rounded-2xl border border-slate-800 space-y-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-pink-400" /> Mocks
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-pink-600 dark:text-pink-400" /> Mocks
             </div>
-            <div className="text-xl font-black text-pink-300 font-mono">{stats.totalMockSections || 0}</div>
+            <div className="text-xl font-black text-pink-600 dark:text-pink-300 font-mono">{stats.totalMockSections || 0}</div>
           </div>
         </div>
       </div>
 
       {/* Quick Access Portal Grid */}
       <div className="space-y-3">
-        <h2 className="text-sm font-bold text-white flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-400" /> Quick Administrative Management
+        <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400" /> Quick Administrative Management
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Link
             to="/admin/users"
-            className="glass-panel p-4 rounded-2xl border border-slate-800 hover:border-violet-500/40 transition space-y-2 group"
+            className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-violet-500/40 hover:shadow-md transition space-y-2 group shadow-sm"
           >
             <div className="flex items-center justify-between">
-              <Users className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition" />
-              <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition" />
+              <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition" />
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition" />
             </div>
-            <div className="font-bold text-white text-xs">User Directory</div>
-            <p className="text-[11px] text-slate-400">
+            <div className="font-bold text-slate-900 dark:text-white text-xs">User Directory</div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Manage accounts, reset passwords, and edit profile details for all users.
             </p>
           </Link>
 
           <Link
             to="/admin/batches"
-            className="glass-panel p-4 rounded-2xl border border-slate-800 hover:border-violet-500/40 transition space-y-2 group"
+            className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-violet-500/40 hover:shadow-md transition space-y-2 group shadow-sm"
           >
             <div className="flex items-center justify-between">
-              <FolderGit2 className="w-5 h-5 text-violet-400 group-hover:scale-110 transition" />
-              <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition" />
+              <FolderGit2 className="w-5 h-5 text-violet-600 dark:text-violet-400 group-hover:scale-110 transition" />
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition" />
             </div>
-            <div className="font-bold text-white text-xs">Batch Cohorts</div>
-            <p className="text-[11px] text-slate-400">
+            <div className="font-bold text-slate-900 dark:text-white text-xs">Batch Cohorts</div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Create student cohorts, assign faculty mentors, and allocate mentees.
             </p>
           </Link>
 
           <Link
             to="/admin/bulk-import"
-            className="glass-panel p-4 rounded-2xl border border-slate-800 hover:border-violet-500/40 transition space-y-2 group"
+            className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-violet-500/40 hover:shadow-md transition space-y-2 group shadow-sm"
           >
             <div className="flex items-center justify-between">
-              <UploadCloud className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition" />
-              <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition" />
+              <UploadCloud className="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition" />
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition" />
             </div>
-            <div className="font-bold text-white text-xs">Bulk Data Import</div>
-            <p className="text-[11px] text-slate-400">
+            <div className="font-bold text-slate-900 dark:text-white text-xs">Bulk Data Import</div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Upload CSV spreadsheets for students, mentors, and batch mappings.
             </p>
           </Link>
 
           <Link
             to="/admin/reports"
-            className="glass-panel p-4 rounded-2xl border border-slate-800 hover:border-violet-500/40 transition space-y-2 group"
+            className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-violet-500/40 hover:shadow-md transition space-y-2 group shadow-sm"
           >
             <div className="flex items-center justify-between">
-              <FileSpreadsheet className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition" />
-              <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-white transition" />
+              <FileSpreadsheet className="w-5 h-5 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition" />
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition" />
             </div>
-            <div className="font-bold text-white text-xs">Reports & Exports</div>
-            <p className="text-[11px] text-slate-400">
+            <div className="font-bold text-slate-900 dark:text-white text-xs">Reports & Exports</div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
               Generate platform performance summaries and export tabular CSVs.
             </p>
           </Link>
@@ -342,11 +353,11 @@ export const AdminProfilePage = () => {
       {/* Recent System Audit Logs */}
       {recentLogs.length > 0 && (
         <div className="space-y-3 pt-2">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <Activity className="w-4 h-4 text-emerald-400" /> Recent System Audit Events
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Recent System Audit Events
           </h2>
 
-          <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden divide-y divide-slate-800/70">
+          <div className="glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/70">
             {recentLogs.map((log) => {
               const dateStr = new Date(log.createdAt).toLocaleString('en-US', {
                 month: 'short',
@@ -358,19 +369,19 @@ export const AdminProfilePage = () => {
               return (
                 <div key={log.id} className="p-3.5 flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-3">
-                    <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-mono text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono text-[10px] font-bold border border-slate-200 dark:border-slate-700/60">
                       {log.action}
                     </span>
-                    <span className="text-slate-300">
-                      by <strong className="text-white">{log.actor?.name || 'System'}</strong> ({log.actor?.role || 'SYSTEM'})
+                    <span className="text-slate-700 dark:text-slate-300">
+                      by <strong className="text-slate-900 dark:text-white">{log.actor?.name || 'System'}</strong> ({log.actor?.role || 'SYSTEM'})
                     </span>
                     {log.resourceType && (
-                      <span className="text-slate-500 text-[11px]">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px]">
                         on {log.resourceType}
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] text-slate-500 font-mono">{dateStr}</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">{dateStr}</span>
                 </div>
               );
             })}

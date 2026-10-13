@@ -46,7 +46,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center text-slate-400">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f19] flex items-center justify-center text-slate-500 dark:text-slate-400">
         Loading session...
       </div>
     );

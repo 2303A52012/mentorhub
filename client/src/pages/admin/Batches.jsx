@@ -63,26 +63,26 @@ export const AdminBatches = () => {
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Batch Management</h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Batch Management</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Create academic training cohorts, assign lead mentors, and structure mentee groups.
           </p>
         </div>
 
         <button
           onClick={() => setShowModal(true)}
-          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30"
+          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
         >
           <Plus className="w-4 h-4" /> Create New Batch
         </button>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Loading batches...</div>
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">Loading batches...</div>
       ) : batches.length === 0 ? (
-        <div className="text-center py-16 glass-panel rounded-2xl border border-slate-800 text-slate-400 text-sm">
+        <div className="text-center py-16 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-sm shadow-sm">
           No batches created yet.
         </div>
       ) : (
@@ -90,25 +90,25 @@ export const AdminBatches = () => {
           {batches.map((b) => (
             <div
               key={b._id}
-              className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between"
+              className="bg-white dark:bg-slate-900/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 flex flex-col justify-between"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
                     Cohort {b.academicYear || 2027}
                   </span>
-                  <span className="text-[10px] font-semibold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
                     {b.menteeCount} Students
                   </span>
                 </div>
 
-                <h3 className="text-base font-bold text-white">{b.name}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">{b.name}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   {b.description || 'Specialized training track.'}
                 </p>
 
-                <div className="pt-2 border-t border-slate-800 space-y-1 text-xs">
-                  <span className="font-semibold text-slate-400 text-[11px] block">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1 text-xs">
+                  <span className="font-semibold text-slate-600 dark:text-slate-400 text-[11px] block">
                     Assigned Mentors:
                   </span>
                   <div className="flex flex-wrap gap-1">
@@ -116,13 +116,13 @@ export const AdminBatches = () => {
                       b.mentorIds.map((m) => (
                         <span
                           key={m._id}
-                          className="bg-slate-900 border border-slate-700 text-indigo-300 px-2 py-0.5 rounded text-[10px]"
+                          className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded text-[10px]"
                         >
                           {m.name}
                         </span>
                       ))
                     ) : (
-                      <span className="text-slate-500 text-[10px]">None</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-[10px]">None</span>
                     )}
                   </div>
                 </div>
@@ -134,13 +134,13 @@ export const AdminBatches = () => {
 
       {/* Create Batch Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-panel p-6 rounded-2xl border border-slate-700 max-w-md w-full max-h-[90vh] overflow-y-auto space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white">Create New Batch</h3>
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Create New Batch</h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -148,46 +148,46 @@ export const AdminBatches = () => {
 
             <form onSubmit={handleCreateBatch} className="space-y-3 text-xs">
               <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Batch Name</label>
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Batch Name</label>
                 <input
                   type="text"
                   required
                   value={batchName}
                   onChange={(e) => setBatchName(e.target.value)}
                   placeholder="e.g. Cream Batch or Batch C"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Academic Year</label>
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Academic Year</label>
                 <input
                   type="number"
                   required
                   value={academicYear}
                   onChange={(e) => setAcademicYear(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Description</label>
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Description</label>
                 <textarea
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Cohort goals and description..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="space-y-1 pt-1">
-                <label className="text-slate-300 font-medium">Assign Mentors</label>
-                <div className="max-h-28 overflow-y-auto space-y-1 p-2 bg-slate-900 rounded-xl border border-slate-800">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Assign Mentors</label>
+                <div className="max-h-28 overflow-y-auto space-y-1 p-2 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
                   {mentors.map((m) => (
                     <label
                       key={m._id}
-                      className="flex items-center gap-2 cursor-pointer text-slate-300 py-0.5"
+                      className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 py-0.5"
                     >
                       <input
                         type="checkbox"
@@ -201,7 +201,7 @@ export const AdminBatches = () => {
                             );
                           }
                         }}
-                        className="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0"
+                        className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-0"
                       />
                       <span>{m.name}</span>
                     </label>
@@ -209,17 +209,17 @@ export const AdminBatches = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-md shadow-indigo-600/20"
                 >
                   Create Batch
                 </button>

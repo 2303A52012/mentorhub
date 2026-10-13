@@ -12,6 +12,25 @@ export const authorizeRoles = (...roles) => {
   };
 };
 
+export const isSuperAdmin = (user) => {
+  return (
+    user &&
+    user.role === 'ADMIN' &&
+    user.email?.toLowerCase() === 'admin@sru.edu.in'
+  );
+};
+
+export const requireSuperAdmin = (req, res, next) => {
+  if (!req.user || !isSuperAdmin(req.user)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Forbidden: Super Administrator privileges required (admin@sru.edu.in).'
+    });
+  }
+  next();
+};
+
+
 export const checkMentorMenteeAccess = async (req, res, next) => {
   try {
     if (req.user.role === 'ADMIN') {

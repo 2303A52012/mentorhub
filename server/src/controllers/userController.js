@@ -3,7 +3,7 @@ import prisma from '../config/prisma.js';
 
 export const getMentees = async (req, res, next) => {
   try {
-    const { batchId, search, status, completionFilter } = req.query;
+    const { batchId, search, status, completionFilter, mentorId } = req.query;
     const userId = req.user.id || req.user._id;
 
     let menteeUserIds = null;
@@ -17,6 +17,15 @@ export const getMentees = async (req, res, next) => {
         select: { menteeId: true }
       });
       menteeUserIds = assignments.map((a) => a.menteeId);
+    } else if (mentorId && mentorId !== 'ALL') {
+      const assignments = await prisma.mentorMenteeAssignment.findMany({
+        where: {
+          mentorId: mentorId,
+          status: 'ACTIVE'
+        },
+        select: { menteeId: true }
+      });
+      menteeUserIds = assignments.map((a) => a.menteeId);
     }
 
     const where = {
@@ -25,6 +34,12 @@ export const getMentees = async (req, res, next) => {
 
     if (menteeUserIds) {
       where.id = { in: menteeUserIds };
+    }
+
+    if (batchId && batchId !== 'ALL') {
+      where.menteeBatches = {
+        some: { batchId }
+      };
     }
 
     if (status) {
@@ -911,6 +926,29 @@ export const assignMentorToMentee = async (req, res, next) => {
       });
     }
 
+    const targetMentor = await prisma.user.findUnique({
+      where: { id: mentorId }
+    });
+
+    if (!targetMentor || targetMentor.role !== 'MENTOR') {
+      return res.status(404).json({
+        success: false,
+        message: 'Target mentor not found.'
+      });
+    }
+
+    // Deactivate previous active mentor assignments for this mentee
+    await prisma.mentorMenteeAssignment.updateMany({
+      where: {
+        menteeId,
+        mentorId: { not: mentorId },
+        status: 'ACTIVE'
+      },
+      data: {
+        status: 'INACTIVE'
+      }
+    });
+
     const assignment = await prisma.mentorMenteeAssignment.upsert({
       where: {
         mentorId_menteeId: { mentorId, menteeId }
@@ -924,11 +962,14 @@ export const assignMentorToMentee = async (req, res, next) => {
       },
       update: {
         batchId: batchId || null,
-        status: 'ACTIVE'
+        status: 'ACTIVE',
+        assignedAt: new Date()
       }
     });
 
     const mentee = await prisma.user.findUnique({ where: { id: menteeId } });
+
+    // Notify new mentor
     await prisma.notification.create({
       data: {
         userId: mentorId,
@@ -938,12 +979,502 @@ export const assignMentorToMentee = async (req, res, next) => {
       }
     });
 
+    // Notify mentee
+    await prisma.notification.create({
+      data: {
+        userId: menteeId,
+        type: 'SYSTEM',
+        title: 'Mentor Assigned',
+        message: `Your technical mentor has been assigned to ${targetMentor.name}.`
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user.id || req.user._id,
+        action: 'ASSIGN_MENTOR',
+        resourceType: 'MentorMenteeAssignment',
+        resourceId: assignment.id,
+        details: {
+          menteeId,
+          menteeName: mentee?.name,
+          mentorId,
+          mentorName: targetMentor.name
+        }
+      }
+    });
+
     return res.status(200).json({
       success: true,
-      message: 'Mentor assigned to mentee successfully.',
+      message: `Mentor ${targetMentor.name} assigned to ${mentee?.name || 'student'} successfully.`,
       assignment: { ...assignment, _id: assignment.id }
     });
   } catch (error) {
     next(error);
   }
 };
+
+export const reallocateMentor = async (req, res, next) => {
+  try {
+    const { sourceMentorId, targetMentorId, menteeIds, deactivateSourceMentor, reason } = req.body;
+    const actorId = req.user.id || req.user._id;
+
+    if (!sourceMentorId || !targetMentorId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both sourceMentorId and targetMentorId are required.'
+      });
+    }
+
+    if (sourceMentorId === targetMentorId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Source mentor and target mentor must be different.'
+      });
+    }
+
+    const [sourceMentor, targetMentor] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: sourceMentorId },
+        include: { mentorProfile: true }
+      }),
+      prisma.user.findUnique({
+        where: { id: targetMentorId },
+        include: { mentorProfile: true }
+      })
+    ]);
+
+    if (!sourceMentor || sourceMentor.role !== 'MENTOR') {
+      return res.status(404).json({
+        success: false,
+        message: 'Source mentor was not found.'
+      });
+    }
+
+    if (!targetMentor || targetMentor.role !== 'MENTOR') {
+      return res.status(404).json({
+        success: false,
+        message: 'Target mentor was not found.'
+      });
+    }
+
+    // Find active assignments of the source mentor
+    const assignmentWhere = {
+      mentorId: sourceMentorId,
+      status: 'ACTIVE'
+    };
+
+    if (Array.isArray(menteeIds) && menteeIds.length > 0) {
+      assignmentWhere.menteeId = { in: menteeIds };
+    }
+
+    const activeAssignments = await prisma.mentorMenteeAssignment.findMany({
+      where: assignmentWhere,
+      include: {
+        mentee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            menteeProfile: true
+          }
+        }
+      }
+    });
+
+    if (activeAssignments.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: `No active mentees found under mentor '${sourceMentor.name}' to reallocate.`
+      });
+    }
+
+    const reallocatedMenteeIds = activeAssignments.map((a) => a.menteeId);
+
+    // 1. Mark source assignments as INACTIVE
+    await prisma.mentorMenteeAssignment.updateMany({
+      where: {
+        mentorId: sourceMentorId,
+        menteeId: { in: reallocatedMenteeIds }
+      },
+      data: {
+        status: 'INACTIVE'
+      }
+    });
+
+    // 2. Also ensure any other old active assignments for these mentees are deactivated
+    await prisma.mentorMenteeAssignment.updateMany({
+      where: {
+        menteeId: { in: reallocatedMenteeIds },
+        mentorId: { not: targetMentorId },
+        status: 'ACTIVE'
+      },
+      data: {
+        status: 'INACTIVE'
+      }
+    });
+
+    // 3. Upsert assignments for target mentor
+    for (const a of activeAssignments) {
+      await prisma.mentorMenteeAssignment.upsert({
+        where: {
+          mentorId_menteeId: {
+            mentorId: targetMentorId,
+            menteeId: a.menteeId
+          }
+        },
+        create: {
+          mentorId: targetMentorId,
+          menteeId: a.menteeId,
+          batchId: a.batchId || null,
+          status: 'ACTIVE',
+          assignedAt: new Date()
+        },
+        update: {
+          batchId: a.batchId || null,
+          status: 'ACTIVE',
+          assignedAt: new Date()
+        }
+      });
+    }
+
+    // 4. Optionally deactivate the source mentor (e.g. mentor left the institution)
+    let sourceDeactivated = false;
+    if (deactivateSourceMentor) {
+      await prisma.user.update({
+        where: { id: sourceMentorId },
+        data: { accountStatus: 'INACTIVE' }
+      });
+      sourceDeactivated = true;
+    }
+
+    // 5. Notify the target mentor
+    await prisma.notification.create({
+      data: {
+        userId: targetMentorId,
+        type: 'MENTEE_ASSIGNED',
+        title: 'Mentees Reallocated',
+        message: `${activeAssignments.length} student(s) have been reallocated to you from ${sourceMentor.name}.`
+      }
+    });
+
+    // 6. Notify each student
+    for (const a of activeAssignments) {
+      await prisma.notification.create({
+        data: {
+          userId: a.menteeId,
+          type: 'SYSTEM',
+          title: 'Mentor Reallocated',
+          message: `Your technical mentor has been reallocated from ${sourceMentor.name} to ${targetMentor.name}.`
+        }
+      });
+    }
+
+    // 7. Record Audit Log
+    await prisma.auditLog.create({
+      data: {
+        actorId,
+        action: 'MENTOR_REALLOCATION',
+        resourceType: 'MentorMenteeAssignment',
+        resourceId: targetMentorId,
+        details: {
+          sourceMentorId,
+          sourceMentorName: sourceMentor.name,
+          targetMentorId,
+          targetMentorName: targetMentor.name,
+          reallocatedCount: activeAssignments.length,
+          reallocatedMenteeIds,
+          sourceDeactivated,
+          reason: reason || 'Administrative reallocation'
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully reallocated ${activeAssignments.length} student(s) from ${sourceMentor.name} to ${targetMentor.name}.`,
+      reallocatedCount: activeAssignments.length,
+      sourceMentor: {
+        id: sourceMentor.id,
+        name: sourceMentor.name,
+        email: sourceMentor.email,
+        accountStatus: sourceDeactivated ? 'INACTIVE' : sourceMentor.accountStatus
+      },
+      targetMentor: {
+        id: targetMentor.id,
+        name: targetMentor.name,
+        email: targetMentor.email
+      },
+      reallocatedMentees: activeAssignments.map((a) => ({
+        id: a.mentee.id,
+        name: a.mentee.name,
+        email: a.mentee.email,
+        rollNumber: a.mentee.menteeProfile?.rollNumber || ''
+      }))
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ============================================================================
+// SUPER ADMIN EXCLUSIVE: ADMINISTRATOR MANAGEMENT
+// ============================================================================
+
+export const getAdmins = async (req, res, next) => {
+  try {
+    const isSuperAdminCaller =
+      req.user.role === 'ADMIN' && req.user.email?.toLowerCase() === 'admin@sru.edu.in';
+
+    if (!isSuperAdminCaller) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only the Super Administrator (admin@sru.edu.in) can view the platform administrators directory.'
+      });
+    }
+
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        accountStatus: true,
+        createdAt: true,
+        updatedAt: true
+      },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    const enrichedAdmins = admins.map((admin) => ({
+      ...admin,
+      _id: admin.id,
+      isSuperAdmin: admin.email.toLowerCase() === 'admin@sru.edu.in'
+    }));
+
+    return res.status(200).json({
+      success: true,
+      count: enrichedAdmins.length,
+      admins: enrichedAdmins
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createAdmin = async (req, res, next) => {
+  try {
+    const isSuperAdminCaller =
+      req.user.role === 'ADMIN' && req.user.email?.toLowerCase() === 'admin@sru.edu.in';
+
+    if (!isSuperAdminCaller) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only the Super Administrator (admin@sru.edu.in) can create new administrators.'
+      });
+    }
+
+    const { name, email, password } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Administrator name is required.' });
+    }
+    if (!email || !email.trim()) {
+      return res.status(400).json({ success: false, message: 'Administrator email is required.' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } }
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: `An account with email '${normalizedEmail}' already exists (Current Role: ${existingUser.role}).`
+      });
+    }
+
+    const tempPassword = password && password.trim().length >= 6 ? password.trim() : 'Password@123';
+    const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+    const newAdmin = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email: normalizedEmail,
+        passwordHash,
+        role: 'ADMIN',
+        accountStatus: 'ACTIVE',
+        mustChangePassword: true
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        accountStatus: true,
+        createdAt: true
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user.id || req.user._id,
+        action: 'CREATE_ADMIN',
+        resourceType: 'User',
+        resourceId: newAdmin.id,
+        details: {
+          createdAdminEmail: newAdmin.email,
+          createdAdminName: newAdmin.name,
+          createdBy: req.user.email
+        }
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `Administrator '${newAdmin.name}' created successfully with temporary password: ${tempPassword}`,
+      admin: {
+        ...newAdmin,
+        _id: newAdmin.id,
+        isSuperAdmin: false
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateAdmin = async (req, res, next) => {
+  try {
+    const isSuperAdminCaller =
+      req.user.role === 'ADMIN' && req.user.email?.toLowerCase() === 'admin@sru.edu.in';
+
+    if (!isSuperAdminCaller) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only the Super Administrator (admin@sru.edu.in) can modify administrator accounts.'
+      });
+    }
+
+    const { id } = req.params;
+    const { name, accountStatus } = req.body;
+
+    const targetAdmin = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!targetAdmin || targetAdmin.role !== 'ADMIN') {
+      return res.status(404).json({ success: false, message: 'Administrator not found.' });
+    }
+
+    if (targetAdmin.email.toLowerCase() === 'admin@sru.edu.in') {
+      if (accountStatus && accountStatus !== 'ACTIVE') {
+        return res.status(400).json({
+          success: false,
+          message: 'The primary Super Administrator (admin@sru.edu.in) cannot be deactivated or suspended.'
+        });
+      }
+    }
+
+    const dataToUpdate = {};
+    if (name && name.trim()) dataToUpdate.name = name.trim();
+    if (accountStatus) dataToUpdate.accountStatus = accountStatus;
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: dataToUpdate,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        accountStatus: true,
+        updatedAt: true
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user.id || req.user._id,
+        action: 'UPDATE_ADMIN',
+        resourceType: 'User',
+        resourceId: id,
+        details: {
+          updatedEmail: targetAdmin.email,
+          changes: dataToUpdate
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Administrator account updated successfully.',
+      admin: {
+        ...updated,
+        _id: updated.id,
+        isSuperAdmin: updated.email.toLowerCase() === 'admin@sru.edu.in'
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteAdmin = async (req, res, next) => {
+  try {
+    const isSuperAdminCaller =
+      req.user.role === 'ADMIN' && req.user.email?.toLowerCase() === 'admin@sru.edu.in';
+
+    if (!isSuperAdminCaller) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only the Super Administrator (admin@sru.edu.in) can delete administrator accounts.'
+      });
+    }
+
+    const { id } = req.params;
+
+    const targetAdmin = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!targetAdmin || targetAdmin.role !== 'ADMIN') {
+      return res.status(404).json({ success: false, message: 'Administrator not found.' });
+    }
+
+    if (targetAdmin.email.toLowerCase() === 'admin@sru.edu.in') {
+      return res.status(400).json({
+        success: false,
+        message: 'The primary Super Administrator (admin@sru.edu.in) cannot be deleted.'
+      });
+    }
+
+    await prisma.user.delete({
+      where: { id }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user.id || req.user._id,
+        action: 'DELETE_ADMIN',
+        resourceType: 'User',
+        resourceId: id,
+        details: {
+          deletedAdminEmail: targetAdmin.email,
+          deletedAdminName: targetAdmin.name
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Administrator '${targetAdmin.name}' (${targetAdmin.email}) has been permanently deleted.`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

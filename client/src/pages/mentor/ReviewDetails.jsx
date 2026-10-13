@@ -164,7 +164,7 @@ export const ReviewDetails = () => {
       <div className="flex items-center justify-between">
         <Link
           to="/mentor/reviews"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Review Queue
         </Link>
@@ -172,33 +172,33 @@ export const ReviewDetails = () => {
       </div>
 
       {/* Header Info */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+      <div className="bg-white dark:bg-slate-900/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
               Week {task?.weekNo} Submission Review
             </span>
-            <h1 className="text-2xl font-bold text-white">{task?.title}</h1>
-            <p className="text-xs text-slate-400">
-              Submitted by <strong className="text-white">{mentee?.name}</strong> (Roll:{' '}
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{task?.title}</h1>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Submitted by <strong className="text-slate-900 dark:text-white">{mentee?.name}</strong> (Roll:{' '}
               {menteeProfile?.rollNumber || 'N/A'})
             </p>
           </div>
 
-          <div className="text-right text-xs text-slate-400 space-y-1">
+          <div className="text-right text-xs text-slate-500 dark:text-slate-400 space-y-1">
             <div>
-              Version: <span className="text-white font-mono font-bold">v{latestSub?.version || 1}</span>
+              Version: <span className="text-slate-900 dark:text-white font-mono font-bold">v{latestSub?.version || 1}</span>
             </div>
             <div>
               Submitted:{' '}
-              <span className="text-white">
+              <span className="text-slate-900 dark:text-white">
                 {menteeTask.submittedAt
                   ? new Date(menteeTask.submittedAt).toLocaleString()
                   : 'Not yet'}
               </span>
             </div>
             {latestSub?.submittedLate && (
-              <span className="inline-block text-[10px] bg-rose-500/10 text-rose-400 px-2 py-0.5 rounded font-bold">
+              <span className="inline-block text-[10px] bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 px-2 py-0.5 rounded font-bold">
                 ⚠️ Late Submission
               </span>
             )}
@@ -207,18 +207,18 @@ export const ReviewDetails = () => {
       </div>
 
       {successMessage && (
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" /> {successMessage}
+        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> {successMessage}
         </div>
       )}
 
       {/* Problems & Solutions Inspection */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Code2 className="w-5 h-5 text-indigo-400" /> Student Problem Submissions ({task?.problems?.length || 0})
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Code2 className="w-5 h-5 text-indigo-500 dark:text-indigo-400" /> Student Problem Submissions ({task?.problems?.length || 0})
           </h2>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
             Inspect algorithmic approach, complexities, platform link, and code.
           </span>
         </div>
@@ -240,16 +240,16 @@ export const ReviewDetails = () => {
           return (
             <div
               key={prob._id}
-              className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-5"
+              className="bg-white dark:bg-slate-900/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-5 shadow-sm"
             >
               {/* Problem Title & Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-xl bg-indigo-600/20 text-indigo-300 flex items-center justify-center text-xs font-bold border border-indigo-500/30">
+                  <span className="w-7 h-7 rounded-xl bg-indigo-50 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-300 flex items-center justify-center text-xs font-bold border border-indigo-200 dark:border-indigo-500/30">
                     Q{idx + 1}
                   </span>
                   <div>
-                    <h3 className="font-bold text-white text-sm">{prob.name}</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">{prob.name}</h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       <PlatformBadge platform={prob.platform} />
                     </div>
@@ -260,7 +260,7 @@ export const ReviewDetails = () => {
                   href={prob.problemUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-indigo-300 font-medium transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-indigo-600 dark:text-indigo-300 font-medium transition"
                 >
                   View Problem Statement ↗ <ExternalLink className="w-3 h-3" />
                 </a>
@@ -268,15 +268,15 @@ export const ReviewDetails = () => {
 
               {/* 1. Approach & Idea */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                   Algorithm Approach & Intuition
                 </label>
-                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 text-xs text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans whitespace-pre-wrap">
                   {solutionData.approach && solutionData.approach.trim().length > 0 ? (
                     solutionData.approach
                   ) : (
-                    <span className="text-slate-500 italic">
+                    <span className="text-slate-400 dark:text-slate-500 italic">
                       [No approach or explanation recorded for this problem]
                     </span>
                   )}
@@ -286,33 +286,33 @@ export const ReviewDetails = () => {
               {/* 2. Complexities & Submission Link */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 {/* Time Complexity */}
-                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                  <span className="text-[11px] text-slate-400 flex items-center gap-1.5 font-semibold">
-                    <Cpu className="w-3.5 h-3.5 text-amber-400" /> Time Complexity
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-semibold">
+                    <Cpu className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Time Complexity
                   </span>
-                  <p className="font-mono text-white text-xs font-bold">
+                  <p className="font-mono text-slate-900 dark:text-white text-xs font-bold">
                     {solutionData.timeComplexity || (
-                      <span className="text-slate-500 font-normal italic">Not specified</span>
+                      <span className="text-slate-400 dark:text-slate-500 font-normal italic">Not specified</span>
                     )}
                   </p>
                 </div>
 
                 {/* Space Complexity */}
-                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                  <span className="text-[11px] text-slate-400 flex items-center gap-1.5 font-semibold">
-                    <HardDrive className="w-3.5 h-3.5 text-cyan-400" /> Space Complexity
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-semibold">
+                    <HardDrive className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" /> Space Complexity
                   </span>
-                  <p className="font-mono text-white text-xs font-bold">
+                  <p className="font-mono text-slate-900 dark:text-white text-xs font-bold">
                     {solutionData.spaceComplexity || (
-                      <span className="text-slate-500 font-normal italic">Not specified</span>
+                      <span className="text-slate-400 dark:text-slate-500 font-normal italic">Not specified</span>
                     )}
                   </p>
                 </div>
 
                 {/* Platform Submission Link */}
-                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
-                  <span className="text-[11px] text-slate-400 flex items-center gap-1.5 font-semibold">
-                    <LinkIcon className="w-3.5 h-3.5 text-emerald-400" /> Platform Link
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-semibold">
+                    <LinkIcon className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> Platform Link
                   </span>
                   <div>
                     {solutionData.submissionUrl ? (
@@ -324,12 +324,12 @@ export const ReviewDetails = () => {
                         }
                         target="_blank"
                         rel="noreferrer"
-                        className="text-emerald-400 hover:text-emerald-300 hover:underline font-mono text-[11px] flex items-center gap-1 truncate"
+                        className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline font-mono text-[11px] flex items-center gap-1 truncate"
                       >
                         Platform Submission ↗ <ExternalLink className="w-3 h-3 flex-shrink-0" />
                       </a>
                     ) : (
-                      <span className="text-slate-500 text-xs italic">No link provided</span>
+                      <span className="text-slate-400 dark:text-slate-500 text-xs italic">No link provided</span>
                     )}
                   </div>
                 </div>
@@ -339,9 +339,9 @@ export const ReviewDetails = () => {
               {solutionData.sourceCode && solutionData.sourceCode.trim().length > 0 && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                      <Code2 className="w-3.5 h-3.5 text-purple-400" /> Submitted Source Code
-                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Code2 className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" /> Submitted Source Code
+                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/20">
                         {solutionData.language || 'cpp'}
                       </span>
                     </label>
@@ -349,11 +349,11 @@ export const ReviewDetails = () => {
                     <button
                       type="button"
                       onClick={() => copyToClipboard(solutionData.sourceCode, prob._id)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] text-slate-300 hover:text-white flex items-center gap-1 transition"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition"
                     >
                       {copiedCodeId === prob._id ? (
                         <>
-                          <Check className="w-3 h-3 text-emerald-400" /> Copied
+                          <Check className="w-3 h-3 text-emerald-500 dark:text-emerald-400" /> Copied
                         </>
                       ) : (
                         <>
@@ -363,19 +363,19 @@ export const ReviewDetails = () => {
                     </button>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-emerald-300 font-mono overflow-x-auto leading-relaxed max-h-80 whitespace-pre">
+                  <div className="p-4 rounded-xl bg-slate-900 dark:bg-slate-950 border border-slate-800 text-xs text-emerald-400 dark:text-emerald-300 font-mono overflow-x-auto leading-relaxed max-h-80 whitespace-pre">
                     {solutionData.sourceCode}
                   </div>
                 </div>
               )}
 
               {/* Problem-Specific Mentor Feedback Inputs */}
-              <div className="pt-3 border-t border-slate-800/80 space-y-2">
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-indigo-300">
+                  <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-300">
                     Evaluation Note on Problem {idx + 1}:
                   </span>
-                  <label className="flex items-center gap-1.5 text-[11px] text-rose-300 cursor-pointer">
+                  <label className="flex items-center gap-1.5 text-[11px] text-rose-600 dark:text-rose-300 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={currentCorrection}
@@ -386,7 +386,7 @@ export const ReviewDetails = () => {
                           e.target.checked
                         )
                       }
-                      className="rounded bg-slate-900 border-slate-700 text-rose-600 focus:ring-0"
+                      className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-rose-600 focus:ring-0"
                     />
                     Requires Revision
                   </label>
@@ -398,7 +398,7 @@ export const ReviewDetails = () => {
                     handleProblemFeedbackChange(prob._id, 'feedback', e.target.value)
                   }
                   placeholder="e.g. Good time complexity analysis, consider corner cases where n=1..."
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -409,10 +409,10 @@ export const ReviewDetails = () => {
       {/* Review Submission Form */}
       <form
         onSubmit={handleReviewSubmit}
-        className="glass-panel p-6 rounded-2xl border border-indigo-500/20 space-y-5"
+        className="bg-white dark:bg-slate-900/60 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-500/20 space-y-5 shadow-sm"
       >
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
-          <FileCheck className="w-5 h-5 text-indigo-400" /> Review Verification & Decision
+        <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <FileCheck className="w-5 h-5 text-indigo-500 dark:text-indigo-400" /> Review Verification & Decision
         </h2>
 
         {/* Decision Toggle */}
@@ -421,30 +421,30 @@ export const ReviewDetails = () => {
             type="button"
             onClick={() => setDecision('APPROVED')}
             className={`p-3.5 rounded-xl border flex items-center justify-center gap-2 font-bold text-xs transition ${decision === 'APPROVED'
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
-                : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40 shadow-sm'
+                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
           >
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Approve Task
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Approve Task
           </button>
 
           <button
             type="button"
             onClick={() => setDecision('RESUBMISSION_REQUIRED')}
             className={`p-3.5 rounded-xl border flex items-center justify-center gap-2 font-bold text-xs transition ${decision === 'RESUBMISSION_REQUIRED'
-                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-lg shadow-rose-500/10'
-                : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-500/40 shadow-sm'
+                : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
           >
-            <AlertCircle className="w-4 h-4 text-rose-400" /> Request Resubmission
+            <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" /> Request Resubmission
           </button>
         </div>
 
         {/* Score Field (if approved) */}
         {decision === 'APPROVED' && (
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-amber-400" /> Task Score (out of 10)
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <Star className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Task Score (out of 10)
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -454,19 +454,19 @@ export const ReviewDetails = () => {
                 step="0.5"
                 value={score}
                 onChange={(e) => setScore(e.target.value)}
-                className="w-28 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-indigo-500"
+                className="w-28 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-indigo-500"
               />
-              <span className="text-xs text-slate-400">/ 10 points</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">/ 10 points</span>
             </div>
           </div>
         )}
 
         {/* Overall Feedback */}
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-slate-300">
+          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
             Overall Mentor Feedback{' '}
             {decision === 'RESUBMISSION_REQUIRED' && (
-              <span className="text-rose-400">* (Required)</span>
+              <span className="text-rose-600 dark:text-rose-400">* (Required)</span>
             )}
           </label>
           <textarea
@@ -479,7 +479,7 @@ export const ReviewDetails = () => {
                 ? 'Great problem solving notes and clean implementation...'
                 : 'Explain what needs correction before approval...'
             }
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 leading-relaxed"
+            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 leading-relaxed"
           />
         </div>
 
@@ -502,8 +502,8 @@ export const ReviewDetails = () => {
 
       {/* Review History Logs */}
       {reviewHistory && reviewHistory.length > 0 && (
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-900/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <History className="w-4 h-4 text-slate-400" /> Past Review History
           </h2>
 
@@ -511,23 +511,23 @@ export const ReviewDetails = () => {
             {reviewHistory.map((rev) => (
               <div
                 key={rev._id}
-                className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs space-y-1.5"
+                className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-300">
+                  <span className="font-semibold text-slate-800 dark:text-slate-300">
                     Review by {rev.reviewerId?.name}
                   </span>
                   <span
-                    className={`font-bold px-2 py-0.5 rounded text-[10px] ${rev.decision === 'APPROVED'
-                        ? 'bg-emerald-500/10 text-emerald-400'
-                        : 'bg-rose-500/10 text-rose-400'
+                    className={`font-bold px-2 py-0.5 rounded text-[10px] border ${rev.decision === 'APPROVED'
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
+                        : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/20'
                       }`}
                   >
                     {rev.decision} {rev.score !== null ? `(${rev.score}/10)` : ''}
                   </span>
                 </div>
-                <p className="text-slate-400 italic">"{rev.overallFeedback}"</p>
-                <span className="text-[10px] text-slate-500 block">
+                <p className="text-slate-600 dark:text-slate-400 italic">"{rev.overallFeedback}"</p>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
                   {new Date(rev.reviewedAt).toLocaleString()}
                 </span>
               </div>

@@ -140,6 +140,7 @@ export const login = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        isSuperAdmin: user.role === 'ADMIN' && user.email.toLowerCase() === 'admin@sru.edu.in',
         mustChangePassword: user.mustChangePassword
       }
     });
@@ -189,6 +190,7 @@ export const getMe = async (req, res, next) => {
         name: fullUser.name,
         email: fullUser.email,
         role: fullUser.role,
+        isSuperAdmin: fullUser.role === 'ADMIN' && fullUser.email.toLowerCase() === 'admin@sru.edu.in',
         accountStatus: fullUser.accountStatus,
         mustChangePassword: fullUser.mustChangePassword,
         profile: extraProfile,
@@ -619,6 +621,15 @@ export const adminResetPassword = async (req, res, next) => {
 
     if (!targetUser) {
       return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Only Super Admin can reset an Administrator account password
+    const isCallerSuperAdmin = req.user.role === 'ADMIN' && req.user.email?.toLowerCase() === 'admin@sru.edu.in';
+    if (targetUser.role === 'ADMIN' && !isCallerSuperAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only the Super Administrator (admin@sru.edu.in) can reset passwords for administrator accounts.'
+      });
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 10);

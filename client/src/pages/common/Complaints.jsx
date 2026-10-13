@@ -398,22 +398,22 @@ export const Complaints = () => {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Banner & Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-900/90 to-indigo-950/40 p-6 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-white via-slate-50 to-indigo-50/50 dark:from-slate-900 dark:via-slate-900/90 dark:to-indigo-950/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="space-y-1 z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-semibold">
             <MessageSquareWarning className="w-3.5 h-3.5" />
             SRU Grievance & Complaint Desk
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             {role === 'ADMIN'
               ? 'Administration Grievance Management'
               : role === 'MENTOR'
               ? 'Mentor Grievance Desk'
               : 'Student Grievance & Support Box'}
           </h1>
-          <p className="text-sm text-slate-400 max-w-2xl">
+          <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
             {role === 'MENTEE'
               ? 'Raise concerns with strict privacy. Complain to your mentor privately, or report directly to administration where mentors cannot view your reports.'
               : role === 'MENTOR'
@@ -435,16 +435,16 @@ export const Complaints = () => {
       </div>
 
       {/* Privacy Policy Callout Banner */}
-      <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-300">
+      <div className="p-4 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-700 dark:text-slate-300 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+          <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 shrink-0">
             <Lock className="w-4 h-4" />
           </div>
           <div>
-            <span className="font-semibold text-white">Strict Privacy Guarantee: </span>
+            <span className="font-semibold text-slate-900 dark:text-white">Strict Privacy Guarantee: </span>
             {role === 'MENTEE' ? (
               <span>
-                Complaints marked <strong className="text-purple-300">Direct to Admin</strong> are 100% hidden from mentors. Complaints to your <strong className="text-blue-300">Mentor</strong> remain strictly between you two until you choose to forward to admins.
+                Complaints marked <strong className="text-purple-600 dark:text-purple-300 font-semibold">Direct to Admin</strong> are 100% hidden from mentors. Complaints to your <strong className="text-blue-600 dark:text-blue-300 font-semibold">Mentor</strong> remain strictly between you two until you choose to forward to admins.
               </span>
             ) : role === 'MENTOR' ? (
               <span>
@@ -459,7 +459,7 @@ export const Complaints = () => {
         </div>
         <button
           onClick={fetchComplaints}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-xs transition shrink-0"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 text-xs transition shrink-0 border border-slate-200 dark:border-slate-700"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Refresh
@@ -468,45 +468,45 @@ export const Complaints = () => {
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Total Grievances</span>
-            <MessageCircle className="w-4 h-4 text-indigo-400" />
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Grievances</span>
+            <MessageCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-white">{stats.total}</p>
-          <span className="text-[11px] text-slate-500">In your access scope</span>
+          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500">In your access scope</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-400">Pending Action</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Pending Action</span>
+            <Clock className="w-4 h-4 text-amber-500 dark:text-amber-400" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-amber-400">{stats.pending}</p>
-          <span className="text-[11px] text-slate-500">Awaiting initial response</span>
+          <p className="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500">Awaiting initial response</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-sky-400">Under Review</span>
-            <RefreshCw className="w-4 h-4 text-sky-400" />
+            <span className="text-xs font-semibold text-sky-600 dark:text-sky-400">Under Review</span>
+            <RefreshCw className="w-4 h-4 text-sky-500 dark:text-sky-400" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-sky-400">{stats.inReview}</p>
-          <span className="text-[11px] text-slate-500">Active dialogue</span>
+          <p className="mt-2 text-2xl font-bold text-sky-600 dark:text-sky-400">{stats.inReview}</p>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500">Active dialogue</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 backdrop-blur">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800/80 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-emerald-400">Resolved</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Resolved</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
           </div>
-          <p className="mt-2 text-2xl font-bold text-emerald-400">{stats.resolved}</p>
-          <span className="text-[11px] text-slate-500">Satisfactorily closed</span>
+          <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.resolved}</p>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500">Satisfactorily closed</span>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-3">
+      <div className="p-4 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -515,7 +515,7 @@ export const Complaints = () => {
               placeholder="Search by title, description, or student roll number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
@@ -524,7 +524,7 @@ export const Complaints = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
+              className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
             >
               <option value="ALL">All Statuses</option>
               <option value="PENDING">Pending</option>
@@ -539,7 +539,7 @@ export const Complaints = () => {
               <select
                 value={selectedTarget}
                 onChange={(e) => setSelectedTarget(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
               >
                 <option value="ALL">All Destinations</option>
                 <option value="MENTOR">Mentor Directed</option>
@@ -552,7 +552,7 @@ export const Complaints = () => {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
+              className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
             >
               <option value="ALL">All Categories</option>
               {CATEGORIES.map((cat) => (
@@ -572,12 +572,12 @@ export const Complaints = () => {
           <p className="text-sm text-slate-400">Loading complaints from secure vault...</p>
         </div>
       ) : filteredComplaints.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-slate-900/40 border border-slate-800/80">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+        <div className="p-12 text-center rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 shadow-sm">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
             <MessageSquareWarning className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-semibold text-white">No Grievances Found</h3>
-          <p className="text-sm text-slate-400 max-w-md mx-auto mt-1">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">No Grievances Found</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
             {complaints.length === 0
               ? 'No grievances or complaints have been submitted in your current view.'
               : 'No complaints matched your search filter criteria.'}
@@ -602,7 +602,7 @@ export const Complaints = () => {
               <div
                 key={c.id}
                 onClick={() => openComplaintDetails(c.id)}
-                className="group p-5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 transition cursor-pointer shadow-md hover:shadow-indigo-950/20"
+                className="group p-5 rounded-2xl bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition cursor-pointer shadow-sm hover:shadow-md"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="space-y-2 flex-1">
@@ -612,16 +612,16 @@ export const Complaints = () => {
                       <span className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${priorityObj.color}`}>
                         {priorityObj.label} Priority
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300">
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                         {c.category}
                       </span>
                     </div>
 
-                    <h3 className="text-base font-semibold text-white group-hover:text-indigo-300 transition">
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition">
                       {c.title}
                     </h3>
 
-                    <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
                       {c.description}
                     </p>
 
@@ -631,7 +631,7 @@ export const Complaints = () => {
                         <User className="w-3.5 h-3.5 text-slate-400" />
                         <span>
                           From:{' '}
-                          <strong className="text-slate-300 font-medium">
+                          <strong className="text-slate-700 dark:text-slate-300 font-medium">
                             {c.creator?.id === user?.id
                               ? 'You'
                               : `${c.creator?.name}${
@@ -647,7 +647,7 @@ export const Complaints = () => {
                         <div className="flex items-center gap-1.5">
                           <UserCheck className="w-3.5 h-3.5 text-slate-400" />
                           <span>
-                            Mentor: <strong className="text-slate-300 font-medium">{c.mentor.name}</strong>
+                            Mentor: <strong className="text-slate-700 dark:text-slate-300 font-medium">{c.mentor.name}</strong>
                           </span>
                         </div>
                       )}
@@ -665,7 +665,7 @@ export const Complaints = () => {
                   </div>
 
                   <div className="sm:self-center shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-slate-800 group-hover:bg-indigo-600/20 group-hover:text-indigo-400 text-slate-400 flex items-center justify-center transition">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-600/20 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 text-slate-400 flex items-center justify-center transition">
                       <ChevronRight className="w-4 h-4" />
                     </div>
                   </div>
@@ -680,22 +680,22 @@ export const Complaints = () => {
       {/* 1. RAISE COMPLAINT MODAL                                  */}
       {/* ========================================================= */}
       {createModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setCreateModalOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-white transition"
+              className="p-1 rounded-lg absolute top-5 right-5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="space-y-1 mb-5">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-semibold">
                 <MessageSquareWarning className="w-3.5 h-3.5" />
                 Submit Grievance
               </div>
-              <h2 className="text-xl font-bold text-white">Raise a New Grievance</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Raise a New Grievance</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Your report will be processed through our protected and confidential workflow.
               </p>
             </div>
@@ -704,7 +704,7 @@ export const Complaints = () => {
               {/* TARGET SELECTION (Mentee only) */}
               {role === 'MENTEE' && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-300">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Where would you like to direct this complaint?
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -713,21 +713,21 @@ export const Complaints = () => {
                       onClick={() => hasMentor && setFormData({ ...formData, targetType: 'MENTOR' })}
                       className={`p-3.5 rounded-xl border transition cursor-pointer ${
                         !hasMentor
-                          ? 'opacity-50 cursor-not-allowed border-slate-800 bg-slate-950/40'
+                          ? 'opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950/40'
                           : formData.targetType === 'MENTOR'
-                          ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
-                          : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 ring-1 ring-blue-500'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:border-slate-300 dark:hover:border-slate-700'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <UserCheck className="w-4 h-4 text-blue-400" />
-                        <span className="text-sm font-semibold text-white">To My Mentor</span>
+                        <UserCheck className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                        <span className="text-sm font-semibold text-slate-900 dark:text-white">To My Mentor</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-normal">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
                         {hasMentor ? (
                           <>
                             Direct to{' '}
-                            <strong className="text-slate-300">{assignedMentor?.name}</strong>. Admins
+                            <strong className="text-slate-800 dark:text-slate-300">{assignedMentor?.name}</strong>. Admins
                             cannot see this unless escalated later.
                           </>
                         ) : (
@@ -741,16 +741,16 @@ export const Complaints = () => {
                       onClick={() => setFormData({ ...formData, targetType: 'ADMIN' })}
                       className={`p-3.5 rounded-xl border transition cursor-pointer ${
                         formData.targetType === 'ADMIN'
-                          ? 'border-purple-500 bg-purple-500/10 ring-1 ring-purple-500'
-                          : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
+                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-500/10 ring-1 ring-purple-500'
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:border-slate-300 dark:hover:border-slate-700'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <Shield className="w-4 h-4 text-purple-400" />
-                        <span className="text-sm font-semibold text-white">To Administration</span>
+                        <Shield className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+                        <span className="text-sm font-semibold text-slate-900 dark:text-white">To Administration</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-normal">
-                        Strictly confidential. <strong className="text-purple-300">Your mentor cannot see</strong>{' '}
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal">
+                        Strictly confidential. <strong className="text-purple-600 dark:text-purple-300 font-semibold">Your mentor cannot see</strong>{' '}
                         this complaint at all.
                       </p>
                     </div>
@@ -760,8 +760,8 @@ export const Complaints = () => {
 
               {/* Mentor target notification */}
               {role === 'MENTOR' && (
-                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-center gap-2.5">
-                  <Shield className="w-4 h-4 shrink-0 text-purple-400" />
+                <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-xs text-purple-700 dark:text-purple-300 flex items-center gap-2.5">
+                  <Shield className="w-4 h-4 shrink-0 text-purple-500 dark:text-purple-400" />
                   <span>
                     This grievance will be routed directly to College Administration for confidential review.
                   </span>
@@ -770,25 +770,25 @@ export const Complaints = () => {
 
               {/* Title */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Complaint Title / Subject *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Complaint Title / Subject *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Mentor session scheduling issue or Lab machine unavailable"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               {/* Category & Priority */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Category</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Category</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c.value} value={c.value}>
@@ -799,11 +799,11 @@ export const Complaints = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Priority Level</label>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Priority Level</label>
                   <select
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
                   >
                     {PRIORITIES.map((p) => (
                       <option key={p.value} value={p.value}>
@@ -816,14 +816,14 @@ export const Complaints = () => {
 
               {/* Description */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Detailed Description *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Detailed Description *</label>
                 <textarea
                   rows={4}
                   required
                   placeholder="Provide complete facts, dates, context, and what resolution you are requesting..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
                 />
               </div>
 
@@ -831,7 +831,7 @@ export const Complaints = () => {
                 <button
                   type="button"
                   onClick={() => setCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition"
                 >
                   Cancel
                 </button>
@@ -862,25 +862,25 @@ export const Complaints = () => {
       {/* 2. COMPLAINT DETAILS & CONVERSATION THREAD MODAL          */}
       {/* ========================================================= */}
       {activeComplaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl h-[92vh] flex flex-col shadow-2xl overflow-hidden relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl h-[92vh] flex flex-col shadow-2xl overflow-hidden relative">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-800 flex items-start justify-between gap-4 bg-slate-950/60">
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4 bg-slate-50 dark:bg-slate-950/60">
               <div className="space-y-1.5 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   {renderStatusBadge(activeComplaint.status)}
                   {renderTargetBadge(activeComplaint)}
-                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-300">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
                     {activeComplaint.category}
                   </span>
                 </div>
-                <h2 className="text-lg font-bold text-white tracking-tight">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   {activeComplaint.title}
                 </h2>
-                <div className="flex flex-wrap items-center gap-x-4 text-xs text-slate-400">
+                <div className="flex flex-wrap items-center gap-x-4 text-xs text-slate-500 dark:text-slate-400">
                   <span>
                     Reported by:{' '}
-                    <strong className="text-slate-200">
+                    <strong className="text-slate-800 dark:text-slate-200">
                       {activeComplaint.creator?.name} (
                       {activeComplaint.creator?.menteeProfile?.rollNumber || activeComplaint.creator?.role})
                     </strong>
@@ -893,7 +893,7 @@ export const Complaints = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setActiveComplaint(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -901,11 +901,11 @@ export const Complaints = () => {
             </div>
 
             {/* Modal Body / Scrollable Conversation */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-white dark:bg-slate-900">
               {/* Privacy Alert In Drawer */}
               {activeComplaint.targetType === 'ADMIN' && (
-                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-center gap-2.5">
-                  <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
+                <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-xs text-purple-700 dark:text-purple-300 flex items-center gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
                   <span>
                     Confidential Report: This thread is strictly confidential between the student and Administration. Mentors have no access.
                   </span>
@@ -914,15 +914,15 @@ export const Complaints = () => {
 
               {/* Escalation Notice */}
               {activeComplaint.isForwardedToAdmin && (
-                <div className="p-3.5 rounded-xl bg-orange-500/10 border border-orange-500/25 space-y-1">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-orange-400">
+                <div className="p-3.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/25 space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-orange-600 dark:text-orange-400">
                     <ArrowUpRight className="w-4 h-4" />
                     Escalated to College Administration
                   </div>
-                  <p className="text-xs text-slate-300">
+                  <p className="text-xs text-slate-700 dark:text-slate-300">
                     <strong>Reason:</strong> "{activeComplaint.forwardReason || 'No reason specified'}"
                   </p>
-                  <div className="text-[11px] text-slate-500 pt-1">
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 pt-1">
                     Forwarded by {activeComplaint.forwardedBy?.name} on{' '}
                     {new Date(activeComplaint.forwardedAt).toLocaleString()}
                   </div>
@@ -934,25 +934,25 @@ export const Complaints = () => {
                 <div
                   className={`p-3.5 rounded-xl border ${
                     activeComplaint.status === 'RESOLVED'
-                      ? 'bg-emerald-500/10 border-emerald-500/25'
-                      : 'bg-rose-500/10 border-rose-500/25'
+                      ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/25'
+                      : 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/25'
                   }`}
                 >
-                  <div className="flex items-center gap-2 text-xs font-semibold text-white">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 dark:text-white">
                     {activeComplaint.status === 'RESOLVED' ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     ) : (
-                      <XCircle className="w-4 h-4 text-rose-400" />
+                      <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                     )}
                     {activeComplaint.status === 'RESOLVED' ? 'Resolution Notice' : 'Closure / Rejection Notice'}
                   </div>
                   {activeComplaint.resolutionNotes && (
-                    <p className="text-xs text-slate-300 mt-1">
+                    <p className="text-xs text-slate-700 dark:text-slate-300 mt-1">
                       <strong>Notes:</strong> {activeComplaint.resolutionNotes}
                     </p>
                   )}
                   {activeComplaint.resolvedBy && (
-                    <p className="text-[11px] text-slate-500 mt-1">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                       Marked by {activeComplaint.resolvedBy.name} ({activeComplaint.resolvedBy.role}) on{' '}
                       {new Date(activeComplaint.resolvedAt).toLocaleString()}
                     </p>
@@ -961,22 +961,22 @@ export const Complaints = () => {
               )}
 
               {/* Original Complaint Statement Card */}
-              <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-800/60">
-                  <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-indigo-400" />
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800/80 space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pb-2 border-b border-slate-200 dark:border-slate-800/60">
+                  <span className="font-semibold text-slate-800 dark:text-slate-300 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                     Original Statement
                   </span>
                   <span>{new Date(activeComplaint.createdAt).toLocaleTimeString()}</span>
                 </div>
-                <p className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">
+                <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
                   {activeComplaint.description}
                 </p>
               </div>
 
               {/* Conversation Messages */}
               <div className="space-y-3 pt-2">
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 px-1">
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
                   Discussion & Follow-ups ({activeComplaint.messages?.length || 0})
                 </div>
 
@@ -993,7 +993,7 @@ export const Complaints = () => {
                       return (
                         <div
                           key={msg.id}
-                          className="my-2 p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/60 text-center text-xs text-amber-300 font-mono"
+                          className="my-2 p-2.5 rounded-lg bg-amber-50 dark:bg-slate-800/60 border border-amber-200 dark:border-slate-700/60 text-center text-xs text-amber-800 dark:text-amber-300 font-mono"
                         >
                           {msg.message}
                         </div>
@@ -1005,11 +1005,11 @@ export const Complaints = () => {
                         key={msg.id}
                         className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'}`}
                       >
-                        <div className="flex items-center gap-2 mb-1 text-[11px] text-slate-400 px-1">
-                          <span className="font-semibold text-slate-300">
+                        <div className="flex items-center gap-2 mb-1 text-[11px] text-slate-500 dark:text-slate-400 px-1">
+                          <span className="font-semibold text-slate-800 dark:text-slate-300">
                             {isCurrentUser ? 'You' : msg.sender?.name}
                           </span>
-                          <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[10px] text-slate-300">
+                          <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                             {msg.sender?.role}
                           </span>
                           <span>{new Date(msg.createdAt).toLocaleTimeString()}</span>
@@ -1019,7 +1019,7 @@ export const Complaints = () => {
                           className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed ${
                             isCurrentUser
                               ? 'bg-indigo-600 text-white rounded-tr-none shadow-md shadow-indigo-600/20'
-                              : 'bg-slate-800/90 text-slate-200 border border-slate-700/60 rounded-tl-none'
+                              : 'bg-slate-100 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 rounded-tl-none'
                           }`}
                         >
                           {msg.message}
@@ -1032,7 +1032,7 @@ export const Complaints = () => {
             </div>
 
             {/* Modal Actions & Reply Box */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/80 space-y-3">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 space-y-3">
               {/* Context Actions Row (Escalate / Resolve) */}
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                 {/* Escalate button: shown if addressed to mentor and not yet escalated */}
@@ -1042,7 +1042,7 @@ export const Complaints = () => {
                       setForwardReason('');
                       setForwardModalOpen(true);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 font-medium transition"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/20 font-medium transition"
                   >
                     <ArrowUpRight className="w-3.5 h-3.5" />
                     Escalate to Administration
@@ -1057,7 +1057,7 @@ export const Complaints = () => {
                     activeComplaint.status !== 'RESOLVED' && (
                       <button
                         onClick={handleMenteeResolve}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-medium transition"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-medium transition"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Mark as Satisfied & Close
@@ -1074,7 +1074,7 @@ export const Complaints = () => {
                         });
                         setStatusModalOpen(true);
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 font-medium transition"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
                       Change Status / Resolution
@@ -1090,7 +1090,7 @@ export const Complaints = () => {
                   placeholder="Type a response or update..."
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
                 <button
                   type="submit"
@@ -1110,25 +1110,25 @@ export const Complaints = () => {
       {/* 3. ESCALATE / FORWARD TO ADMIN MODAL                      */}
       {/* ========================================================= */}
       {forwardModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2.5 text-orange-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5 text-orange-600 dark:text-orange-400">
               <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/20">
                 <ArrowUpRight className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Escalate to Administration</h3>
-                <p className="text-xs text-slate-400">SRU College Grievance Board</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Escalate to Administration</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">SRU College Grievance Board</p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
               Once escalated, the entire complaint history and discussion thread will become visible to College Admins for formal arbitration and review.
             </p>
 
             <form onSubmit={handleForwardToAdmin} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Reason for Escalation *
                 </label>
                 <textarea
@@ -1137,7 +1137,7 @@ export const Complaints = () => {
                   placeholder="e.g. Mentor did not respond within expected timeline, or issue requires departmental Dean intervention..."
                   value={forwardReason}
                   onChange={(e) => setForwardReason(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-orange-500 resize-none"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-orange-500 resize-none"
                 />
               </div>
 
@@ -1145,7 +1145,7 @@ export const Complaints = () => {
                 <button
                   type="button"
                   onClick={() => setForwardModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
                 >
                   Cancel
                 </button>
@@ -1166,17 +1166,17 @@ export const Complaints = () => {
       {/* 4. STATUS & RESOLUTION MODAL                              */}
       {/* ========================================================= */}
       {statusModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-white">Update Grievance Status</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Update Grievance Status</h3>
 
             <form onSubmit={handleUpdateStatus} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">New Status</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">New Status</label>
                 <select
                   value={statusForm.status}
                   onChange={(e) => setStatusForm({ ...statusForm, status: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
                 >
                   <option value="PENDING">PENDING</option>
                   <option value="IN_REVIEW">IN_REVIEW</option>
@@ -1186,7 +1186,7 @@ export const Complaints = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Resolution / Outcome Notes
                 </label>
                 <textarea
@@ -1194,7 +1194,7 @@ export const Complaints = () => {
                   placeholder="Summarize the action taken, outcome, or justification..."
                   value={statusForm.resolutionNotes}
                   onChange={(e) => setStatusForm({ ...statusForm, resolutionNotes: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-500 resize-none"
                 />
               </div>
 
@@ -1202,7 +1202,7 @@ export const Complaints = () => {
                 <button
                   type="button"
                   onClick={() => setStatusModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
                 >
                   Cancel
                 </button>

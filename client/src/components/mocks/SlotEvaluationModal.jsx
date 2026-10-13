@@ -148,34 +148,34 @@ export const SlotEvaluationModal = ({
     : 'Date not set';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#111625] border border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-6 shadow-2xl space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-[#111625] border border-slate-200 dark:border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-6 shadow-2xl space-y-5">
         {/* Top Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-start justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-lg flex-shrink-0">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-center font-bold text-lg flex-shrink-0">
               {slot.mentee?.name ? slot.mentee.name.charAt(0).toUpperCase() : 'C'}
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-white text-base tracking-tight">{slot.mentee?.name}</h3>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base tracking-tight">{slot.mentee?.name}</h3>
                 <MockStatusBadge status={slot.status} />
               </div>
-              <div className="text-xs text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="font-mono text-slate-300">
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="font-mono text-slate-700 dark:text-slate-300">
                   {slot.mentee?.menteeProfile?.rollNumber || slot.mentee?.email}
                 </span>
                 <span>&bull;</span>
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-slate-500" /> {dateFormatted}
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" /> {dateFormatted}
                 </span>
                 <span>&bull;</span>
-                <span className="flex items-center gap-1 font-mono text-indigo-300">
-                  <Clock className="w-3.5 h-3.5 text-slate-500" /> {slot.startTime} - {slot.endTime}
+                <span className="flex items-center gap-1 font-mono text-indigo-600 dark:text-indigo-300 font-medium">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" /> {slot.startTime} - {slot.endTime}
                 </span>
                 <span>&bull;</span>
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-slate-500" /> {slot.roomNumber}
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" /> {slot.roomNumber}
                 </span>
               </div>
             </div>
@@ -183,20 +183,20 @@ export const SlotEvaluationModal = ({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2 text-xs">
           <button
             onClick={() => setActiveTab('EVALUATION')}
             className={`px-3.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 ${
               activeTab === 'EVALUATION'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
             }`}
           >
             <Award className="w-3.5 h-3.5" />
@@ -209,7 +209,7 @@ export const SlotEvaluationModal = ({
               className={`px-3.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 ${
                 activeTab === 'RESCHEDULE'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
               }`}
             >
               <Clock className="w-3.5 h-3.5" /> Reschedule Slot
@@ -221,7 +221,7 @@ export const SlotEvaluationModal = ({
             className={`px-3.5 py-1.5 rounded-xl font-semibold transition flex items-center gap-1.5 ${
               activeTab === 'HISTORY'
                 ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
             }`}
           >
             <History className="w-3.5 h-3.5" /> Schedule Audit History
@@ -231,22 +231,22 @@ export const SlotEvaluationModal = ({
         {/* ================= TAB 1: EVALUATION FORM ================= */}
         {activeTab === 'EVALUATION' && (
           <form onSubmit={handleRecordEvaluation} className="space-y-4 text-xs">
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 text-slate-300">
-              <div className="font-semibold text-white flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-1 text-slate-600 dark:text-slate-300">
+              <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                 Individual Slot Evaluation Matrix
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                 Scores are saved directly against this candidate's slot. The 3 skill scores are scored out of 5 (sum max 15), while Overall Score is evaluated independently out of 10.
               </p>
             </div>
 
             {/* Overall Score Slider / Input */}
-            <div className="glass-panel p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5 space-y-2">
+            <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-500/5 space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="font-bold text-white text-xs">Overall Interview Score (0 – 10)</label>
-                  <p className="text-[10px] text-slate-400">Holistic rating for candidate's interview readiness</p>
+                  <label className="font-bold text-slate-900 dark:text-white text-xs">Overall Interview Score (0 – 10)</label>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Holistic rating for candidate's interview readiness</p>
                 </div>
                 <div className="flex items-center gap-1">
                   <input
@@ -257,7 +257,7 @@ export const SlotEvaluationModal = ({
                     required
                     value={evalForm.overallScore}
                     onChange={(e) => setEvalForm({ ...evalForm, overallScore: parseFloat(e.target.value) || 0 })}
-                    className="w-16 bg-slate-900 border border-indigo-500 rounded-lg px-2 py-1 text-right font-black text-indigo-300 text-sm focus:outline-none"
+                    className="w-16 bg-white dark:bg-slate-900 border border-indigo-500 rounded-lg px-2 py-1 text-right font-black text-indigo-600 dark:text-indigo-300 text-sm focus:outline-none"
                   />
                   <span className="font-bold text-slate-400 text-xs">/ 10</span>
                 </div>
@@ -269,17 +269,17 @@ export const SlotEvaluationModal = ({
                 step="0.5"
                 value={evalForm.overallScore}
                 onChange={(e) => setEvalForm({ ...evalForm, overallScore: parseFloat(e.target.value) })}
-                className="w-full accent-indigo-500 cursor-pointer"
+                className="w-full accent-indigo-600 cursor-pointer"
               />
             </div>
 
             {/* 3 Skill Scores (0 to 5 each) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Technical Score */}
-              <div className="glass-panel p-3 rounded-xl border border-slate-800 space-y-1.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-bold text-cyan-300 text-[11px]">Technical (0–5)</label>
-                  <span className="font-mono font-bold text-white text-xs">{evalForm.technicalScore}/5</span>
+                  <label className="font-bold text-cyan-700 dark:text-cyan-300 text-[11px]">Technical (0–5)</label>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white text-xs">{evalForm.technicalScore}/5</span>
                 </div>
                 <input
                   type="range"
@@ -288,16 +288,16 @@ export const SlotEvaluationModal = ({
                   step="0.5"
                   value={evalForm.technicalScore}
                   onChange={(e) => setEvalForm({ ...evalForm, technicalScore: parseFloat(e.target.value) })}
-                  className="w-full accent-cyan-500 cursor-pointer"
+                  className="w-full accent-cyan-600 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400">Code correctness & syntax</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Code correctness & syntax</p>
               </div>
 
               {/* Problem-Solving Score */}
-              <div className="glass-panel p-3 rounded-xl border border-slate-800 space-y-1.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-bold text-violet-300 text-[11px]">Problem Solving (0–5)</label>
-                  <span className="font-mono font-bold text-white text-xs">{evalForm.problemSolvingScore}/5</span>
+                  <label className="font-bold text-violet-700 dark:text-violet-300 text-[11px]">Problem Solving (0–5)</label>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white text-xs">{evalForm.problemSolvingScore}/5</span>
                 </div>
                 <input
                   type="range"
@@ -306,16 +306,16 @@ export const SlotEvaluationModal = ({
                   step="0.5"
                   value={evalForm.problemSolvingScore}
                   onChange={(e) => setEvalForm({ ...evalForm, problemSolvingScore: parseFloat(e.target.value) })}
-                  className="w-full accent-violet-500 cursor-pointer"
+                  className="w-full accent-violet-600 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400">Logic & edge-case handling</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Logic & edge-case handling</p>
               </div>
 
               {/* Communication Score */}
-              <div className="glass-panel p-3 rounded-xl border border-slate-800 space-y-1.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-bold text-amber-300 text-[11px]">Communication (0–5)</label>
-                  <span className="font-mono font-bold text-white text-xs">{evalForm.communicationScore}/5</span>
+                  <label className="font-bold text-amber-700 dark:text-amber-300 text-[11px]">Communication (0–5)</label>
+                  <span className="font-mono font-bold text-slate-900 dark:text-white text-xs">{evalForm.communicationScore}/5</span>
                 </div>
                 <input
                   type="range"
@@ -324,20 +324,20 @@ export const SlotEvaluationModal = ({
                   step="0.5"
                   value={evalForm.communicationScore}
                   onChange={(e) => setEvalForm({ ...evalForm, communicationScore: parseFloat(e.target.value) })}
-                  className="w-full accent-amber-500 cursor-pointer"
+                  className="w-full accent-amber-600 cursor-pointer"
                 />
-                <p className="text-[10px] text-slate-400">Articulation & thought-process</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Articulation & thought-process</p>
               </div>
             </div>
 
             {/* Recommendation Decision */}
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-300">Final Recommendation Decision *</label>
+              <label className="font-semibold text-slate-700 dark:text-slate-300">Final Recommendation Decision *</label>
               <select
                 required
                 value={evalForm.recommendation}
                 onChange={(e) => setEvalForm({ ...evalForm, recommendation: e.target.value })}
-                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
               >
                 <option value="STRONGLY_RECOMMENDED">Strongly Recommended (Ready for Placement)</option>
                 <option value="RECOMMENDED">Recommended (Cleared Mock Expectations)</option>
@@ -348,32 +348,32 @@ export const SlotEvaluationModal = ({
 
             {/* Qualitative Notes / Feedback */}
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-300">Evaluation Notes & Actionable Feedback</label>
+              <label className="font-semibold text-slate-700 dark:text-slate-300">Evaluation Notes & Actionable Feedback</label>
               <textarea
                 rows={3}
                 value={evalForm.notes}
                 onChange={(e) => setEvalForm({ ...evalForm, notes: e.target.value })}
                 placeholder="Key strengths, time complexity trade-offs explained, areas for improvement, recommended practice topics..."
-                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl p-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
               />
             </div>
 
             {/* Actions Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 {slot.status !== 'COMPLETED' && (
                   <>
                     <button
                       type="button"
                       onClick={handleMarkMissed}
-                      className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition text-[11px] font-medium"
+                      className="px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 transition text-[11px] font-semibold"
                     >
                       Mark Missed (Absent)
                     </button>
                     <button
                       type="button"
                       onClick={handleCancelSlot}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition text-[11px] font-medium"
+                      className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition text-[11px] font-semibold"
                     >
                       Cancel Slot
                     </button>
@@ -385,7 +385,7 @@ export const SlotEvaluationModal = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition border border-slate-200 dark:border-slate-700"
                 >
                   Close
                 </button>
@@ -409,8 +409,8 @@ export const SlotEvaluationModal = ({
         {/* ================= TAB 2: RESCHEDULE FORM ================= */}
         {activeTab === 'RESCHEDULE' && (
           <form onSubmit={handleReschedule} className="space-y-4 text-xs">
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-800 dark:text-amber-300 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
               <span>
                 Rescheduling will verify real-time conflicts for you, candidate, and room. History of this change will be preserved in the audit log.
               </span>
@@ -418,68 +418,68 @@ export const SlotEvaluationModal = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-300">New Date *</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300">New Date *</label>
                 <input
                   type="date"
                   required
                   value={rescheduleForm.sessionDate}
                   onChange={(e) => setRescheduleForm({ ...rescheduleForm, sessionDate: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-300">Room / Venue *</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300">Room / Venue *</label>
                 <input
                   type="text"
                   required
                   value={rescheduleForm.roomNumber}
                   onChange={(e) => setRescheduleForm({ ...rescheduleForm, roomNumber: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-300">New Start Time *</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300">New Start Time *</label>
                 <input
                   type="time"
                   required
                   value={rescheduleForm.startTime}
-                  onChange={(e) => setRescheduleForm({ ...rescheduleForm, startTime: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-slate-300">New End Time *</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300">New End Time *</label>
                 <input
                   type="time"
                   required
                   value={rescheduleForm.endTime}
                   onChange={(e) => setRescheduleForm({ ...rescheduleForm, endTime: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-semibold text-slate-300">Reason for Rescheduling</label>
+              <label className="font-semibold text-slate-700 dark:text-slate-300">Reason for Rescheduling</label>
               <input
                 type="text"
                 value={rescheduleForm.reason}
                 onChange={(e) => setRescheduleForm({ ...rescheduleForm, reason: e.target.value })}
                 placeholder="e.g. Mentor schedule adjustment or student class conflict"
-                className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setActiveTab('EVALUATION')}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition"
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition border border-slate-200 dark:border-slate-700"
               >
                 Back
               </button>
@@ -498,13 +498,13 @@ export const SlotEvaluationModal = ({
         {/* ================= TAB 3: AUDIT HISTORY ================= */}
         {activeTab === 'HISTORY' && (
           <div className="space-y-3 text-xs">
-            <h4 className="font-bold text-white text-xs flex items-center gap-2">
-              <History className="w-4 h-4 text-indigo-400" />
+            <h4 className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-2">
+              <History className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
               Appointment Timeline & Modification Log
             </h4>
 
             {(!slot.history || slot.history.length === 0) ? (
-              <div className="py-8 text-center text-slate-500 glass-panel rounded-xl border border-slate-800">
+              <div className="py-8 text-center text-slate-500 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-800">
                 No past modifications recorded for this slot.
               </div>
             ) : (
@@ -512,23 +512,23 @@ export const SlotEvaluationModal = ({
                 {slot.history.map((h) => (
                   <div
                     key={h.id}
-                    className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-start justify-between gap-3"
+                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-3"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-indigo-300 font-mono text-[11px] uppercase">
+                        <span className="font-bold text-indigo-600 dark:text-indigo-300 font-mono text-[11px] uppercase">
                           {h.action}
                         </span>
-                        <span className="text-[10px] text-slate-500">&bull;</span>
-                        <span className="text-[11px] text-slate-300">
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500">&bull;</span>
+                        <span className="text-[11px] text-slate-700 dark:text-slate-300">
                           {h.previousStartTime} - {h.previousEndTime} ({h.previousRoom || 'Room'})
                         </span>
                       </div>
                       {h.reason && (
-                        <p className="text-[11px] text-slate-400 italic">"{h.reason}"</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">"{h.reason}"</p>
                       )}
                     </div>
-                    <div className="text-[10px] text-slate-500 text-right flex-shrink-0">
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500 text-right flex-shrink-0">
                       {new Date(h.createdAt).toLocaleDateString()} &middot;{' '}
                       {new Date(h.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>

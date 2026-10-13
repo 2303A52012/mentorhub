@@ -49,19 +49,19 @@ export const MentorAnalytics = () => {
   return (
     <div className="space-y-8 pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
           Cohort Analytics & At-Risk Indicators
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
           Section 12.4 & 12.5 · Transparent completion metrics and early intervention flags.
         </p>
       </div>
 
       {/* Chart Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-indigo-400" /> Assignment Status Distribution
+        <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-4">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Assignment Status Distribution
           </h2>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -70,7 +70,7 @@ export const MentorAnalytics = () => {
                 <YAxis stroke="#64748b" fontSize={11} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
+                    backgroundColor: '#1e293b',
                     borderColor: '#334155',
                     borderRadius: '0.75rem',
                     fontSize: '12px',
@@ -84,11 +84,11 @@ export const MentorAnalytics = () => {
         </div>
 
         {/* At-Risk Detail Panel */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400" /> Early Intervention Flags
+        <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm space-y-4">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400" /> Early Intervention Flags
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             Mentees flagged automatically based on missed deadlines or completion rates below 50%.
           </p>
 
@@ -97,15 +97,15 @@ export const MentorAnalytics = () => {
               atRiskMentees.map((m) => (
                 <div
                   key={m._id}
-                  className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5"
+                  className="p-4 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-xs space-y-1.5 shadow-xs"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-white text-sm">{m.name}</span>
-                    <span className="text-[10px] font-semibold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded">
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">{m.name}</span>
+                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 rounded">
                       {m.reason}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-[11px]">
                     <span>Completion Rate: {m.completionRate}%</span>
                     <span>Overdue Tasks: {m.overdueCount}</span>
                   </div>

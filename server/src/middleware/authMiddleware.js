@@ -41,8 +41,9 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
-    // Ensure backwards compatibility with _id
+    // Ensure backwards compatibility with _id and attach isSuperAdmin
     user._id = user.id;
+    user.isSuperAdmin = user.role === 'ADMIN' && user.email?.toLowerCase() === 'admin@sru.edu.in';
     req.user = user;
     next();
   } catch (error) {

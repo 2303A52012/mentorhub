@@ -45,8 +45,8 @@ export const MentorDashboard = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Mentor Dashboard</h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Mentor Dashboard</h1>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             Track your assigned cohort, review student problem notes, and address at-risk progress.
           </p>
         </div>
@@ -63,40 +63,40 @@ export const MentorDashboard = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800">
+        <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Assigned Mentees</span>
-            <Users className="w-4 h-4 text-indigo-400" />
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Assigned Mentees</span>
+            <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           </div>
-          <p className="text-2xl font-bold text-white mt-2">{stats?.totalMentees || 0}</p>
-          <span className="text-[11px] text-slate-400">Under your mentorship</span>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{stats?.totalMentees || 0}</p>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">Under your mentorship</span>
         </div>
 
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800">
+        <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Awaiting Review</span>
-            <FileCheck className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Awaiting Review</span>
+            <FileCheck className="w-4 h-4 text-amber-500 dark:text-amber-400" />
           </div>
-          <p className="text-2xl font-bold text-white mt-2">{stats?.awaitingReview || 0}</p>
-          <span className="text-[11px] text-amber-400 font-medium">Submissions to verify</span>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{stats?.awaitingReview || 0}</p>
+          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Submissions to verify</span>
         </div>
 
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800">
+        <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Overdue Tasks</span>
-            <Clock className="w-4 h-4 text-rose-400" />
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Overdue Tasks</span>
+            <Clock className="w-4 h-4 text-rose-500 dark:text-rose-400" />
           </div>
-          <p className="text-2xl font-bold text-white mt-2">{stats?.overdueCount || 0}</p>
-          <span className="text-[11px] text-rose-400 font-medium">Missed deadlines</span>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{stats?.overdueCount || 0}</p>
+          <span className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">Missed deadlines</span>
         </div>
 
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800">
+        <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Avg Completion</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Avg Completion</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
           </div>
-          <p className="text-2xl font-bold text-white mt-2">{stats?.avgCompletionRate || 0}%</p>
-          <span className="text-[11px] text-emerald-400 font-medium">Verified approved</span>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-2">{stats?.avgCompletionRate || 0}%</p>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">Verified approved</span>
         </div>
       </div>
 
@@ -105,10 +105,10 @@ export const MentorDashboard = () => {
         {/* Left Column: Submissions Awaiting Verification */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <FileCheck className="w-4 h-4 text-indigo-400" /> Submissions Awaiting Your Review
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <FileCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Submissions Awaiting Your Review
             </h2>
-            <Link to="/mentor/reviews" className="text-xs text-indigo-400 hover:text-indigo-300">
+            <Link to="/mentor/reviews" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium">
               Review Queue &rarr;
             </Link>
           </div>
@@ -118,17 +118,17 @@ export const MentorDashboard = () => {
               recentSubmissions.map((mt) => (
                 <div
                   key={mt._id}
-                  className="glass-panel p-5 rounded-2xl border border-slate-800 hover:border-slate-700 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-sm">{mt.menteeId?.name}</span>
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">{mt.menteeId?.name}</span>
                       <StatusBadge status={mt.status} />
                     </div>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
                       Week {mt.taskId?.weekNo}: {mt.taskId?.title}
                     </p>
-                    <span className="text-[10px] text-slate-500 block">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
                       Submitted on{' '}
                       {mt.submittedAt ? new Date(mt.submittedAt).toLocaleDateString() : 'N/A'}
                     </span>
@@ -143,7 +143,7 @@ export const MentorDashboard = () => {
                 </div>
               ))
             ) : (
-              <div className="p-8 text-center glass-panel rounded-2xl text-slate-400 text-sm">
+              <div className="p-8 text-center glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm text-slate-500 dark:text-slate-400 text-sm">
                 No submissions waiting for review right now.
               </div>
             )}
@@ -153,10 +153,10 @@ export const MentorDashboard = () => {
         {/* Right Column: At-Risk Mentees Indicator */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400" /> Students Needing Attention
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400" /> Students Needing Attention
             </h2>
-            <Link to="/mentor/mentees" className="text-xs text-indigo-400 hover:text-indigo-300">
+            <Link to="/mentor/mentees" className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium">
               Directory &rarr;
             </Link>
           </div>
@@ -166,19 +166,19 @@ export const MentorDashboard = () => {
               atRiskMentees.map((m) => (
                 <div
                   key={m._id}
-                  className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-2"
+                  className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-xs space-y-2 shadow-xs"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">{m.name}</span>
-                    <span className="text-[10px] font-semibold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded">
+                    <span className="font-bold text-slate-900 dark:text-white">{m.name}</span>
+                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 rounded">
                       {m.reason}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 text-[11px]">
                     <span>Completion rate: {m.completionRate}%</span>
                     <Link
                       to={`/mentor/mentees/${m._id}`}
-                      className="text-amber-300 hover:underline font-medium"
+                      className="text-amber-700 dark:text-amber-300 hover:underline font-medium"
                     >
                       View Student &rarr;
                     </Link>
@@ -186,7 +186,7 @@ export const MentorDashboard = () => {
                 </div>
               ))
             ) : (
-              <div className="p-6 text-center glass-panel rounded-2xl text-slate-400 text-xs">
+              <div className="p-6 text-center glass-panel rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm text-slate-500 dark:text-slate-400 text-xs">
                 All mentees are making steady progress!
               </div>
             )}

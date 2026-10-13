@@ -31,12 +31,12 @@ export const MentorTaskReviews = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Submission Verification & Reviews
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Review student solutions, problem-solving notes, assign scores, approve or request resubmissions.
           </p>
         </div>
@@ -45,7 +45,7 @@ export const MentorTaskReviews = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+            className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-300 focus:outline-none focus:border-indigo-500"
           >
             <option value="">All Review Statuses</option>
             <option value="AWAITING_REVIEW">⚡ Awaiting Review</option>
@@ -57,16 +57,16 @@ export const MentorTaskReviews = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-slate-400">Loading submissions...</div>
+        <div className="text-center py-12 text-slate-500 dark:text-slate-400">Loading submissions...</div>
       ) : reviews.length === 0 ? (
-        <div className="text-center py-16 glass-panel rounded-2xl border border-slate-800 text-slate-400 text-sm">
+        <div className="text-center py-16 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-sm shadow-sm">
           No task assignments found for this filter.
         </div>
       ) : (
-        <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+        <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/80 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+              <thead className="bg-slate-50 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="py-3 px-4">Student</th>
                   <th className="py-3 px-4">Task & Week</th>
@@ -77,7 +77,7 @@ export const MentorTaskReviews = () => {
                   <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
                 {reviews.map((r) => {
                   const sub = r.latestSubmission;
                   const rev = r.latestReview;
@@ -85,55 +85,55 @@ export const MentorTaskReviews = () => {
                   return (
                     <tr
                       key={r._id}
-                      className="hover:bg-slate-800/30 transition text-slate-300"
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition text-slate-700 dark:text-slate-300"
                     >
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-white">{r.menteeId?.name}</div>
-                        <div className="text-[10px] text-slate-500">{r.menteeId?.email}</div>
+                        <div className="font-semibold text-slate-900 dark:text-white">{r.menteeId?.name}</div>
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500">{r.menteeId?.email}</div>
                       </td>
                       <td className="py-3.5 px-4">
-                        <div className="font-medium text-slate-200">
+                        <div className="font-medium text-slate-800 dark:text-slate-200">
                           {r.taskId?.title}
                         </div>
-                        <div className="text-[10px] text-indigo-400 font-semibold uppercase">
+                        <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold uppercase">
                           Week {r.taskId?.weekNo}
                         </div>
                       </td>
                       <td className="py-3.5 px-4">
                         <StatusBadge status={r.status} />
                       </td>
-                      <td className="py-3.5 px-4 text-slate-400 text-[11px]">
+                      <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 text-[11px]">
                         {r.submittedAt ? (
                           <>
                             {new Date(r.submittedAt).toLocaleDateString()}
                             {sub?.submittedLate && (
-                              <span className="block text-[10px] text-rose-400 font-semibold">
+                              <span className="block text-[10px] text-rose-600 dark:text-rose-400 font-semibold">
                                 Late Submission
                               </span>
                             )}
                           </>
                         ) : (
-                          <span className="text-slate-500">Not yet</span>
+                          <span className="text-slate-400 dark:text-slate-500">Not yet</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-slate-300">
+                      <td className="py-3.5 px-4 font-mono text-slate-700 dark:text-slate-300">
                         {sub ? `v${sub.version}` : '—'}
                       </td>
                       <td className="py-3.5 px-4">
                         {rev ? (
                           <div>
                             <span
-                              className={`text-[11px] font-bold px-2 py-0.5 rounded ${
+                              className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
                                 rev.decision === 'APPROVED'
-                                  ? 'bg-emerald-500/10 text-emerald-400'
-                                  : 'bg-rose-500/10 text-rose-400'
+                                  ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
+                                  : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/20'
                               }`}
                             >
                               {rev.decision} {rev.score !== null ? `(${rev.score}/10)` : ''}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-500 text-[11px]">Pending review</span>
+                          <span className="text-slate-400 dark:text-slate-500 text-[11px]">Pending review</span>
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-right">
@@ -142,7 +142,7 @@ export const MentorTaskReviews = () => {
                           className={`px-3 py-1.5 rounded-lg font-medium text-[11px] transition inline-flex items-center gap-1 ${
                             r.status === 'SUBMITTED' || r.status === 'UNDER_REVIEW'
                               ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30'
-                              : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                              : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                           }`}
                         >
                           {r.status === 'SUBMITTED' ? 'Review Now' : 'Inspect Work'}{' '}
