@@ -35,6 +35,15 @@ const LANGUAGE_OPTIONS = [
   { label: 'Rust', value: 'rust' }
 ];
 
+const isDeadlinePassed = (lastDate) => {
+  if (!lastDate) return false;
+  const d = new Date(lastDate);
+  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0) {
+    d.setUTCHours(23, 59, 59, 999);
+  }
+  return new Date() > d;
+};
+
 export const MenteeTaskDetails = () => {
   const { id } = useParams();
   const { showConfirm, showSuccess, showError, showToast } = useModal();
@@ -126,7 +135,30 @@ export const MenteeTaskDetails = () => {
     }));
   };
 
+  const task = menteeTask?.taskId;
+  const problems = task?.problems || [];
+  const isPastDeadline =
+    (task?.lastDate && isDeadlinePassed(task.lastDate)) ||
+    menteeTask?.isOverdue ||
+    menteeTask?.isClosed;
+  const isApproved = menteeTask?.status === 'APPROVED';
+  const isSubmitted =
+    menteeTask?.status === 'SUBMITTED' || menteeTask?.status === 'UNDER_REVIEW';
+  const isClosed =
+    (isPastDeadline && !isSubmitted && !isApproved) ||
+    menteeTask?.status === 'OVERDUE' ||
+    menteeTask?.status === 'CLOSED';
+  const isLocked = isSubmitted || isApproved || isClosed;
+
   const handleSaveProblem = async (problemId) => {
+    if (isClosed) {
+      showError(
+        'Task Closed',
+        'The deadline for this task has passed. Submissions and changes are closed.'
+      );
+      return;
+    }
+
     setSaveStatus((prev) => ({ ...prev, [problemId]: 'saving' }));
     try {
       const sol = solutions[problemId] || {};
@@ -147,11 +179,22 @@ export const MenteeTaskDetails = () => {
     } catch (err) {
       console.error('Failed to save problem solution', err);
       setSaveStatus((prev) => ({ ...prev, [problemId]: 'error' }));
-      showError('Save Error', 'Failed to save problem solution.');
+      showError(
+        'Save Error',
+        err.response?.data?.message || 'Failed to save problem solution.'
+      );
     }
   };
 
   const handleSubmitTask = async () => {
+    if (isClosed) {
+      showError(
+        'Task Closed',
+        'The submission deadline has passed. This task is closed and cannot be submitted. Contact your mentor or administrator if you need a deadline extension.'
+      );
+      return;
+    }
+
     const confirmed = await showConfirm({
       title: 'Submit Task for Review?',
       message: 'Are you sure you want to submit all your problem solutions for mentor review?',
@@ -198,13 +241,6 @@ export const MenteeTaskDetails = () => {
       </div>
     );
   }
-
-  const task = menteeTask.taskId;
-  const problems = task?.problems || [];
-  const isLocked =
-    menteeTask.status === 'SUBMITTED' ||
-    menteeTask.status === 'UNDER_REVIEW' ||
-    menteeTask.status === 'APPROVED';
 
   // Count problems that have approach or submission link or source code
   const filledCount = problems.filter((p) => {
@@ -253,8 +289,13 @@ export const MenteeTaskDetails = () => {
           </span>
           <span>•</span>
           <span className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
+            <Clock className={`w-3.5 h-3.5 ${isClosed ? 'text-rose-500' : 'text-amber-500'}`} />
             Deadline: {task?.lastDate ? new Date(task.lastDate).toLocaleDateString() : 'N/A'}
+            {isClosed && (
+              <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-500/30">
+                EXPIRED
+              </span>
+            )}
           </span>
           <span>•</span>
           <span className="font-semibold text-slate-700 dark:text-slate-300">
@@ -262,6 +303,26 @@ export const MenteeTaskDetails = () => {
           </span>
         </div>
       </div>
+
+      {/* Overdue / Closed Deadline Banner */}
+      {isClosed && (
+        <div className="p-5 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border-2 border-rose-300 dark:border-rose-500/30 text-rose-900 dark:text-rose-100 space-y-2 shadow-sm">
+          <div className="flex items-center gap-2.5 font-bold text-sm text-rose-700 dark:text-rose-300">
+            <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
+            <span>Task Incomplete · Submission Deadline Expired</span>
+          </div>
+          <p className="text-xs text-rose-800 dark:text-rose-200/90 leading-relaxed">
+            The due date for this task (
+            <strong>
+              {task?.lastDate ? new Date(task.lastDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+            </strong>
+            ) has ended. As per policy, this task is marked incomplete and can no longer be submitted.
+          </p>
+          <div className="pt-1 text-[11px] font-medium text-rose-700 dark:text-rose-300 flex items-center gap-1.5">
+            <span>ℹ️ Need to submit? Ask your mentor or administrator to edit and extend the task due date.</span>
+          </div>
+        </div>
+      )}
 
       {/* Review Feedback Banner (if returned for corrections) */}
       {menteeTask.status === 'RESUBMISSION_REQUIRED' && latestReview && (
@@ -548,13 +609,20 @@ export const MenteeTaskDetails = () => {
             {filledCount} of {problems.length} questions completed
           </p>
           <span className="text-[11px] text-slate-500 dark:text-slate-400">
-            {isLocked
+            {isClosed
+              ? 'Deadline has passed · Task is marked incomplete and submissions are closed.'
+              : isLocked
               ? `Task is ${menteeTask.status.toLowerCase().replace('_', ' ')} · Submissions locked.`
               : 'Save solutions for each question. When finished, submit the complete task for mentor evaluation.'}
           </span>
         </div>
 
-        {!isLocked ? (
+        {isClosed ? (
+          <div className="flex items-center gap-2 text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/15 px-4 py-2.5 rounded-xl border border-rose-300 dark:border-rose-500/30">
+            <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+            Submission Closed · Due Date Expired
+          </div>
+        ) : !isLocked ? (
           <button
             onClick={handleSubmitTask}
             disabled={submitting}

@@ -10,7 +10,8 @@ import {
   ArrowRight,
   Award,
   Star,
-  RefreshCw
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 
 export const MenteeTasks = () => {
@@ -123,11 +124,16 @@ export const MenteeTasks = () => {
               const totalProblems = task?.problems?.length || 0;
               const savedProblems = item.savedCount || 0;
               const percent = totalProblems > 0 ? Math.round((savedProblems / totalProblems) * 100) : 0;
+              const isTaskClosed = item.isClosed || item.status === 'OVERDUE' || item.status === 'CLOSED';
 
               return (
                 <div
                   key={item._id}
-                  className="bg-white dark:bg-slate-900/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500/30 transition flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md"
+                  className={`bg-white dark:bg-slate-900/60 p-6 rounded-2xl border ${
+                    isTaskClosed
+                      ? 'border-rose-200 dark:border-rose-900/50 hover:border-rose-300 dark:hover:border-rose-700/60'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500/30'
+                  } transition flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md`}
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -146,10 +152,20 @@ export const MenteeTasks = () => {
                       </p>
                     </div>
 
+                    {isTaskClosed && (
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] font-semibold">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span>Deadline Expired · Submissions Closed</span>
+                      </div>
+                    )}
+
                     <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                       <span>
                         {totalProblems} coding problems · Due{' '}
-                        {task?.lastDate ? new Date(task.lastDate).toLocaleDateString() : 'N/A'}
+                        <strong className={isTaskClosed ? 'text-rose-600 dark:text-rose-400 font-bold' : ''}>
+                          {task?.lastDate ? new Date(task.lastDate).toLocaleDateString() : 'N/A'}
+                        </strong>
+                        {isTaskClosed && ' (Closed)'}
                       </span>
                     </div>
 
@@ -175,9 +191,13 @@ export const MenteeTasks = () => {
                   <div className="pt-2">
                     <Link
                       to={`/mentee/tasks/${item._id}`}
-                      className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20"
+                      className={`w-full py-2.5 px-4 rounded-xl font-medium text-xs transition flex items-center justify-center gap-2 ${
+                        isTaskClosed
+                          ? 'bg-slate-800 hover:bg-slate-700 text-white shadow-sm'
+                          : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20'
+                      }`}
                     >
-                      Open Task <ArrowRight className="w-3.5 h-3.5" />
+                      {isTaskClosed ? 'View Closed Task' : 'Open Task'} <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </div>

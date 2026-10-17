@@ -1,5 +1,14 @@
 import prisma from '../config/prisma.js';
 
+export const isDeadlinePassed = (lastDate) => {
+  if (!lastDate) return false;
+  const d = new Date(lastDate);
+  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0) {
+    d.setUTCHours(23, 59, 59, 999);
+  }
+  return new Date() > d;
+};
+
 export const getPresentTasks = async (req, res, next) => {
   try {
     const menteeId = req.user.id || req.user._id;
@@ -21,9 +30,8 @@ export const getPresentTasks = async (req, res, next) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    const now = new Date();
     const updatedTasks = tasks.map((mt) => {
-      const isPastDeadline = mt.task && new Date(mt.task.lastDate) < now;
+      const isPastDeadline = mt.task && isDeadlinePassed(mt.task.lastDate);
       let effectiveStatus = mt.status;
 
       if (
@@ -31,6 +39,12 @@ export const getPresentTasks = async (req, res, next) => {
         (mt.status === 'IN_PROGRESS' || mt.status === 'UPCOMING')
       ) {
         effectiveStatus = 'OVERDUE';
+        if (mt.status !== 'OVERDUE') {
+          prisma.menteeTask.update({
+            where: { id: mt.id },
+            data: { status: 'OVERDUE' }
+          }).catch(() => {});
+        }
       }
 
       const totalProblems = mt.task?.problems?.length || 0;
@@ -48,6 +62,8 @@ export const getPresentTasks = async (req, res, next) => {
         },
         reviewerId: mt.reviewer ? { ...mt.reviewer, _id: mt.reviewer.id } : null,
         status: effectiveStatus,
+        isOverdue: isPastDeadline && (effectiveStatus === 'OVERDUE' || effectiveStatus === 'CLOSED'),
+        isClosed: isPastDeadline && !['SUBMITTED', 'UNDER_REVIEW', 'APPROVED'].includes(effectiveStatus),
         assignedAt: mt.assignedAt,
         submittedAt: mt.submittedAt,
         problemProgress: mt.problemProgress.map((p) => ({ ...p, _id: p.id })),
@@ -190,11 +206,32 @@ export const getMenteeTaskById = async (req, res, next) => {
       });
     }
 
+    const isPastDeadline = menteeTask.task && isDeadlinePassed(menteeTask.task.lastDate);
+    let effectiveStatus = menteeTask.status;
+
+    if (
+      isPastDeadline &&
+      (menteeTask.status === 'IN_PROGRESS' || menteeTask.status === 'UPCOMING')
+    ) {
+      effectiveStatus = 'OVERDUE';
+      if (menteeTask.status !== 'OVERDUE') {
+        prisma.menteeTask.update({
+          where: { id: menteeTask.id },
+          data: { status: 'OVERDUE' }
+        }).catch(() => {});
+      }
+    }
+
+    const isOverdue = isPastDeadline && (effectiveStatus === 'OVERDUE' || effectiveStatus === 'CLOSED');
+    const isClosed = isPastDeadline && !['SUBMITTED', 'UNDER_REVIEW', 'APPROVED'].includes(effectiveStatus);
+
     const formatted = {
       _id: menteeTask.id,
       id: menteeTask.id,
       menteeId: menteeTask.menteeId,
-      status: menteeTask.status,
+      status: effectiveStatus,
+      isOverdue,
+      isClosed,
       assignedAt: menteeTask.assignedAt,
       submittedAt: menteeTask.submittedAt,
       approvedAt: menteeTask.approvedAt,
@@ -234,13 +271,13 @@ export const saveProblemNotes = async (req, res, next) => {
 
     let menteeTask = await prisma.menteeTask.findUnique({
       where: { id },
-      include: { problemProgress: true }
+      include: { task: true, problemProgress: true }
     });
 
     if (!menteeTask) {
       menteeTask = await prisma.menteeTask.findFirst({
         where: { taskId: id, menteeId: userId },
-        include: { problemProgress: true }
+        include: { task: true, problemProgress: true }
       });
     }
 
@@ -258,10 +295,26 @@ export const saveProblemNotes = async (req, res, next) => {
       });
     }
 
+    // Check if submission deadline has passed
+    if (menteeTask.task && isDeadlinePassed(menteeTask.task.lastDate)) {
+      if (menteeTask.status !== 'OVERDUE' && menteeTask.status !== 'CLOSED' && menteeTask.status !== 'APPROVED') {
+        prisma.menteeTask.update({
+          where: { id: menteeTask.id },
+          data: { status: 'OVERDUE' }
+        }).catch(() => {});
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'The deadline for this task has passed. The task is closed and problem solutions cannot be saved or edited.'
+      });
+    }
+
     if (
       menteeTask.status === 'SUBMITTED' ||
       menteeTask.status === 'UNDER_REVIEW' ||
-      menteeTask.status === 'APPROVED'
+      menteeTask.status === 'APPROVED' ||
+      menteeTask.status === 'OVERDUE' ||
+      menteeTask.status === 'CLOSED'
     ) {
       return res.status(400).json({
         success: false,
@@ -306,7 +359,7 @@ export const saveProblemNotes = async (req, res, next) => {
     } else {
       await prisma.problemProgress.create({
         data: {
-          menteeTaskId: id,
+          menteeTaskId: menteeTask.id,
           problemId,
           notes: storedNotesString,
           savedAt: new Date()
@@ -316,13 +369,13 @@ export const saveProblemNotes = async (req, res, next) => {
 
     if (menteeTask.status === 'UPCOMING') {
       await prisma.menteeTask.update({
-        where: { id },
+        where: { id: menteeTask.id },
         data: { status: 'IN_PROGRESS' }
       });
     }
 
     const updated = await prisma.problemProgress.findMany({
-      where: { menteeTaskId: id }
+      where: { menteeTaskId: menteeTask.id }
     });
 
     return res.status(200).json({
@@ -383,12 +436,24 @@ export const submitMenteeTask = async (req, res, next) => {
       });
     }
 
+    // Check if submission deadline has passed - BLOCK SUBMISSION
+    if (menteeTask.task && isDeadlinePassed(menteeTask.task.lastDate)) {
+      if (menteeTask.status !== 'OVERDUE' && menteeTask.status !== 'CLOSED') {
+        await prisma.menteeTask.update({
+          where: { id: menteeTask.id },
+          data: { status: 'OVERDUE' }
+        }).catch(() => {});
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'The submission deadline for this task has passed. Submissions are closed and you cannot submit this task. If you need an extension, please contact your mentor or administrator.'
+      });
+    }
+
     const now = new Date();
-    const isLate =
-      menteeTask.task && new Date(menteeTask.task.lastDate) < now;
 
     const lastSubmission = await prisma.taskSubmission.findFirst({
-      where: { menteeTaskId: id },
+      where: { menteeTaskId: menteeTask.id },
       orderBy: { version: 'desc' }
     });
 
@@ -415,17 +480,17 @@ export const submitMenteeTask = async (req, res, next) => {
 
     const submission = await prisma.taskSubmission.create({
       data: {
-        menteeTaskId: id,
+        menteeTaskId: menteeTask.id,
         menteeId: userId,
         version: newVersion,
         problemSnapshot,
         submittedAt: now,
-        submittedLate: isLate
+        submittedLate: false
       }
     });
 
     const updatedMenteeTask = await prisma.menteeTask.update({
-      where: { id },
+      where: { id: menteeTask.id },
       data: {
         status: 'SUBMITTED',
         submittedAt: now

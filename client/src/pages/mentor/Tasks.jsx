@@ -40,6 +40,12 @@ export const MentorTasks = () => {
   const [savingEdit, setSavingEdit] = useState(false);
   const [editError, setEditError] = useState('');
 
+  // Extend Deadline Modal State
+  const [extendingTask, setExtendingTask] = useState(null);
+  const [extendDate, setExtendDate] = useState('');
+  const [savingExtend, setSavingExtend] = useState(false);
+  const [extendError, setExtendError] = useState('');
+
   // Delete State
   const [deletingId, setDeletingId] = useState(null);
 
@@ -212,7 +218,70 @@ export const MentorTasks = () => {
 
   const canManage = (task) => {
     if (!user) return false;
-    return user.role === 'ADMIN' || isSelfCreator(task);
+    return user.role === 'ADMIN' || user.role === 'MENTOR' || isSelfCreator(task);
+  };
+
+  const isPastDue = (lastDate) => {
+    if (!lastDate) return false;
+    const d = new Date(lastDate);
+    if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0) {
+      d.setUTCHours(23, 59, 59, 999);
+    }
+    return new Date() > d;
+  };
+
+  const openExtendModal = (task) => {
+    setExtendingTask(task);
+    setExtendError('');
+    let base = task.lastDate ? new Date(task.lastDate) : new Date();
+    if (base.getTime() < Date.now()) {
+      base = new Date();
+    }
+    const nextDate = new Date(base.getTime() + 7 * 24 * 60 * 60 * 1000);
+    setExtendDate(nextDate.toISOString().split('T')[0]);
+  };
+
+  const closeExtendModal = () => {
+    setExtendingTask(null);
+    setExtendError('');
+    setExtendDate('');
+  };
+
+  const handleSaveExtend = async (e) => {
+    e.preventDefault();
+    if (!extendDate) {
+      setExtendError('Please select a new deadline date.');
+      return;
+    }
+    const newEnd = new Date(extendDate);
+    const start = new Date(extendingTask.assignmentDate);
+    if (newEnd <= start) {
+      setExtendError('New deadline cannot precede or equal the task assignment date.');
+      return;
+    }
+
+    try {
+      setSavingExtend(true);
+      setExtendError('');
+      const res = await api.patch(`/tasks/${extendingTask._id || extendingTask.id}/extend-deadline`, {
+        lastDate: extendDate
+      });
+
+      if (res.data.success) {
+        closeExtendModal();
+        showSuccess(
+          'Deadline Extended',
+          `Deadline for "${extendingTask.title}" extended to ${new Date(extendDate).toLocaleDateString()}. Overdue tasks have been reopened for students!`
+        );
+        fetchTasks();
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to extend task deadline.';
+      setExtendError(errorMsg);
+      showError('Extension Failed', errorMsg);
+    } finally {
+      setSavingExtend(false);
+    }
   };
 
   return (
@@ -268,6 +337,15 @@ export const MentorTasks = () => {
                       <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                         {task.problems?.length || 0} Problems
                       </span>
+                      {isPastDue(task.lastDate) ? (
+                        <span className="text-[10px] bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30 px-2 py-0.5 rounded-full font-bold">
+                          Due Date Expired · Closed
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 px-2 py-0.5 rounded-full font-medium">
+                          Active Submissions
+                        </span>
+                      )}
                       {isSelf ? (
                         <span className="text-[10px] bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 px-2.5 py-0.5 rounded-full font-bold">
                           Created by You
@@ -287,6 +365,13 @@ export const MentorTasks = () => {
                     {/* Creator / Admin Edit & Delete Action Buttons */}
                     {canEdit && (
                       <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => openExtendModal(task)}
+                          className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-600/20 hover:bg-amber-100 dark:hover:bg-amber-600/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 transition"
+                          title="Extend Task Due Date"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => openEditModal(task)}
                           className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-600/30 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200 dark:border-slate-700 transition"
@@ -313,6 +398,24 @@ export const MentorTasks = () => {
                     </p>
                   </div>
 
+                  {/* Past Due Warning Alert */}
+                  {isPastDue(task.lastDate) && (
+                    <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
+                        Deadline has ended. Students cannot submit until extended.
+                      </span>
+                      {canEdit && (
+                        <button
+                          onClick={() => openExtendModal(task)}
+                          className="font-bold underline hover:no-underline text-rose-800 dark:text-rose-200 shrink-0"
+                        >
+                          Extend Now
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Problem Snippets */}
                   {task.problems && task.problems.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
@@ -338,8 +441,11 @@ export const MentorTasks = () => {
                       {new Date(task.assignmentDate).toLocaleDateString()}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Due:{' '}
-                      {new Date(task.lastDate).toLocaleDateString()}
+                      <Clock className={`w-3.5 h-3.5 ${isPastDue(task.lastDate) ? 'text-rose-500 dark:text-rose-400' : 'text-amber-500 dark:text-amber-400'}`} /> Due:{' '}
+                      <strong className={isPastDue(task.lastDate) ? 'text-rose-600 dark:text-rose-400' : ''}>
+                        {new Date(task.lastDate).toLocaleDateString()}
+                      </strong>
+                      {isPastDue(task.lastDate) && ' (Expired)'}
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />{' '}
@@ -370,20 +476,29 @@ export const MentorTasks = () => {
                   </div>
                 </div>
 
-                <div className="pt-2 flex items-center gap-2">
+                <div className="pt-2 flex flex-wrap items-center gap-2">
                   <Link
                     to={user?.role === 'ADMIN' ? '/admin/reviews' : '/mentor/reviews'}
                     className="flex-1 py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-medium text-xs transition border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1.5"
                   >
-                    View Submissions &rarr;
+                    Submissions &rarr;
                   </Link>
                   {canEdit && (
-                    <button
-                      onClick={() => openEditModal(task)}
-                      className="py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-indigo-700 dark:text-indigo-300 font-medium text-xs transition border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1.5"
-                    >
-                      <Edit className="w-3.5 h-3.5" /> Edit
-                    </button>
+                    <>
+                      <button
+                        onClick={() => openExtendModal(task)}
+                        className="py-2 px-3 rounded-xl bg-amber-50 dark:bg-amber-600/20 hover:bg-amber-100 dark:hover:bg-amber-600/30 text-amber-700 dark:text-amber-300 font-medium text-xs transition border border-amber-200 dark:border-amber-500/30 flex items-center gap-1.5"
+                        title="Extend Due Date"
+                      >
+                        <Clock className="w-3.5 h-3.5" /> Extend Due Date
+                      </button>
+                      <button
+                        onClick={() => openEditModal(task)}
+                        className="py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-indigo-700 dark:text-indigo-300 font-medium text-xs transition border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1.5"
+                      >
+                        <Edit className="w-3.5 h-3.5" /> Edit
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -588,6 +703,99 @@ export const MentorTasks = () => {
           </div>
         </div>
       )}
+
+      {/* ==================== EXTEND DEADLINE MODAL ==================== */}
+      {extendingTask && (
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-500" /> Extend Task Due Date
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Week {extendingTask.weekNo}: {extendingTask.title}
+                </p>
+              </div>
+              <button
+                onClick={closeExtendModal}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {extendError && (
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" /> {extendError}
+              </div>
+            )}
+
+            <div className="p-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-600/10 border border-indigo-200 dark:border-indigo-500/20 text-[11px] text-indigo-700 dark:text-indigo-300 space-y-1">
+              <p className="font-semibold">Reopening Policy:</p>
+              <p className="leading-relaxed">
+                Extending the due date into the future automatically reopens this task for all students whose submissions were closed or marked overdue, allowing them to continue their work.
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveExtend} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  Current Due Date
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  disabled
+                  value={
+                    extendingTask.lastDate
+                      ? new Date(extendingTask.lastDate).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })
+                      : 'N/A'
+                  }
+                  className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-600 dark:text-slate-400 font-mono"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  New Due Date <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={extendDate}
+                  onChange={(e) => setExtendDate(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-xs font-mono"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={closeExtendModal}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingExtend}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 disabled:opacity-60"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {savingExtend ? 'Extending Deadline...' : 'Save & Reopen Task'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

@@ -327,11 +327,11 @@ export const updateTask = async (req, res, next) => {
       });
     }
 
-    // Only the creator of this task can edit it
-    if (existingTask.createdById !== userId && req.user.role !== 'ADMIN') {
+    // Admin, Mentor, or creator of this task can edit it
+    if (existingTask.createdById !== userId && req.user.role !== 'ADMIN' && req.user.role !== 'MENTOR') {
       return res.status(403).json({
         success: false,
-        message: 'Permission denied: Only the creator of this task can edit it.'
+        message: 'Permission denied: Only mentors or administrators can edit this task.'
       });
     }
 
@@ -367,6 +367,60 @@ export const updateTask = async (req, res, next) => {
       where: { id },
       data: updateData
     });
+
+    // If deadline was modified, handle reopening or closing assigned mentee tasks
+    if (lastDate) {
+      const endBoundary = new Date(newEnd);
+      if (endBoundary.getUTCHours() === 0 && endBoundary.getUTCMinutes() === 0 && endBoundary.getUTCSeconds() === 0) {
+        endBoundary.setUTCHours(23, 59, 59, 999);
+      }
+      const isNowFuture = endBoundary > new Date();
+
+      if (isNowFuture) {
+        // Re-open tasks that were OVERDUE or CLOSED back to IN_PROGRESS so student can submit
+        await prisma.menteeTask.updateMany({
+          where: {
+            taskId: id,
+            status: { in: ['OVERDUE', 'CLOSED'] }
+          },
+          data: {
+            status: 'IN_PROGRESS'
+          }
+        });
+
+        const assignedMentees = await prisma.menteeTask.findMany({
+          where: { taskId: id },
+          select: { menteeId: true }
+        });
+
+        if (assignedMentees.length > 0) {
+          const formattedDate = newEnd.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          });
+          await prisma.notification.createMany({
+            data: assignedMentees.map((m) => ({
+              userId: m.menteeId,
+              type: 'TASK_DEADLINE_EXTENDED',
+              title: 'Task Deadline Extended',
+              message: `The deadline for "${existingTask.title}" has been extended to ${formattedDate}. You can now submit your work.`
+            }))
+          }).catch(() => {});
+        }
+      } else {
+        // Deadline set in past -> mark incomplete tasks as OVERDUE
+        await prisma.menteeTask.updateMany({
+          where: {
+            taskId: id,
+            status: { in: ['UPCOMING', 'IN_PROGRESS'] }
+          },
+          data: {
+            status: 'OVERDUE'
+          }
+        });
+      }
+    }
 
     // If problems array is provided, synchronize questions
     if (Array.isArray(problems)) {
@@ -636,3 +690,137 @@ export const getTaskProgress = async (req, res, next) => {
     next(error);
   }
 };
+
+export const extendTaskDeadline = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { lastDate } = req.body;
+    const userId = req.user.id || req.user._id;
+
+    if (!lastDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'A new deadline (lastDate) is required.'
+      });
+    }
+
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: { menteeTasks: true }
+    });
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found.'
+      });
+    }
+
+    if (task.createdById !== userId && req.user.role !== 'ADMIN' && req.user.role !== 'MENTOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'Permission denied: Only mentors or administrators can extend task deadlines.'
+      });
+    }
+
+    const newEnd = new Date(lastDate);
+    if (isNaN(newEnd.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid deadline date format.'
+      });
+    }
+
+    if (newEnd <= task.assignmentDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'New deadline cannot precede or equal the task assignment date.'
+      });
+    }
+
+    const updatedTask = await prisma.task.update({
+      where: { id },
+      data: { lastDate: newEnd },
+      include: {
+        problems: { orderBy: { position: 'asc' } },
+        createdBy: { select: { id: true, name: true, email: true } },
+        reviewer: { select: { id: true, name: true, email: true } }
+      }
+    });
+
+    // Check if newEnd is in the future
+    const endBoundary = new Date(newEnd);
+    if (endBoundary.getUTCHours() === 0 && endBoundary.getUTCMinutes() === 0 && endBoundary.getUTCSeconds() === 0) {
+      endBoundary.setUTCHours(23, 59, 59, 999);
+    }
+    const isNowFuture = endBoundary > new Date();
+
+    if (isNowFuture) {
+      // Re-open tasks that were OVERDUE or CLOSED back to IN_PROGRESS
+      await prisma.menteeTask.updateMany({
+        where: {
+          taskId: id,
+          status: { in: ['OVERDUE', 'CLOSED'] }
+        },
+        data: {
+          status: 'IN_PROGRESS'
+        }
+      });
+
+      // Notify assigned students
+      const assignedMentees = await prisma.menteeTask.findMany({
+        where: { taskId: id },
+        select: { menteeId: true }
+      });
+
+      if (assignedMentees.length > 0) {
+        const formattedDate = newEnd.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        });
+        await prisma.notification.createMany({
+          data: assignedMentees.map((m) => ({
+            userId: m.menteeId,
+            type: 'TASK_DEADLINE_EXTENDED',
+            title: 'Task Deadline Extended',
+            message: `The deadline for "${task.title}" has been extended to ${formattedDate}. You can now submit your work.`
+          }))
+        }).catch(() => {});
+      }
+    } else {
+      await prisma.menteeTask.updateMany({
+        where: {
+          taskId: id,
+          status: { in: ['UPCOMING', 'IN_PROGRESS'] }
+        },
+        data: {
+          status: 'OVERDUE'
+        }
+      });
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: userId,
+        action: 'EXTEND_TASK_DEADLINE',
+        entityType: 'Task',
+        entityId: id,
+        details: { oldDeadline: task.lastDate, newDeadline: newEnd }
+      }
+    }).catch(() => {});
+
+    return res.status(200).json({
+      success: true,
+      message: 'Task deadline extended successfully.',
+      task: {
+        ...updatedTask,
+        _id: updatedTask.id,
+        problems: updatedTask.problems.map((p) => ({ ...p, _id: p.id }))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
