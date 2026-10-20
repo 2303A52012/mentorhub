@@ -37,9 +37,17 @@ import { MenteeProfilePage } from './pages/mentee/Profile';
 import { MenteeAchievements } from './pages/mentee/Achievements';
 import { MenteeWeeklyMocks } from './pages/mentee/WeeklyMocks';
 
+// Trainer Pages
+import { TrainerDashboard } from './pages/trainer/Dashboard';
+import { TrainingCalendar } from './pages/trainer/TrainingCalendar';
+import { DailyProblems } from './pages/trainer/DailyProblems';
+import { TrainerStudents } from './pages/trainer/Students';
+import { TrainerTasks } from './pages/trainer/Tasks';
+
 // Common Pages
 import { Complaints } from './pages/common/Complaints';
 import { DoubtSessions } from './pages/common/DoubtSessions';
+import { Announcements } from './pages/common/Announcements';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -59,6 +67,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     if (user.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
     if (user.role === 'MENTOR') return <Navigate to="/mentor/dashboard" replace />;
+    if (user.role === 'TRAINER') return <Navigate to="/trainer/dashboard" replace />;
     return <Navigate to="/mentee/dashboard" replace />;
   }
 
@@ -87,6 +96,8 @@ export default function App() {
               <Navigate to="/admin/dashboard" replace />
             ) : user?.role === 'MENTOR' ? (
               <Navigate to="/mentor/dashboard" replace />
+            ) : user?.role === 'TRAINER' ? (
+              <Navigate to="/trainer/dashboard" replace />
             ) : (
               <Navigate to="/mentee/dashboard" replace />
             )
@@ -309,6 +320,58 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['MENTOR']}>
               <DoubtSessions />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Trainer Routes */}
+        <Route
+          path="trainer/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <TrainerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/calendar"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <TrainingCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/problems"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <DailyProblems />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/students"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <TrainerStudents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/tasks"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <TrainerTasks />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Announcements — accessible by all logged in roles */}
+        <Route
+          path="announcements"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER', 'MENTOR', 'MENTEE']}>
+              <Announcements />
             </ProtectedRoute>
           }
         />

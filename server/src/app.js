@@ -19,6 +19,8 @@ import bulkImportRoutes from './routes/bulkImportRoutes.js';
 import mockRoutes from './routes/mockRoutes.js';
 import complaintRoutes from './routes/complaintRoutes.js';
 import doubtSessionRoutes from './routes/doubtSessionRoutes.js';
+import trainerRoutes from './routes/trainerRoutes.js';
+import announcementRoutes from './routes/announcementRoutes.js';
 
 const app = express();
 
@@ -59,6 +61,8 @@ app.use('/api/v1/bulk-import', bulkImportRoutes);
 app.use('/api/v1', mockRoutes);
 app.use('/api/v1/complaints', complaintRoutes);
 app.use('/api/v1/doubt-sessions', doubtSessionRoutes);
+app.use('/api/v1/trainer', trainerRoutes);
+app.use('/api/v1/announcements', announcementRoutes);
 
 // Error handler
 app.use(errorHandler);

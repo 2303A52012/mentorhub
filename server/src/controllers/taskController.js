@@ -20,6 +20,9 @@ export const getTasks = async (req, res, next) => {
           { createdBy: { role: 'ADMIN' } }
         ]
       };
+    } else if (req.user.role === 'TRAINER') {
+      // Trainer sees tasks they created
+      where = { createdById: userId };
     }
 
     const tasks = await prisma.task.findMany({
@@ -195,6 +198,24 @@ export const createTask = async (req, res, next) => {
         batchMentees.forEach((bm) => recipientIdsSet.add(bm.menteeId));
       } else {
         targetIds.forEach((id) => recipientIdsSet.add(id));
+      }
+    } else if (req.user.role === 'TRAINER') {
+      // Verify trainer is assigned to the batch
+      const batchId = req.body.batchId;
+      if (!batchId) return res.status(400).json({ success: false, message: 'batchId is required for trainer tasks.' });
+      const trainerBatch = await prisma.trainerBatch.findUnique({
+        where: { trainerId_batchId: { trainerId: userId, batchId } }
+      });
+      if (!trainerBatch) return res.status(403).json({ success: false, message: 'You are not assigned to this batch.' });
+
+      if (targetType === 'BATCH') {
+        const batchMentees = await prisma.batchMentee.findMany({ where: { batchId } });
+        batchMentees.forEach((bm) => recipientIdsSet.add(bm.menteeId));
+      } else if (targetType === 'CUSTOM' && Array.isArray(req.body.menteeIds)) {
+        // Verify all menteeIds belong to the batch
+        const batchMentees = await prisma.batchMentee.findMany({ where: { batchId }, select: { menteeId: true } });
+        const batchMenteeIds = new Set(batchMentees.map(bm => bm.menteeId));
+        req.body.menteeIds.forEach((id) => { if (batchMenteeIds.has(id)) recipientIdsSet.add(id); });
       }
     }
 

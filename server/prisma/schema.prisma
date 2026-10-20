@@ -10,6 +10,7 @@ generator client {
 
 enum Role {
   ADMIN
+  TRAINER
   MENTOR
   MENTEE
 }
@@ -75,11 +76,13 @@ model User {
 
   mentorProfile      MentorProfile?
   menteeProfile      MenteeProfile?
+  trainerProfile     TrainerProfile?
   codingProfile      CodingProfile?
 
   createdBatches     Batch[]        @relation("CreatedBatches")
   mentorBatches      BatchMentor[]
   menteeBatches      BatchMentee[]
+  trainerBatches     TrainerBatch[] @relation("TrainerBatches")
 
   mentorAssignments  MentorMenteeAssignment[] @relation("MentorAssignments")
   menteeAssignments  MentorMenteeAssignment[] @relation("MenteeAssignments")
@@ -117,6 +120,18 @@ model User {
   // Doubt Sessions relations
   menteeDoubtSessions      DoubtSession[]     @relation("MenteeDoubtSessions")
   mentorDoubtSessions      DoubtSession[]     @relation("MentorDoubtSessions")
+
+  // Announcements relations
+  announcementsCreated     Announcement[]     @relation("CreatedAnnouncements")
+  announcementReads        AnnouncementRead[]
+
+  // Training Sessions & Daily Problems relations
+  trainingSessionsCreated  TrainingSession[]  @relation("CreatedTrainingSessions")
+  dailyProblemsCreated     DailyProblem[]     @relation("CreatedDailyProblems")
+
+  // Weekly Cumulative Target Verifications
+  weeklyTargetVerificationsDone     WeeklyTargetVerification[] @relation("VerifierVerifications")
+  weeklyTargetVerificationsReceived WeeklyTargetVerification[] @relation("MenteeVerifications")
 }
 
 model MentorProfile {
@@ -155,12 +170,15 @@ model Batch {
   description  String         @default("")
   createdById  String?
   createdBy    User?          @relation("CreatedBatches", fields: [createdById], references: [id], onDelete: SetNull)
-  mentors      BatchMentor[]
-  mentees      BatchMentee[]
-  assignments  MentorMenteeAssignment[]
-  mockSections MockSection[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  mentors          BatchMentor[]
+  mentees          BatchMentee[]
+  trainers         TrainerBatch[]     @relation("BatchTrainers")
+  assignments      MentorMenteeAssignment[]
+  mockSections     MockSection[]
+  trainingSessions TrainingSession[]  @relation("BatchTrainingSessions")
+  dailyProblems    DailyProblem[]     @relation("BatchDailyProblems")
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 }
 
 model BatchMentor {
@@ -603,4 +621,133 @@ model DoubtSession {
   @@index([mentorId])
   @@index([status])
   @@index([scheduledDate])
+}
+
+// ─── Trainer ──────────────────────────────────────────────────────────────────
+
+model TrainerProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  designation String   @default("Corporate Trainer")
+  bio         String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Trainer ↔ Batch (many-to-many — a trainer can cover multiple batches)
+model TrainerBatch {
+  id        String   @id @default(uuid())
+  trainerId String
+  trainer   User     @relation("TrainerBatches", fields: [trainerId], references: [id], onDelete: Cascade)
+  batchId   String
+  batch     Batch    @relation("BatchTrainers", fields: [batchId], references: [id], onDelete: Cascade)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([trainerId, batchId])
+  @@index([trainerId])
+  @@index([batchId])
+}
+
+// Training calendar entry — one session per scheduled date
+model TrainingSession {
+  id          String   @id @default(uuid())
+  batchId     String
+  batch       Batch    @relation("BatchTrainingSessions", fields: [batchId], references: [id], onDelete: Cascade)
+  trainerId   String
+  trainer     User     @relation("CreatedTrainingSessions", fields: [trainerId], references: [id], onDelete: Cascade)
+  date        DateTime
+  topicsTaught String[] @default([])
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([batchId])
+  @@index([trainerId])
+  @@index([date])
+}
+
+// Company-specific daily problem (interview / OA problem)
+model DailyProblem {
+  id          String   @id @default(uuid())
+  batchId     String
+  batch       Batch    @relation("BatchDailyProblems", fields: [batchId], references: [id], onDelete: Cascade)
+  postedById  String
+  postedBy    User     @relation("CreatedDailyProblems", fields: [postedById], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  title       String
+  description String
+  company     String   @default("")
+  difficulty  String   @default("MEDIUM") // EASY, MEDIUM, HARD
+  platform    Platform @default(CUSTOM)
+  link        String   @default("")
+  tags        String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([batchId])
+  @@index([postedById])
+  @@index([date])
+}
+
+// ─── Announcements ────────────────────────────────────────────────────────────
+
+enum AnnouncementAudience {
+  ALL          // Everyone
+  BATCH        // A specific batch
+  MENTOR_GROUP // A specific mentor's mentees
+  INDIVIDUAL   // Specific users
+}
+
+model Announcement {
+  id          String               @id @default(uuid())
+  title       String
+  content     String
+  createdById String
+  createdBy   User                 @relation("CreatedAnnouncements", fields: [createdById], references: [id], onDelete: Cascade)
+  audience    AnnouncementAudience @default(ALL)
+  // targetIds holds batchId / mentorId / individual userId(s) depending on audience
+  targetIds   String[]             @default([])
+  isPinned    Boolean              @default(false)
+  expiresAt   DateTime?
+  reads       AnnouncementRead[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([createdById])
+  @@index([audience])
+  @@index([createdAt])
+}
+
+model AnnouncementRead {
+  id             String       @id @default(uuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime     @default(now())
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+}
+
+// ─── Weekly Cumulative Target Verification ────────────────────────────────────
+
+model WeeklyTargetVerification {
+  id         String   @id @default(uuid())
+  menteeId   String
+  mentee     User     @relation("MenteeVerifications", fields: [menteeId], references: [id], onDelete: Cascade)
+  verifierId String
+  verifier   User     @relation("VerifierVerifications", fields: [verifierId], references: [id], onDelete: Cascade)
+  weekNo     Int
+  verified   Boolean  @default(false)
+  notes      String   @default("")
+  verifiedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([menteeId, weekNo])
+  @@index([menteeId])
+  @@index([verifierId])
 }

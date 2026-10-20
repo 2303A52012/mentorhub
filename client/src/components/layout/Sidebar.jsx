@@ -20,7 +20,10 @@ import {
   BookOpen,
   Sun,
   Moon,
-  X
+  X,
+  Megaphone,
+  Zap,
+  Layers
 } from 'lucide-react';
 
 export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
@@ -40,8 +43,18 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
       { to: '/mentor/mocks', label: 'Weekly Mocks', icon: Calendar },
       { to: '/admin/reviews', label: 'Task Reviews', icon: FileCheck },
       { to: '/admin/complaints', label: 'Grievance Desk', icon: MessageSquareWarning },
+      { to: '/announcements', label: 'Announcements', icon: Megaphone },
       { to: '/admin/reports', label: 'Reports & CSV', icon: FileSpreadsheet },
       { to: '/admin/profile', label: 'Admin Profile', icon: User }
+    ];
+  } else if (role === 'TRAINER') {
+    links = [
+      { to: '/trainer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/trainer/students', label: 'Batch Students', icon: Users },
+      { to: '/trainer/calendar', label: 'Training Calendar', icon: Calendar },
+      { to: '/trainer/problems', label: 'Daily Problems', icon: Zap },
+      { to: '/trainer/tasks', label: 'Assign Tasks', icon: CheckSquare },
+      { to: '/announcements', label: 'Announcements', icon: Megaphone },
     ];
   } else if (role === 'MENTOR') {
     links = [
@@ -54,6 +67,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
       { to: '/mentor/complaints', label: 'Grievance Desk', icon: MessageSquareWarning },
       { to: '/mentor/batches', label: 'Batches', icon: FolderGit2 },
       { to: '/mentor/analytics', label: 'Analytics & At-Risk', icon: TrendingUp },
+      { to: '/announcements', label: 'Announcements', icon: Megaphone },
       { to: '/mentor/profile', label: 'Mentor Profile', icon: User }
     ];
   } else if (role === 'MENTEE') {
@@ -63,6 +77,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
       { to: '/mentee/tasks', label: 'Weekly Tasks', icon: CheckSquare },
       { to: '/mentee/doubt-sessions', label: 'Ask Doubts / 1-on-1', icon: BookOpen },
       { to: '/mentee/complaints', label: 'Grievance Box', icon: MessageSquareWarning },
+      { to: '/announcements', label: 'Announcements', icon: Megaphone },
       { to: '/mentee/achievements', label: 'Achievements & Rank', icon: Trophy },
       { to: '/mentee/profile', label: 'Profile & Coding Links', icon: User }
     ];

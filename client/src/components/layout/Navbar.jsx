@@ -16,6 +16,8 @@ export const Navbar = ({ mobileMenuOpen, onToggleMobileMenu }) => {
       ? '/admin/profile'
       : user?.role === 'MENTOR'
       ? '/mentor/profile'
+      : user?.role === 'TRAINER'
+      ? '/trainer/dashboard'
       : '/mentee/profile';
 
   return (

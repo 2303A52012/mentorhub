@@ -45,6 +45,7 @@ export const Login = () => {
       const data = await login(emailOrIdentifier, password);
       if (data.user.role === 'ADMIN') navigate('/admin/dashboard');
       else if (data.user.role === 'MENTOR') navigate('/mentor/dashboard');
+      else if (data.user.role === 'TRAINER') navigate('/trainer/dashboard');
       else navigate('/mentee/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
