@@ -1,4 +1,4 @@
-import { MentorMenteeAssignment } from '../models/MentorMenteeAssignment.js';
+import prisma from '../config/prisma.js';
 
 export const authorizeRoles = (...roles) => {
   return (req, res, next) => {
@@ -30,7 +30,6 @@ export const requireSuperAdmin = (req, res, next) => {
   next();
 };
 
-
 export const checkMentorMenteeAccess = async (req, res, next) => {
   try {
     if (req.user.role === 'ADMIN') {
@@ -42,8 +41,10 @@ export const checkMentorMenteeAccess = async (req, res, next) => {
       return next();
     }
 
+    const userId = req.user.id || req.user._id;
+
     if (req.user.role === 'MENTEE') {
-      if (req.user._id.toString() !== menteeId.toString()) {
+      if (userId?.toString() !== menteeId.toString()) {
         return res.status(403).json({
           success: false,
           message: 'Access denied: You can only access your own mentee data.'
@@ -53,10 +54,12 @@ export const checkMentorMenteeAccess = async (req, res, next) => {
     }
 
     if (req.user.role === 'MENTOR') {
-      const assignment = await MentorMenteeAssignment.findOne({
-        mentorId: req.user._id,
-        menteeId,
-        status: 'ACTIVE'
+      const assignment = await prisma.mentorMenteeAssignment.findFirst({
+        where: {
+          mentorId: userId,
+          menteeId: menteeId,
+          status: 'ACTIVE'
+        }
       });
 
       if (!assignment) {
