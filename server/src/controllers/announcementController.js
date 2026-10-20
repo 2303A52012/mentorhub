@@ -1,4 +1,4 @@
-﻿import prisma from '../config/database.js';
+import prisma from '../config/prisma.js';
 
 async function isVisibleTo(announcement, userId, userRole) {
   if (['ADMIN', 'TRAINER', 'MENTOR'].includes(userRole)) return true;

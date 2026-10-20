@@ -21,4 +21,5 @@ export const closeDB = async () => {
     console.error('Error closing database:', err);
   }
 };
-
+export default prisma;
+export { prisma };
