@@ -13,7 +13,24 @@ export const getTrainerProfile = async (req, res, next) => {
         trainerProfile: true,
         trainerBatches: {
           include: {
-            batch: { select: { id: true, name: true, academicYear: true, description: true } }
+            batch: {
+              select: {
+                id: true,
+                name: true,
+                academicYear: true,
+                description: true,
+                _count: {
+                  select: { mentees: true }
+                }
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            trainingSessionsCreated: true,
+            dailyProblemsCreated: true,
+            tasksCreated: true
           }
         }
       }
@@ -26,7 +43,13 @@ export const getTrainerProfile = async (req, res, next) => {
 export const updateTrainerProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { designation, bio } = req.body;
+    const { name, designation, bio } = req.body;
+    if (name && name.trim()) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { name: name.trim() }
+      });
+    }
     const profile = await prisma.trainerProfile.upsert({
       where: { userId },
       create: { userId, designation: designation || 'Corporate Trainer', bio: bio || '' },

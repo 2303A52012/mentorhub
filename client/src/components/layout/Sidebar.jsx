@@ -59,6 +59,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
       { to: '/trainer/problems', label: 'Daily Problems', icon: Zap },
       { to: '/trainer/batches', label: 'Batches', icon: FolderGit2 },
       { to: '/announcements', label: 'Announcements', icon: Megaphone },
+      { to: '/trainer/profile', label: 'Trainer Profile', icon: User }
     ];
   } else if (role === 'MENTOR') {
     links = [

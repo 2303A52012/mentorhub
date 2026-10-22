@@ -26,22 +26,36 @@ async function seedTrainerAndCalendar() {
 
   const trainersData = [
     {
-      name: 'Prof. Arjun Verma',
-      email: 'trainer.dsa@sru.edu.in',
-      designation: 'Lead DSA & Competitive Programming Trainer',
-      bio: 'Ex-Amazon SDE II, ICPC Regionalist. Specializes in Advanced Trees, Graph Algorithms, and Dynamic Programming.',
-      batchNames: ['G6-B1', 'G6-B2']
+      name: 'Trainer G6-B1',
+      email: 'trainer.g6-b1@sru.edu.in',
+      designation: 'Corporate Technical Trainer (G6-B1)',
+      bio: 'Corporate Trainer dedicated to Batch G6-B1. Specializes in Algorithms, Data Structures, and Placement Readiness.',
+      batchNames: ['G6-B1']
     },
     {
-      name: 'Dr. Meera Nambiar',
-      email: 'trainer.system@sru.edu.in',
-      designation: 'Corporate Technical Trainer & System Architect',
-      bio: 'Former Tech Lead at Cisco. Expert in Distributed Systems, System Design, and Low-Level Concurrency.',
-      batchNames: ['G6-B3', 'G6-B4']
+      name: 'Trainer G6-B2',
+      email: 'trainer.g6-b2@sru.edu.in',
+      designation: 'Corporate Technical Trainer (G6-B2)',
+      bio: 'Corporate Trainer dedicated to Batch G6-B2. Specializes in Core CS, Problem Solving, and Technical Interview Prep.',
+      batchNames: ['G6-B2']
+    },
+    {
+      name: 'Trainer G6-B3',
+      email: 'trainer.g6-b3@sru.edu.in',
+      designation: 'Corporate Technical Trainer (G6-B3)',
+      bio: 'Corporate Trainer dedicated to Batch G6-B3. Specializes in Full Stack Systems, High Performance Computing, and System Design.',
+      batchNames: ['G6-B3']
+    },
+    {
+      name: 'Trainer G6-B4',
+      email: 'trainer.g6-b4@sru.edu.in',
+      designation: 'Corporate Technical Trainer (G6-B4)',
+      bio: 'Corporate Trainer dedicated to Batch G6-B4. Specializes in Cloud Architecture, Scalable Backends, and Coding Assessment.',
+      batchNames: ['G6-B4']
     }
   ];
 
-  const createdTrainers = [];
+  const batchTrainerMap = {};
 
   for (const tData of trainersData) {
     let user = await prisma.user.findFirst({
@@ -76,16 +90,13 @@ async function seedTrainerAndCalendar() {
       if (bId) {
         await prisma.trainerBatch.upsert({
           where: { trainerId_batchId: { trainerId: user.id, batchId: bId } },
-          create: { trainerId: user.id, batchId: bId, isPrimary: bName === tData.batchNames[0] },
-          update: {}
+          create: { trainerId: user.id, batchId: bId, isPrimary: true },
+          update: { isPrimary: true }
         });
+        batchTrainerMap[bId] = user.id;
       }
     }
-
-    createdTrainers.push(user);
   }
-
-  const primaryTrainer = createdTrainers[0];
 
   // 3. Official Training Calendar Dates (Sep, Oct, Nov 2026)
   const officialSchedule = [
@@ -128,7 +139,7 @@ async function seedTrainerAndCalendar() {
         await prisma.trainingSession.create({
           data: {
             batchId: b.id,
-            trainerId: primaryTrainer.id,
+            trainerId: batchTrainerMap[b.id] || null,
             date: session.date,
             topicsTaught: session.topics,
             notes: session.notes

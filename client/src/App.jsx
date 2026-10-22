@@ -43,6 +43,7 @@ import { TrainingCalendar } from './pages/trainer/TrainingCalendar';
 import { DailyProblems } from './pages/trainer/DailyProblems';
 import { TrainerStudents } from './pages/trainer/Students';
 import { TrainerTasks } from './pages/trainer/Tasks';
+import { TrainerProfilePage } from './pages/trainer/Profile';
 
 // Common Pages
 import { Complaints } from './pages/common/Complaints';
@@ -426,6 +427,14 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
               <MentorBatches />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/profile"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <TrainerProfilePage />
             </ProtectedRoute>
           }
         />
