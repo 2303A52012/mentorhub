@@ -70,14 +70,40 @@ export const getTrainingSessions = async (req, res, next) => {
     const { batchId, month, year } = req.query;
 
     let where = {};
-    if (batchId) where.batchId = batchId;
+    if (batchId && batchId !== 'ALL' && batchId !== 'all') {
+      where.batchId = batchId;
+    }
 
-    // Restrict trainer to his batches
+    // Restrict trainer to assigned batches
     if (role === 'TRAINER') {
       const myBatches = await prisma.trainerBatch.findMany({ where: { trainerId: userId }, select: { batchId: true } });
       const allowedBatches = myBatches.map(b => b.batchId);
-      if (batchId && !allowedBatches.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
-      if (!batchId) where.batchId = { in: allowedBatches };
+      if (batchId && batchId !== 'ALL' && !allowedBatches.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
+      if (!batchId || batchId === 'ALL') where.batchId = { in: allowedBatches };
+    }
+
+    // Mentee: filter by enrolled batches if not specified
+    if (role === 'MENTEE') {
+      const myBatches = await prisma.batchMentee.findMany({ where: { menteeId: userId }, select: { batchId: true } });
+      const allowedBatches = myBatches.map(b => b.batchId);
+      if (batchId && batchId !== 'ALL') {
+        where.batchId = batchId;
+      } else if (allowedBatches.length > 0) {
+        where.batchId = { in: allowedBatches };
+      }
+    }
+
+    // Mentor: filter by assigned batches if not specified
+    if (role === 'MENTOR') {
+      if (batchId && batchId !== 'ALL') {
+        where.batchId = batchId;
+      } else {
+        const myBatches = await prisma.batchMentor.findMany({ where: { mentorId: userId }, select: { batchId: true } });
+        const allowedBatches = myBatches.map(b => b.batchId);
+        if (allowedBatches.length > 0) {
+          where.batchId = { in: allowedBatches };
+        }
+      }
     }
 
     if (month && year) {
@@ -90,7 +116,7 @@ export const getTrainingSessions = async (req, res, next) => {
       where,
       orderBy: { date: 'asc' },
       include: {
-        trainer: { select: { id: true, name: true } },
+        trainer: { select: { id: true, name: true, email: true } },
         batch: { select: { id: true, name: true } }
       }
     });
@@ -101,31 +127,39 @@ export const getTrainingSessions = async (req, res, next) => {
 export const createOrUpdateTrainingSession = async (req, res, next) => {
   try {
     const { id: userId, role } = req.user;
-    const { batchId, date, topicsTaught = [], notes = '' } = req.body;
+    const { batchId, date, topicsTaught = [], notes = '', trainerId } = req.body;
 
     if (!batchId || !date) return res.status(400).json({ success: false, message: 'batchId and date are required.' });
 
+    let effectiveTrainerId = userId;
     if (role === 'TRAINER') {
       const access = await prisma.trainerBatch.findUnique({ where: { trainerId_batchId: { trainerId: userId, batchId } } });
       if (!access) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
+    } else if (role === 'ADMIN') {
+      if (trainerId) {
+        effectiveTrainerId = trainerId;
+      } else {
+        const tb = await prisma.trainerBatch.findFirst({ where: { batchId } });
+        if (tb) effectiveTrainerId = tb.trainerId;
+      }
     }
 
     const sessionDate = new Date(date);
     sessionDate.setHours(0, 0, 0, 0);
 
     const existing = await prisma.trainingSession.findFirst({
-      where: { batchId, trainerId: userId, date: sessionDate }
+      where: { batchId, date: sessionDate }
     });
 
     let session;
     if (existing) {
       session = await prisma.trainingSession.update({
         where: { id: existing.id },
-        data: { topicsTaught, notes }
+        data: { topicsTaught, notes, trainerId: effectiveTrainerId }
       });
     } else {
       session = await prisma.trainingSession.create({
-        data: { batchId, trainerId: userId, date: sessionDate, topicsTaught, notes }
+        data: { batchId, trainerId: effectiveTrainerId, date: sessionDate, topicsTaught, notes }
       });
     }
 

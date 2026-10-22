@@ -138,6 +138,14 @@ export default function App() {
           }
         />
         <Route
+          path="admin/training-calendar"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <TrainingCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="admin/tasks"
           element={
             <ProtectedRoute allowedRoles={['ADMIN']}>
@@ -292,6 +300,14 @@ export default function App() {
           }
         />
         <Route
+          path="mentor/training-calendar"
+          element={
+            <ProtectedRoute allowedRoles={['MENTOR', 'ADMIN']}>
+              <TrainingCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="mentor/mocks/:id"
           element={
             <ProtectedRoute allowedRoles={['MENTOR', 'ADMIN']}>
@@ -430,6 +446,22 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['MENTEE']}>
               <MenteeWeeklyMocks />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="mentee/training-calendar"
+          element={
+            <ProtectedRoute allowedRoles={['MENTEE']}>
+              <TrainingCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="training-calendar"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER', 'MENTOR', 'MENTEE']}>
+              <TrainingCalendar />
             </ProtectedRoute>
           }
         />
