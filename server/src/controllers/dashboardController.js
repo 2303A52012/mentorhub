@@ -233,6 +233,37 @@ export const getMenteeDashboard = async (req, res, next) => {
       include: { achievement: true }
     });
 
+    // Latest Problem of the Day for student's batch
+    const menteeBatches = await prisma.batchMentee.findMany({
+      where: { menteeId },
+      select: { batchId: true }
+    });
+    const batchIds = menteeBatches.map(b => b.batchId);
+
+    let latestDailyProblem = null;
+    if (batchIds.length > 0) {
+      const dp = await prisma.dailyProblem.findFirst({
+        where: { batchId: { in: batchIds } },
+        orderBy: { date: 'desc' },
+        include: {
+          postedBy: { select: { id: true, name: true } },
+          batch: { select: { id: true, name: true } },
+          submissions: {
+            where: { studentId: menteeId },
+            take: 1
+          }
+        }
+      });
+      if (dp) {
+        latestDailyProblem = {
+          ...dp,
+          isSolved: dp.submissions && dp.submissions.length > 0,
+          mySubmission: dp.submissions?.[0] || null,
+          submissions: undefined
+        };
+      }
+    }
+
     const formatTask = (t) => ({
       ...t,
       _id: t.id,
@@ -254,6 +285,7 @@ export const getMenteeDashboard = async (req, res, next) => {
         totalNotesSaved,
         achievementsCount: earnedAchievements.length
       },
+      latestDailyProblem,
       presentTasks: presentTasks.slice(0, 4).map(formatTask),
       completedTasks: completedTasks.slice(0, 4).map(formatTask),
       recentReviews: recentReviews.map((r) => ({

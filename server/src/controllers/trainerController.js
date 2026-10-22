@@ -293,7 +293,7 @@ export const getDailyProblems = async (req, res, next) => {
       where.date = { gte: d, lt: next };
     }
 
-    const [total, problems] = await Promise.all([
+    const [total, rawProblems] = await Promise.all([
       prisma.dailyProblem.count({ where }),
       prisma.dailyProblem.findMany({
         where,
@@ -301,12 +301,236 @@ export const getDailyProblems = async (req, res, next) => {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          postedBy: { select: { id: true, name: true } },
-          batch: { select: { id: true, name: true } }
+          postedBy: { select: { id: true, name: true, email: true } },
+          batch: {
+            select: {
+              id: true,
+              name: true,
+              _count: { select: { mentees: true } }
+            }
+          },
+          _count: {
+            select: { submissions: true }
+          },
+          ...(role === 'MENTEE' ? {
+            submissions: {
+              where: { studentId: userId },
+              take: 1
+            }
+          } : {})
         }
       })
     ]);
+
+    const problems = rawProblems.map(p => {
+      const totalStudents = p.batch?._count?.mentees || 0;
+      const solvedCount = p._count?.submissions || 0;
+      const pendingCount = Math.max(0, totalStudents - solvedCount);
+      const mySubmission = p.submissions?.[0] || null;
+      return {
+        ...p,
+        totalStudents,
+        solvedCount,
+        pendingCount,
+        isSolved: Boolean(mySubmission),
+        mySubmission,
+        submissions: undefined
+      };
+    });
+
     return res.json({ success: true, total, page, limit, problems });
+  } catch (err) { next(err); }
+};
+
+export const getDailyProblemById = async (req, res, next) => {
+  try {
+    const { role, id: userId } = req.user;
+    const { id } = req.params;
+
+    const problem = await prisma.dailyProblem.findUnique({
+      where: { id },
+      include: {
+        postedBy: { select: { id: true, name: true, email: true } },
+        batch: {
+          select: {
+            id: true,
+            name: true,
+            _count: { select: { mentees: true } }
+          }
+        },
+        _count: {
+          select: { submissions: true }
+        },
+        ...(role === 'MENTEE' ? {
+          submissions: {
+            where: { studentId: userId },
+            take: 1
+          }
+        } : {})
+      }
+    });
+
+    if (!problem) return res.status(404).json({ success: false, message: 'Daily problem not found.' });
+
+    const totalStudents = problem.batch?._count?.mentees || 0;
+    const solvedCount = problem._count?.submissions || 0;
+    const pendingCount = Math.max(0, totalStudents - solvedCount);
+    const mySubmission = problem.submissions?.[0] || null;
+
+    return res.json({
+      success: true,
+      problem: {
+        ...problem,
+        totalStudents,
+        solvedCount,
+        pendingCount,
+        isSolved: Boolean(mySubmission),
+        mySubmission,
+        submissions: undefined
+      }
+    });
+  } catch (err) { next(err); }
+};
+
+export const getDailyProblemSubmissions = async (req, res, next) => {
+  try {
+    const { role, id: userId } = req.user;
+    const { id } = req.params;
+
+    const problem = await prisma.dailyProblem.findUnique({
+      where: { id },
+      include: {
+        batch: { select: { id: true, name: true } }
+      }
+    });
+
+    if (!problem) return res.status(404).json({ success: false, message: 'Daily problem not found.' });
+
+    if (role === 'TRAINER') {
+      const access = await prisma.trainerBatch.findUnique({
+        where: { trainerId_batchId: { trainerId: userId, batchId: problem.batchId } }
+      });
+      if (!access) return res.status(403).json({ success: false, message: 'Access denied.' });
+    }
+
+    const batchMentees = await prisma.batchMentee.findMany({
+      where: { batchId: problem.batchId },
+      include: {
+        mentee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            menteeProfile: true
+          }
+        }
+      },
+      orderBy: { mentee: { name: 'asc' } }
+    });
+
+    const submissions = await prisma.dailyProblemSubmission.findMany({
+      where: { dailyProblemId: id }
+    });
+
+    const submissionMap = new Map();
+    submissions.forEach(s => submissionMap.set(s.studentId, s));
+
+    const studentList = batchMentees.map(bm => {
+      const student = bm.mentee;
+      const sub = submissionMap.get(student.id);
+      return {
+        studentId: student.id,
+        name: student.name,
+        email: student.email,
+        rollNumber: student.menteeProfile?.rollNumber || '',
+        section: student.menteeProfile?.section || 'A',
+        status: sub ? 'COMPLETED' : 'PENDING',
+        submission: sub || null
+      };
+    });
+
+    const solvedCount = submissions.length;
+    const totalStudents = batchMentees.length;
+    const pendingCount = Math.max(0, totalStudents - solvedCount);
+
+    return res.json({
+      success: true,
+      problem: {
+        id: problem.id,
+        title: problem.title,
+        company: problem.company,
+        difficulty: problem.difficulty,
+        link: problem.link,
+        batchName: problem.batch?.name
+      },
+      stats: {
+        totalStudents,
+        solvedCount,
+        pendingCount
+      },
+      submissions: studentList
+    });
+  } catch (err) { next(err); }
+};
+
+export const submitDailyProblem = async (req, res, next) => {
+  try {
+    const { id: userId, role } = req.user;
+    const { id: dailyProblemId } = req.params;
+    const { submissionUrl, language = 'cpp', timeComplexity = '', spaceComplexity = '', approach = '', sourceCode = '' } = req.body;
+
+    const problem = await prisma.dailyProblem.findUnique({
+      where: { id: dailyProblemId }
+    });
+    if (!problem) return res.status(404).json({ success: false, message: 'Problem not found.' });
+
+    const inBatch = await prisma.batchMentee.findUnique({
+      where: { batchId_menteeId: { batchId: problem.batchId, menteeId: userId } }
+    });
+    if (!inBatch && role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'You are not enrolled in the batch for this daily problem.' });
+    }
+
+    if (!submissionUrl?.trim() && !sourceCode?.trim() && !approach?.trim()) {
+      return res.status(400).json({ success: false, message: 'Please provide a submission URL, approach, or code.' });
+    }
+
+    const submission = await prisma.dailyProblemSubmission.upsert({
+      where: {
+        dailyProblemId_studentId: {
+          dailyProblemId,
+          studentId: userId
+        }
+      },
+      create: {
+        dailyProblemId,
+        studentId: userId,
+        status: 'COMPLETED',
+        submissionUrl: (submissionUrl || '').trim(),
+        language: (language || 'cpp').trim(),
+        timeComplexity: (timeComplexity || '').trim(),
+        spaceComplexity: (spaceComplexity || '').trim(),
+        approach: (approach || '').trim(),
+        sourceCode: (sourceCode || '').trim(),
+        submittedAt: new Date()
+      },
+      update: {
+        status: 'COMPLETED',
+        submissionUrl: (submissionUrl || '').trim(),
+        language: (language || 'cpp').trim(),
+        timeComplexity: (timeComplexity || '').trim(),
+        spaceComplexity: (spaceComplexity || '').trim(),
+        approach: (approach || '').trim(),
+        sourceCode: (sourceCode || '').trim(),
+        submittedAt: new Date()
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Daily problem marked as completed!',
+      submission
+    });
   } catch (err) { next(err); }
 };
 

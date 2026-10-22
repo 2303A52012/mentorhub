@@ -79,6 +79,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
   } else if (role === 'MENTEE') {
     links = [
       { to: '/mentee/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/mentee/daily-problems', label: 'Daily Problems (POTD)', icon: Zap },
       { to: '/mentee/training-calendar', label: 'Training Calendar', icon: Calendar },
       { to: '/mentee/mocks', label: 'Weekly Mocks', icon: CalendarCheck },
       { to: '/mentee/tasks', label: 'Weekly Tasks', icon: CheckSquare },

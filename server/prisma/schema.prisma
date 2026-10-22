@@ -126,8 +126,9 @@ model User {
   announcementReads        AnnouncementRead[]
 
   // Training Sessions & Daily Problems relations
-  trainingSessionsCreated  TrainingSession[]  @relation("CreatedTrainingSessions")
-  dailyProblemsCreated     DailyProblem[]     @relation("CreatedDailyProblems")
+  trainingSessionsCreated  TrainingSession[]          @relation("CreatedTrainingSessions")
+  dailyProblemsCreated     DailyProblem[]             @relation("CreatedDailyProblems")
+  dailyProblemSubmissions  DailyProblemSubmission[]   @relation("DailyProblemSubmissions")
 
   // Weekly Cumulative Target Verifications
   weeklyTargetVerificationsDone     WeeklyTargetVerification[] @relation("VerifierVerifications")
@@ -684,12 +685,34 @@ model DailyProblem {
   platform    Platform @default(CUSTOM)
   link        String   @default("")
   tags        String[] @default([])
+  submissions DailyProblemSubmission[] @relation("ProblemSubmissions")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([batchId])
   @@index([postedById])
   @@index([date])
+}
+
+model DailyProblemSubmission {
+  id              String       @id @default(uuid())
+  dailyProblemId  String
+  dailyProblem    DailyProblem @relation("ProblemSubmissions", fields: [dailyProblemId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         User         @relation("DailyProblemSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  status          String       @default("COMPLETED") // COMPLETED, PENDING
+  submissionUrl   String       @default("")
+  language        String       @default("cpp")
+  timeComplexity  String       @default("")
+  spaceComplexity String       @default("")
+  approach        String       @default("")
+  sourceCode      String       @default("")
+  submittedAt     DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([dailyProblemId, studentId])
+  @@index([dailyProblemId])
+  @@index([studentId])
 }
 
 // ─── Announcements ────────────────────────────────────────────────────────────

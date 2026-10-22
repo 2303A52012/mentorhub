@@ -5,7 +5,8 @@ import {
   getTrainerProfile, updateTrainerProfile,
   assignTrainerToBatch, removeTrainerFromBatch,
   getTrainingSessions, createOrUpdateTrainingSession, updateTrainingSession, deleteTrainingSession,
-  getDailyProblems, createDailyProblem, updateDailyProblem, deleteDailyProblem,
+  getDailyProblems, getDailyProblemById, getDailyProblemSubmissions, submitDailyProblem,
+  createDailyProblem, updateDailyProblem, deleteDailyProblem,
   getTrainerBatchStudents,
   getTrainers, createTrainer, updateTrainer, deleteTrainer
 } from '../controllers/trainerController.js';
@@ -39,6 +40,9 @@ router.delete('/sessions/:id',                  authorize('ADMIN','TRAINER'), de
 
 // Daily Problems
 router.get('/daily-problems',                   getDailyProblems);
+router.get('/daily-problems/:id',               getDailyProblemById);
+router.get('/daily-problems/:id/submissions',   authorize('ADMIN','TRAINER'), getDailyProblemSubmissions);
+router.post('/daily-problems/:id/submit',        authorize('MENTEE'), submitDailyProblem);
 router.post('/daily-problems',                  authorize('ADMIN','TRAINER'), createDailyProblem);
 router.patch('/daily-problems/:id',             authorize('ADMIN','TRAINER'), updateDailyProblem);
 router.delete('/daily-problems/:id',            authorize('ADMIN','TRAINER'), deleteDailyProblem);

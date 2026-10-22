@@ -36,6 +36,7 @@ import { CompletedTasks } from './pages/mentee/CompletedTasks';
 import { MenteeProfilePage } from './pages/mentee/Profile';
 import { MenteeAchievements } from './pages/mentee/Achievements';
 import { MenteeWeeklyMocks } from './pages/mentee/WeeklyMocks';
+import { MenteeDailyProblems } from './pages/mentee/DailyProblems';
 
 // Trainer Pages
 import { TrainerDashboard } from './pages/trainer/Dashboard';
@@ -455,6 +456,14 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['MENTEE']}>
               <MenteeDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="mentee/daily-problems"
+          element={
+            <ProtectedRoute allowedRoles={['MENTEE']}>
+              <MenteeDailyProblems />
             </ProtectedRoute>
           }
         />
