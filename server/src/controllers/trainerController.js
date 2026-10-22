@@ -1,4 +1,5 @@
 import prisma from '../config/prisma.js';
+import bcrypt from 'bcryptjs';
 
 // ─── Trainer Profile ──────────────────────────────────────────────────────────
 
@@ -302,3 +303,204 @@ export const getTrainerBatchStudents = async (req, res, next) => {
     return res.json({ success: true, batchId, count: students.length, students });
   } catch (err) { next(err); }
 };
+
+// ─── Trainer Directory & Management (ADMIN only) ──────────────────────────────
+
+export const getTrainers = async (req, res, next) => {
+  try {
+    const trainers = await prisma.user.findMany({
+      where: { role: 'TRAINER' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        accountStatus: true,
+        createdAt: true,
+        trainerProfile: true,
+        trainerBatches: {
+          include: {
+            batch: { select: { id: true, name: true, academicYear: true, description: true } }
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    const enrichedTrainers = trainers.map((t) => ({
+      _id: t.id,
+      id: t.id,
+      name: t.name,
+      email: t.email,
+      role: t.role,
+      accountStatus: t.accountStatus,
+      createdAt: t.createdAt,
+      profile: t.trainerProfile || { designation: 'Corporate Trainer', bio: '' },
+      batches: t.trainerBatches.map((tb) => ({
+        ...tb.batch,
+        _id: tb.batch.id,
+        isPrimary: tb.isPrimary
+      }))
+    }));
+
+    return res.json({ success: true, trainers: enrichedTrainers });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createTrainer = async (req, res, next) => {
+  try {
+    const { name, email, password, designation, bio, batchIds } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({ success: false, message: 'Name and email are required.' });
+    }
+
+    const existing = await prisma.user.findFirst({
+      where: { email: { equals: email.toLowerCase().trim(), mode: 'insensitive' } }
+    });
+
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'A user with this email already exists.' });
+    }
+
+    const initialPassword = password || 'Password@123';
+    const passwordHash = await bcrypt.hash(initialPassword, 10);
+
+    const trainer = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        passwordHash,
+        role: 'TRAINER',
+        mustChangePassword: true,
+        trainerProfile: {
+          create: {
+            designation: designation?.trim() || 'Corporate Trainer',
+            bio: bio?.trim() || ''
+          }
+        }
+      },
+      include: {
+        trainerProfile: true
+      }
+    });
+
+    if (Array.isArray(batchIds) && batchIds.length > 0) {
+      await prisma.trainerBatch.createMany({
+        data: batchIds.map((batchId, idx) => ({
+          trainerId: trainer.id,
+          batchId,
+          isPrimary: idx === 0
+        })),
+        skipDuplicates: true
+      });
+    }
+
+    const fullTrainer = await prisma.user.findUnique({
+      where: { id: trainer.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        accountStatus: true,
+        createdAt: true,
+        trainerProfile: true,
+        trainerBatches: {
+          include: {
+            batch: { select: { id: true, name: true, academicYear: true } }
+          }
+        }
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Trainer account created successfully.',
+      trainer: {
+        ...fullTrainer,
+        _id: fullTrainer.id,
+        profile: fullTrainer.trainerProfile,
+        batches: fullTrainer.trainerBatches.map((tb) => ({
+          ...tb.batch,
+          _id: tb.batch.id,
+          isPrimary: tb.isPrimary
+        }))
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateTrainer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, email, designation, bio, accountStatus, batchIds } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user || user.role !== 'TRAINER') {
+      return res.status(404).json({ success: false, message: 'Trainer not found.' });
+    }
+
+    const updateData = {};
+    if (name) updateData.name = name.trim();
+    if (email) updateData.email = email.toLowerCase().trim();
+    if (accountStatus) updateData.accountStatus = accountStatus;
+
+    if (Object.keys(updateData).length > 0) {
+      await prisma.user.update({ where: { id }, data: updateData });
+    }
+
+    if (designation !== undefined || bio !== undefined) {
+      await prisma.trainerProfile.upsert({
+        where: { userId: id },
+        create: {
+          userId: id,
+          designation: designation || 'Corporate Trainer',
+          bio: bio || ''
+        },
+        update: {
+          ...(designation !== undefined ? { designation } : {}),
+          ...(bio !== undefined ? { bio } : {})
+        }
+      });
+    }
+
+    if (Array.isArray(batchIds)) {
+      await prisma.trainerBatch.deleteMany({ where: { trainerId: id } });
+      if (batchIds.length > 0) {
+        await prisma.trainerBatch.createMany({
+          data: batchIds.map((batchId, idx) => ({
+            trainerId: id,
+            batchId,
+            isPrimary: idx === 0
+          })),
+          skipDuplicates: true
+        });
+      }
+    }
+
+    return res.json({ success: true, message: 'Trainer updated successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteTrainer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user || user.role !== 'TRAINER') {
+      return res.status(404).json({ success: false, message: 'Trainer not found.' });
+    }
+
+    await prisma.user.delete({ where: { id } });
+    return res.json({ success: true, message: 'Trainer account deleted successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+

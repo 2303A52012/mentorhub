@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/authMiddleware.js';
 import {
@@ -6,7 +6,8 @@ import {
   assignTrainerToBatch, removeTrainerFromBatch,
   getTrainingSessions, createOrUpdateTrainingSession, updateTrainingSession, deleteTrainingSession,
   getDailyProblems, createDailyProblem, updateDailyProblem, deleteDailyProblem,
-  getTrainerBatchStudents
+  getTrainerBatchStudents,
+  getTrainers, createTrainer, updateTrainer, deleteTrainer
 } from '../controllers/trainerController.js';
 
 const router = express.Router();
@@ -16,6 +17,12 @@ router.use(authenticate);
 router.get('/profile',                          getTrainerProfile);
 router.get('/profile/:trainerId',               getTrainerProfile);
 router.patch('/profile',                        authorize('TRAINER'), updateTrainerProfile);
+
+// Trainer Directory & Management (ADMIN only)
+router.get('/',                                 authorize('ADMIN'), getTrainers);
+router.post('/',                                authorize('ADMIN'), createTrainer);
+router.patch('/:id',                            authorize('ADMIN'), updateTrainer);
+router.delete('/:id',                           authorize('ADMIN'), deleteTrainer);
 
 // Batch assignments (ADMIN only)
 router.post('/assign-batch',                    authorize('ADMIN'), assignTrainerToBatch);

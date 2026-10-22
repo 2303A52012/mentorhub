@@ -29,7 +29,9 @@ import {
   UserMinus,
   UserPlus,
   CheckSquare,
-  Square
+  Square,
+  Briefcase,
+  Edit2
 } from 'lucide-react';
 
 import { useModal } from '../../context/ModalContext';
@@ -40,9 +42,10 @@ export const AdminUsers = () => {
   const isSuperAdmin = user?.isSuperAdmin || user?.email?.toLowerCase() === 'admin@sru.edu.in';
   const { showSuccess, showError, showConfirm } = useModal();
 
-  const [activeTab, setActiveTab] = useState('MENTEES'); // 'MENTEES' | 'MENTORS' | 'ADMINS'
+  const [activeTab, setActiveTab] = useState('MENTEES'); // 'MENTEES' | 'MENTORS' | 'TRAINERS' | 'ADMINS'
   const [mentees, setMentees] = useState([]);
   const [mentors, setMentors] = useState([]);
+  const [trainers, setTrainers] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,11 +62,34 @@ export const AdminUsers = () => {
   // Modals state
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [showMenteeModal, setShowMenteeModal] = useState(false);
+  const [showTrainerModal, setShowTrainerModal] = useState(false);
+  const [showEditTrainerModal, setShowEditTrainerModal] = useState(false);
+  const [editingTrainer, setEditingTrainer] = useState(null);
+  const [trainerLoading, setTrainerLoading] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetTargetUser, setResetTargetUser] = useState(null);
   const [resetRequests, setResetRequests] = useState([]);
   const [adminLoading, setAdminLoading] = useState(false);
+
+  // New Trainer Form State
+  const [trainerForm, setTrainerForm] = useState({
+    name: '',
+    email: '',
+    designation: 'Corporate Trainer',
+    bio: '',
+    password: 'Password@123',
+    batchIds: []
+  });
+
+  // Edit Trainer Form State
+  const [editTrainerForm, setEditTrainerForm] = useState({
+    name: '',
+    email: '',
+    designation: 'Corporate Trainer',
+    bio: '',
+    batchIds: []
+  });
 
   // Reallocation Modal State (Admin & Super Admin)
   const [showReallocateModal, setShowReallocateModal] = useState(false);
@@ -117,6 +143,7 @@ export const AdminUsers = () => {
       const promises = [
         api.get('/mentees'),
         api.get('/mentors'),
+        api.get('/trainers').catch(() => ({ data: { trainers: [] } })),
         api.get('/batches'),
         api.get('/auth/reset-requests').catch(() => ({ data: { requests: [] } }))
       ];
@@ -125,9 +152,10 @@ export const AdminUsers = () => {
         promises.push(api.get('/users/admins').catch(() => ({ data: { admins: [] } })));
       }
 
-      const [mRes, menRes, bRes, rRes, aRes] = await Promise.all(promises);
+      const [mRes, menRes, tRes, bRes, rRes, aRes] = await Promise.all(promises);
       if (mRes.data.success) setMentees(mRes.data.mentees || []);
       if (menRes.data.success) setMentors(menRes.data.mentors || []);
+      if (tRes?.data?.success) setTrainers(tRes.data.trainers || []);
       if (bRes.data.success) setBatches(bRes.data.batches || []);
       if (rRes?.data?.success) setResetRequests(rRes.data.requests || []);
       if (aRes?.data?.success) setAdmins(aRes.data.admins || []);
@@ -205,6 +233,98 @@ export const AdminUsers = () => {
           }
         } catch (err) {
           showError('Delete Failed', err.response?.data?.message || 'Failed to delete administrator account.');
+        }
+      }
+    });
+  };
+
+  const handleCreateTrainer = async (e) => {
+    e.preventDefault();
+    setTrainerLoading(true);
+    try {
+      const res = await api.post('/trainers', trainerForm);
+      if (res.data.success) {
+        showSuccess('Trainer Created', res.data.message || 'Trainer account has been created successfully!');
+        setShowTrainerModal(false);
+        setTrainerForm({
+          name: '',
+          email: '',
+          designation: 'Corporate Trainer',
+          bio: '',
+          password: 'Password@123',
+          batchIds: []
+        });
+        fetchData();
+        setActiveTab('TRAINERS');
+      }
+    } catch (err) {
+      showError('Failed to Create Trainer', err.response?.data?.message || 'Could not create trainer account.');
+    } finally {
+      setTrainerLoading(false);
+    }
+  };
+
+  const handleToggleTrainerStatus = async (trainer) => {
+    const newStatus = trainer.accountStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      const res = await api.patch(`/trainers/${trainer.id || trainer._id}`, { accountStatus: newStatus });
+      if (res.data.success) {
+        showSuccess('Status Updated', `Trainer '${trainer.name}' is now ${newStatus.toLowerCase()}.`);
+        setTrainers((prev) =>
+          prev.map((t) => (t.id === trainer.id || t._id === trainer._id ? { ...t, accountStatus: newStatus } : t))
+        );
+      }
+    } catch (err) {
+      showError('Update Failed', err.response?.data?.message || 'Failed to update trainer status.');
+    }
+  };
+
+  const handleOpenEditTrainer = (trainer) => {
+    setEditingTrainer(trainer);
+    setEditTrainerForm({
+      name: trainer.name || '',
+      email: trainer.email || '',
+      designation: trainer.profile?.designation || 'Corporate Trainer',
+      bio: trainer.profile?.bio || '',
+      batchIds: (trainer.batches || []).map((b) => b._id || b.id)
+    });
+    setShowEditTrainerModal(true);
+  };
+
+  const handleUpdateTrainer = async (e) => {
+    e.preventDefault();
+    if (!editingTrainer) return;
+    setTrainerLoading(true);
+    try {
+      const res = await api.patch(`/trainers/${editingTrainer.id || editingTrainer._id}`, editTrainerForm);
+      if (res.data.success) {
+        showSuccess('Trainer Updated', res.data.message || 'Trainer details updated successfully.');
+        setShowEditTrainerModal(false);
+        setEditingTrainer(null);
+        fetchData();
+      }
+    } catch (err) {
+      showError('Update Failed', err.response?.data?.message || 'Failed to update trainer.');
+    } finally {
+      setTrainerLoading(false);
+    }
+  };
+
+  const handleDeleteTrainer = (trainer) => {
+    showConfirm({
+      title: 'Delete Trainer',
+      message: `Are you sure you want to permanently delete trainer '${trainer.name}' (${trainer.email})? They will lose access to all assigned batches and training sessions immediately.`,
+      confirmText: 'Delete Trainer',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await api.delete(`/trainers/${trainer.id || trainer._id}`);
+          if (res.data.success) {
+            showSuccess('Trainer Deleted', res.data.message || 'Trainer account deleted successfully.');
+            setTrainers((prev) => prev.filter((t) => t.id !== trainer.id && t._id !== trainer._id));
+          }
+        } catch (err) {
+          showError('Delete Failed', err.response?.data?.message || 'Failed to delete trainer.');
         }
       }
     });
@@ -464,6 +584,32 @@ export const AdminUsers = () => {
     });
   }, [mentors, searchQuery, selectedBatch]);
 
+  // Filter Trainers
+  const filteredTrainers = useMemo(() => {
+    return trainers.filter((t) => {
+      const query = searchQuery.toLowerCase().trim();
+      const name = (t.name || '').toLowerCase();
+      const email = (t.email || '').toLowerCase();
+      const designation = (t.profile?.designation || '').toLowerCase();
+      const bio = (t.profile?.bio || '').toLowerCase();
+      const status = (t.accountStatus || '').toLowerCase();
+
+      const matchesSearch =
+        !query ||
+        name.includes(query) ||
+        email.includes(query) ||
+        designation.includes(query) ||
+        bio.includes(query) ||
+        status.includes(query);
+
+      const matchesBatch =
+        selectedBatch === 'ALL' ||
+        (t.batches && t.batches.some((b) => b._id === selectedBatch || b.id === selectedBatch || b.name === selectedBatch));
+
+      return matchesSearch && matchesBatch;
+    });
+  }, [trainers, searchQuery, selectedBatch]);
+
   // Filter Admins (Super Admin only)
   const filteredAdmins = useMemo(() => {
     return admins.filter((a) => {
@@ -482,6 +628,8 @@ export const AdminUsers = () => {
       ? filteredMentees
       : activeTab === 'MENTORS'
       ? filteredMentors
+      : activeTab === 'TRAINERS'
+      ? filteredTrainers
       : filteredAdmins;
   const totalPages = Math.ceil(activeItems.length / pageSize) || 1;
   const paginatedItems = activeItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -520,6 +668,12 @@ export const AdminUsers = () => {
               <ShieldCheck className="w-3.5 h-3.5" /> Add Admin
             </button>
           )}
+          <button
+            onClick={() => setShowTrainerModal(true)}
+            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/20"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Trainer
+          </button>
           <button
             onClick={() => setShowMentorModal(true)}
             className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white text-xs font-semibold transition border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-sm"
@@ -600,7 +754,7 @@ export const AdminUsers = () => {
 
       {/* Tabs & Quick Metrics */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
           <button
             onClick={() => {
               setActiveTab('MENTEES');
@@ -627,6 +781,19 @@ export const AdminUsers = () => {
           >
             <UserCheck className="w-4 h-4" /> Mentors ({mentors.length})
           </button>
+          <button
+            onClick={() => {
+              setActiveTab('TRAINERS');
+              resetFilters();
+            }}
+            className={`px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${
+              activeTab === 'TRAINERS'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm'
+            }`}
+          >
+            <Briefcase className="w-4 h-4" /> Trainers ({trainers.length})
+          </button>
           {isSuperAdmin && (
             <button
               onClick={() => {
@@ -651,6 +818,8 @@ export const AdminUsers = () => {
               ? `${mentees.length} students`
               : activeTab === 'MENTORS'
               ? `${mentors.length} mentors`
+              : activeTab === 'TRAINERS'
+              ? `${trainers.length} trainers`
               : `${admins.length} administrators`}
           </span>
           {hasActiveFilters && (
@@ -676,6 +845,8 @@ export const AdminUsers = () => {
                 ? 'Search student by Name, Roll No (e.g. 24A91A0501), Email, Branch...'
                 : activeTab === 'MENTORS'
                 ? 'Search mentor by Name, Faculty Roll No (e.g. FAC-CSE-001), Email, Department...'
+                : activeTab === 'TRAINERS'
+                ? 'Search trainer by Name, Email, Designation, Bio, Status...'
                 : 'Search administrator by Name, Email, Status...'
             }
             value={searchQuery}
@@ -1109,6 +1280,201 @@ export const AdminUsers = () => {
             </div>
           </div>
         </div>
+      ) : activeTab === 'TRAINERS' ? (
+        /* ==================== TRAINERS DIRECTORY TABLE ==================== */
+        <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden space-y-4 p-4">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800/80">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Corporate & Technical Trainers Roster
+              </h2>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Manage batch-scoped trainers, assign cohort batches, track specialization, and configure account access.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowTrainerModal(true)}
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Trainer
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th className="py-3 px-3">Trainer</th>
+                  <th className="py-3 px-3">Designation & Specialization</th>
+                  <th className="py-3 px-3">Assigned Cohort Batches</th>
+                  <th className="py-3 px-3 text-center">Status</th>
+                  <th className="py-3 px-3">Created At</th>
+                  <th className="py-3 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
+                {paginatedItems.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-10 text-slate-500">
+                      No trainer records found matching your filters.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedItems.map((t) => (
+                    <tr key={t._id || t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition">
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center font-bold text-xs">
+                            {t.name ? t.name.charAt(0).toUpperCase() : 'T'}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                              {t.name}
+                            </div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono flex items-center gap-1">
+                              <Mail className="w-3 h-3 text-slate-400 dark:text-slate-500" /> {t.email}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="font-medium text-slate-800 dark:text-slate-200">
+                          {t.profile?.designation || 'Corporate Trainer'}
+                        </div>
+                        {t.profile?.bio && (
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 italic truncate max-w-xs">
+                            "{t.profile.bio}"
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-3">
+                        {t.batches && t.batches.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {t.batches.map((b) => (
+                              <span
+                                key={b._id || b.id}
+                                className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-mono font-medium"
+                              >
+                                <FolderGit2 className="w-2.5 h-2.5" />
+                                {b.name}
+                                {b.isPrimary && (
+                                  <span className="text-[9px] bg-emerald-500/20 px-1 rounded text-emerald-800 dark:text-emerald-300 font-bold">
+                                    Primary
+                                  </span>
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500 text-[10px]">No batch assigned</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span
+                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
+                            t.accountStatus === 'ACTIVE'
+                              ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
+                              : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/20'
+                          }`}
+                        >
+                          {t.accountStatus || 'ACTIVE'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-slate-500 dark:text-slate-400 text-[11px]">
+                        {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td className="py-3 px-3 text-right space-x-1.5">
+                        <button
+                          onClick={() => handleOpenEditTrainer(t)}
+                          title="Edit Trainer & Cohort Batches"
+                          className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-medium text-[11px] border border-emerald-200 dark:border-emerald-500/30 transition inline-flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleTrainerStatus(t)}
+                          title={t.accountStatus === 'ACTIVE' ? 'Deactivate Trainer' : 'Activate Trainer'}
+                          className={`px-2.5 py-1 rounded-lg font-medium text-[11px] border transition inline-flex items-center gap-1 ${
+                            t.accountStatus === 'ACTIVE'
+                              ? 'bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30'
+                              : 'bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30'
+                          }`}
+                        >
+                          {t.accountStatus === 'ACTIVE' ? (
+                            <>
+                              <UserMinus className="w-3 h-3" /> Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck className="w-3 h-3" /> Activate
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setResetTargetUser(t);
+                            setShowResetModal(true);
+                          }}
+                          title="Reset Password"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-[11px] border border-slate-200 dark:border-slate-700 transition inline-flex items-center gap-1"
+                        >
+                          <Key className="w-3 h-3" /> Reset
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTrainer(t)}
+                          title="Delete Trainer"
+                          className="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-medium text-[11px] border border-rose-200 dark:border-rose-500/30 transition inline-flex items-center"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+            <div className="flex items-center gap-2">
+              <span>Rows per page:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-200 focus:outline-none"
+              >
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span>
+                Page <strong className="text-slate-900 dark:text-white">{currentPage}</strong> of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-40 text-slate-700 dark:text-slate-200"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-40 text-slate-700 dark:text-slate-200"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
       ) : (
         /* ==================== ADMINISTRATORS DIRECTORY TABLE (SUPER ADMIN EXCLUSIVE) ==================== */
         <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden space-y-4 p-4">
@@ -1285,6 +1651,273 @@ export const AdminUsers = () => {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trainer Creation Modal */}
+      {showTrainerModal && (
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-500/30">
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Create Trainer Account</h3>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Corporate & Technical Faculty</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTrainerModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTrainer} className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Trainer Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={trainerForm.name}
+                  onChange={(e) => setTrainerForm({ ...trainerForm, name: e.target.value })}
+                  placeholder="e.g. Alex Mercer"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  value={trainerForm.email}
+                  onChange={(e) => setTrainerForm({ ...trainerForm, email: e.target.value })}
+                  placeholder="trainer@sru.edu.in"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Designation / Role</label>
+                <input
+                  type="text"
+                  value={trainerForm.designation}
+                  onChange={(e) => setTrainerForm({ ...trainerForm, designation: e.target.value })}
+                  placeholder="e.g. Corporate Trainer, Lead DSA Instructor"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Bio / Specialization</label>
+                <textarea
+                  rows={2}
+                  value={trainerForm.bio}
+                  onChange={(e) => setTrainerForm({ ...trainerForm, bio: e.target.value })}
+                  placeholder="e.g. Competitive Programming, Dynamic Programming, System Design..."
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Initial Password</label>
+                <input
+                  type="text"
+                  value={trainerForm.password}
+                  onChange={(e) => setTrainerForm({ ...trainerForm, password: e.target.value })}
+                  placeholder="Password@123"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+                <p className="text-[10px] text-slate-400">User will be prompted to change password upon initial login.</p>
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium flex items-center justify-between">
+                  <span>Assign Cohort Batches</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {trainerForm.batchIds.length} batch(es) selected
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                  {batches.map((b) => {
+                    const bId = b._id || b.id;
+                    const isSelected = trainerForm.batchIds.includes(bId);
+                    return (
+                      <button
+                        type="button"
+                        key={bId}
+                        onClick={() => {
+                          setTrainerForm((prev) => ({
+                            ...prev,
+                            batchIds: isSelected
+                              ? prev.batchIds.filter((id) => id !== bId)
+                              : [...prev.batchIds, bId]
+                          }));
+                        }}
+                        className={`px-2.5 py-1.5 rounded-lg text-left text-xs transition border flex items-center gap-1.5 truncate ${
+                          isSelected
+                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40 font-bold'
+                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+                        }`}
+                      >
+                        <FolderGit2 className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{b.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowTrainerModal(false)}
+                  className="px-4 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={trainerLoading}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-600/20 disabled:opacity-50"
+                >
+                  {trainerLoading ? 'Creating...' : 'Create Trainer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Trainer Edit Modal */}
+      {showEditTrainerModal && editingTrainer && (
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-500/30">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Edit Trainer Profile</h3>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">{editingTrainer.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditTrainerModal(false);
+                  setEditingTrainer(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateTrainer} className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Trainer Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTrainerForm.name}
+                  onChange={(e) => setEditTrainerForm({ ...editTrainerForm, name: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Email Address</label>
+                <input
+                  type="email"
+                  value={editTrainerForm.email}
+                  onChange={(e) => setEditTrainerForm({ ...editTrainerForm, email: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Designation</label>
+                <input
+                  type="text"
+                  value={editTrainerForm.designation}
+                  onChange={(e) => setEditTrainerForm({ ...editTrainerForm, designation: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium">Bio / Specialization</label>
+                <textarea
+                  rows={2}
+                  value={editTrainerForm.bio}
+                  onChange={(e) => setEditTrainerForm({ ...editTrainerForm, bio: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <label className="text-slate-700 dark:text-slate-300 font-medium flex items-center justify-between">
+                  <span>Assigned Cohort Batches</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {editTrainerForm.batchIds.length} batch(es) selected
+                  </span>
+                </label>
+                <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto p-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                  {batches.map((b) => {
+                    const bId = b._id || b.id;
+                    const isSelected = editTrainerForm.batchIds.includes(bId);
+                    return (
+                      <button
+                        type="button"
+                        key={bId}
+                        onClick={() => {
+                          setEditTrainerForm((prev) => ({
+                            ...prev,
+                            batchIds: isSelected
+                              ? prev.batchIds.filter((id) => id !== bId)
+                              : [...prev.batchIds, bId]
+                          }));
+                        }}
+                        className={`px-2.5 py-1.5 rounded-lg text-left text-xs transition border flex items-center gap-1.5 truncate ${
+                          isSelected
+                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40 font-bold'
+                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800'
+                        }`}
+                      >
+                        <FolderGit2 className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{b.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditTrainerModal(false);
+                    setEditingTrainer(null);
+                  }}
+                  className="px-4 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={trainerLoading}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-600/20 disabled:opacity-50"
+                >
+                  {trainerLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

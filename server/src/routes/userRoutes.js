@@ -17,6 +17,12 @@ import {
   updateAdmin,
   deleteAdmin
 } from '../controllers/userController.js';
+import {
+  getTrainers,
+  createTrainer,
+  updateTrainer,
+  deleteTrainer
+} from '../controllers/trainerController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { authorizeRoles, requireSuperAdmin } from '../middleware/roleMiddleware.js';
 
@@ -53,6 +59,12 @@ router.get('/mentors', authorizeRoles('ADMIN', 'MENTOR'), getMentors);
 router.post('/mentors', authorizeRoles('ADMIN'), createMentor);
 router.get('/mentors/:id', authorizeRoles('ADMIN', 'MENTOR'), getMentorById);
 router.patch('/mentors/:id', authorizeRoles('ADMIN', 'MENTOR'), updateMentor);
+
+// Trainers routes
+router.get('/trainers', authorizeRoles('ADMIN'), getTrainers);
+router.post('/trainers', authorizeRoles('ADMIN'), createTrainer);
+router.patch('/trainers/:id', authorizeRoles('ADMIN'), updateTrainer);
+router.delete('/trainers/:id', authorizeRoles('ADMIN'), deleteTrainer);
 
 // Admin Profile routes
 router.get('/admin/profile', authorizeRoles('ADMIN'), getAdminProfile);
