@@ -127,7 +127,7 @@ export const getTrainingSessions = async (req, res, next) => {
 export const createOrUpdateTrainingSession = async (req, res, next) => {
   try {
     const { id: userId, role } = req.user;
-    const { batchId, date, topicsTaught = [], notes = '', trainerId } = req.body;
+    const { batchId, date, topicsTaught = [], problemsSolved = [], notes = '', trainerId } = req.body;
 
     if (!batchId || !date) return res.status(400).json({ success: false, message: 'batchId and date are required.' });
 
@@ -157,13 +157,35 @@ export const createOrUpdateTrainingSession = async (req, res, next) => {
         where: { id: existing.id },
         data: { topicsTaught, notes, trainerId: effectiveTrainerId }
       });
+      if (Array.isArray(problemsSolved)) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "TrainingSession" SET "problemsSolved" = $1 WHERE "id" = $2`,
+          problemsSolved,
+          existing.id
+        );
+      }
     } else {
       session = await prisma.trainingSession.create({
         data: { batchId, trainerId: effectiveTrainerId, date: sessionDate, topicsTaught, notes }
       });
+      if (Array.isArray(problemsSolved) && problemsSolved.length > 0) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "TrainingSession" SET "problemsSolved" = $1 WHERE "id" = $2`,
+          problemsSolved,
+          session.id
+        );
+      }
     }
 
-    return res.status(201).json({ success: true, session });
+    const fullSession = await prisma.trainingSession.findUnique({
+      where: { id: session.id },
+      include: {
+        trainer: { select: { id: true, name: true, email: true } },
+        batch: { select: { id: true, name: true } }
+      }
+    });
+
+    return res.status(201).json({ success: true, session: fullSession });
   } catch (err) { next(err); }
 };
 
@@ -171,7 +193,7 @@ export const updateTrainingSession = async (req, res, next) => {
   try {
     const { id: userId, role } = req.user;
     const { id } = req.params;
-    const { topicsTaught, notes, date } = req.body;
+    const { topicsTaught, problemsSolved, notes, date } = req.body;
 
     const session = await prisma.trainingSession.findUnique({ where: { id } });
     if (!session) return res.status(404).json({ success: false, message: 'Session not found.' });
@@ -185,7 +207,24 @@ export const updateTrainingSession = async (req, res, next) => {
         ...(date ? { date: new Date(date) } : {})
       }
     });
-    return res.json({ success: true, session: updated });
+
+    if (Array.isArray(problemsSolved)) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "TrainingSession" SET "problemsSolved" = $1 WHERE "id" = $2`,
+        problemsSolved,
+        id
+      );
+    }
+
+    const fullSession = await prisma.trainingSession.findUnique({
+      where: { id },
+      include: {
+        trainer: { select: { id: true, name: true, email: true } },
+        batch: { select: { id: true, name: true } }
+      }
+    });
+
+    return res.json({ success: true, session: fullSession });
   } catch (err) { next(err); }
 };
 
