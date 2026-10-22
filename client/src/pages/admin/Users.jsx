@@ -31,7 +31,8 @@ import {
   CheckSquare,
   Square,
   Briefcase,
-  Edit2
+  Edit2,
+  MoreVertical
 } from 'lucide-react';
 
 import { useModal } from '../../context/ModalContext';
@@ -55,9 +56,10 @@ export const AdminUsers = () => {
   const [selectedBatch, setSelectedBatch] = useState('ALL');
   const [selectedMentor, setSelectedMentor] = useState('ALL');
 
-  // Pagination State
+  // Pagination & Action Menu State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const [activeMenuId, setActiveMenuId] = useState(null);
 
   // Modals state
   const [showMentorModal, setShowMentorModal] = useState(false);
@@ -170,10 +172,22 @@ export const AdminUsers = () => {
     fetchData();
   }, []);
 
-  // Reset pagination on tab or filter change
+  // Close action menus when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.user-action-menu')) {
+        setActiveMenuId(null);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  // Reset pagination & close menu on tab or filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchQuery, selectedBatch, selectedMentor]);
+    setActiveMenuId(null);
+  }, [activeTab, searchQuery, selectedBatch, selectedMentor, pageSize]);
 
   const handleCreateAdmin = async (e) => {
     e.preventDefault();
@@ -356,6 +370,76 @@ export const AdminUsers = () => {
     } catch (err) {
       showError('Creation Failed', err.response?.data?.message || 'Failed to create mentee account.');
     }
+  };
+
+  const handleToggleMenteeStatus = async (mentee) => {
+    const newStatus = mentee.accountStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      const res = await api.patch(`/mentees/${mentee.id || mentee._id}`, { accountStatus: newStatus });
+      if (res.data.success) {
+        showSuccess('Status Updated', `Student '${mentee.name}' is now ${newStatus.toLowerCase()}.`);
+        setMentees((prev) =>
+          prev.map((m) => (m.id === mentee.id || m._id === mentee._id ? { ...m, accountStatus: newStatus } : m))
+        );
+      }
+    } catch (err) {
+      showError('Update Failed', err.response?.data?.message || 'Failed to update student status.');
+    }
+  };
+
+  const handleDeleteMentee = (mentee) => {
+    showConfirm({
+      title: 'Delete Student',
+      message: `Are you sure you want to permanently delete student '${mentee.name}' (${mentee.email})? All associated tasks, submissions, and mentor assignments will be removed.`,
+      confirmText: 'Delete Student',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await api.delete(`/mentees/${mentee.id || mentee._id}`);
+          if (res.data.success) {
+            showSuccess('Student Deleted', res.data.message || 'Student removed successfully.');
+            setMentees((prev) => prev.filter((m) => m.id !== mentee.id && m._id !== mentee._id));
+          }
+        } catch (err) {
+          showError('Delete Failed', err.response?.data?.message || 'Failed to delete student.');
+        }
+      }
+    });
+  };
+
+  const handleToggleMentorStatus = async (mentor) => {
+    const newStatus = mentor.accountStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      const res = await api.patch(`/mentors/${mentor.id || mentor._id}`, { accountStatus: newStatus });
+      if (res.data.success) {
+        showSuccess('Status Updated', `Faculty mentor '${mentor.name}' is now ${newStatus.toLowerCase()}.`);
+        setMentors((prev) =>
+          prev.map((m) => (m.id === mentor.id || m._id === mentor._id ? { ...m, accountStatus: newStatus } : m))
+        );
+      }
+    } catch (err) {
+      showError('Update Failed', err.response?.data?.message || 'Failed to update mentor status.');
+    }
+  };
+
+  const handleDeleteMentor = (mentor) => {
+    showConfirm({
+      title: 'Delete Faculty Mentor',
+      message: `Are you sure you want to permanently delete mentor '${mentor.name}' (${mentor.email})? If they have active assigned mentees, please reallocate them first.`,
+      confirmText: 'Delete Mentor',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await api.delete(`/mentors/${mentor.id || mentor._id}`);
+          if (res.data.success) {
+            showSuccess('Mentor Deleted', res.data.message || 'Faculty mentor removed successfully.');
+            setMentors((prev) => prev.filter((m) => m.id !== mentor.id && m._id !== mentor._id));
+          }
+        } catch (err) {
+          showError('Delete Failed', err.response?.data?.message || 'Failed to delete mentor.');
+        }
+      }
+    });
   };
 
   // Available mentees for the chosen source mentor in reallocation modal
@@ -925,7 +1009,7 @@ export const AdminUsers = () => {
       ) : activeTab === 'MENTEES' ? (
         /* ==================== MENTEES DIRECTORY TABLE ==================== */
         <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden space-y-4 p-4">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[300px]">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
@@ -1061,35 +1145,90 @@ export const AdminUsers = () => {
                         </div>
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold">
-                          {m.accountStatus}
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded font-bold border ${
+                            m.accountStatus === 'ACTIVE'
+                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
+                          }`}
+                        >
+                          {m.accountStatus || 'ACTIVE'}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3 px-3 text-right relative user-action-menu">
+                        <div className="relative inline-block text-left">
                           <button
-                            onClick={() => handleOpenSingleReassignModal(m)}
-                            title="Reassign this student to another mentor"
-                            className="px-2 py-1 rounded-lg bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-medium text-[11px] border border-sky-200 dark:border-sky-500/30 transition inline-flex items-center gap-1"
-                          >
-                            <ArrowRightLeft className="w-3 h-3" /> Reassign
-                          </button>
-                          <button
-                            onClick={() => {
-                              setResetTargetUser(m);
-                              setShowResetModal(true);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const id = m._id || m.id;
+                              setActiveMenuId(activeMenuId === `mentee-${id}` ? null : `mentee-${id}`);
                             }}
-                            title="Reset Password (Direct Admin Override)"
-                            className="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-medium text-[11px] border border-amber-200 dark:border-amber-500/30 transition inline-flex items-center gap-1"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                            title="Actions"
                           >
-                            <Key className="w-3 h-3" /> Reset
+                            <MoreVertical className="w-4 h-4" />
                           </button>
-                          <Link
-                            to={`/admin/mentees/${m._id || m.id}`}
-                            className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-600/20 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-indigo-700 dark:text-indigo-300 font-medium text-[11px] border border-indigo-200 dark:border-indigo-500/30 transition inline-flex items-center gap-1"
-                          >
-                            Profile ↗
-                          </Link>
+
+                          {activeMenuId === `mentee-${m._id || m.id}` && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 mt-1 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1 z-50 text-left animate-in fade-in zoom-in-95 duration-100"
+                            >
+                              <Link
+                                to={`/admin/mentees/${m._id || m.id}`}
+                                onClick={() => setActiveMenuId(null)}
+                                className="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 text-indigo-500" /> View Profile
+                              </Link>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  handleOpenSingleReassignModal(m);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                <ArrowRightLeft className="w-3.5 h-3.5 text-sky-500" /> Reassign Mentor
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  setResetTargetUser(m);
+                                  setShowResetModal(true);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                <Key className="w-3.5 h-3.5 text-amber-500" /> Reset Password
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  handleToggleMenteeStatus(m);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                {m.accountStatus === 'ACTIVE' ? (
+                                  <>
+                                    <UserMinus className="w-3.5 h-3.5 text-amber-500" /> Deactivate Student
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserCheck className="w-3.5 h-3.5 text-emerald-500" /> Activate Student
+                                  </>
+                                )}
+                              </button>
+                              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  handleDeleteMentee(m);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-medium transition"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Delete Student
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1142,7 +1281,7 @@ export const AdminUsers = () => {
       ) : activeTab === 'MENTORS' ? (
         /* ==================== MENTORS DIRECTORY TABLE ==================== */
         <div className="bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden space-y-4 p-4">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[300px]">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
@@ -1204,34 +1343,91 @@ export const AdminUsers = () => {
                         </span>
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-bold">
-                          {m.accountStatus}
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded font-bold border ${
+                            m.accountStatus === 'ACTIVE'
+                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+                              : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20'
+                          }`}
+                        >
+                          {m.accountStatus || 'ACTIVE'}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-right space-x-1.5">
-                        <button
-                          onClick={() => handleOpenReallocateModal(m)}
-                          title="Reallocate students of this mentor to another mentor"
-                          className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-medium text-[11px] border border-amber-200 dark:border-amber-500/30 transition inline-flex items-center gap-1"
-                        >
-                          <ArrowRightLeft className="w-3 h-3" /> Reallocate
-                        </button>
-                        <Link
-                          to={`/admin/mentors/${m._id || m.id}`}
-                          className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-medium text-[11px] border border-indigo-200 dark:border-indigo-500/30 transition inline-flex items-center gap-1"
-                        >
-                          Profile ↗
-                        </Link>
-                        <button
-                          onClick={() => {
-                            setResetTargetUser(m);
-                            setShowResetModal(true);
-                          }}
-                          title="Reset Password (Direct Admin Override)"
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-[11px] border border-slate-200 dark:border-slate-700 transition inline-flex items-center gap-1"
-                        >
-                          <Key className="w-3 h-3" /> Reset Password
-                        </button>
+                      <td className="py-3 px-3 text-right relative user-action-menu">
+                        <div className="relative inline-block text-left">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const id = m._id || m.id;
+                              setActiveMenuId(activeMenuId === `mentor-${id}` ? null : `mentor-${id}`);
+                            }}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                            title="Actions"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {activeMenuId === `mentor-${m._id || m.id}` && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 mt-1 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1 z-50 text-left animate-in fade-in zoom-in-95 duration-100"
+                            >
+                              <Link
+                                to={`/admin/mentors/${m._id || m.id}`}
+                                onClick={() => setActiveMenuId(null)}
+                                className="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 text-indigo-500" /> View Profile
+                              </Link>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  handleOpenReallocateModal(m);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                <ArrowRightLeft className="w-3.5 h-3.5 text-amber-500" /> Reallocate Mentees
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  setResetTargetUser(m);
+                                  setShowResetModal(true);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                <Key className="w-3.5 h-3.5 text-indigo-500" /> Reset Password
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  handleToggleMentorStatus(m);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                {m.accountStatus === 'ACTIVE' ? (
+                                  <>
+                                    <UserMinus className="w-3.5 h-3.5 text-amber-500" /> Deactivate Mentor
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserCheck className="w-3.5 h-3.5 text-emerald-500" /> Activate Mentor
+                                  </>
+                                )}
+                              </button>
+                              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  handleDeleteMentor(m);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-medium transition"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Delete Faculty Mentor
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -1300,7 +1496,7 @@ export const AdminUsers = () => {
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[300px]">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
@@ -1383,50 +1579,74 @@ export const AdminUsers = () => {
                       <td className="py-3 px-3 text-slate-500 dark:text-slate-400 text-[11px]">
                         {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'N/A'}
                       </td>
-                      <td className="py-3 px-3 text-right space-x-1.5">
-                        <button
-                          onClick={() => handleOpenEditTrainer(t)}
-                          title="Edit Trainer & Cohort Batches"
-                          className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-medium text-[11px] border border-emerald-200 dark:border-emerald-500/30 transition inline-flex items-center gap-1"
-                        >
-                          <Edit2 className="w-3 h-3" /> Edit
-                        </button>
-                        <button
-                          onClick={() => handleToggleTrainerStatus(t)}
-                          title={t.accountStatus === 'ACTIVE' ? 'Deactivate Trainer' : 'Activate Trainer'}
-                          className={`px-2.5 py-1 rounded-lg font-medium text-[11px] border transition inline-flex items-center gap-1 ${
-                            t.accountStatus === 'ACTIVE'
-                              ? 'bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-500/30'
-                              : 'bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30'
-                          }`}
-                        >
-                          {t.accountStatus === 'ACTIVE' ? (
-                            <>
-                              <UserMinus className="w-3 h-3" /> Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="w-3 h-3" /> Activate
-                            </>
+                      <td className="py-3 px-3 text-right relative user-action-menu">
+                        <div className="relative inline-block text-left">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const id = t._id || t.id;
+                              setActiveMenuId(activeMenuId === `trainer-${id}` ? null : `trainer-${id}`);
+                            }}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                            title="Actions"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {activeMenuId === `trainer-${t._id || t.id}` && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 mt-1 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1 z-50 text-left animate-in fade-in zoom-in-95 duration-100"
+                            >
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  handleOpenEditTrainer(t);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                <Edit2 className="w-3.5 h-3.5 text-emerald-500" /> Edit & Cohorts
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  setResetTargetUser(t);
+                                  setShowResetModal(true);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                <Key className="w-3.5 h-3.5 text-amber-500" /> Reset Password
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  handleToggleTrainerStatus(t);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                              >
+                                {t.accountStatus === 'ACTIVE' ? (
+                                  <>
+                                    <UserMinus className="w-3.5 h-3.5 text-amber-500" /> Deactivate Trainer
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserCheck className="w-3.5 h-3.5 text-emerald-500" /> Activate Trainer
+                                  </>
+                                )}
+                              </button>
+                              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  handleDeleteTrainer(t);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-medium transition"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Delete Trainer
+                              </button>
+                            </div>
                           )}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setResetTargetUser(t);
-                            setShowResetModal(true);
-                          }}
-                          title="Reset Password"
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-[11px] border border-slate-200 dark:border-slate-700 transition inline-flex items-center gap-1"
-                        >
-                          <Key className="w-3 h-3" /> Reset
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTrainer(t)}
-                          title="Delete Trainer"
-                          className="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-medium text-[11px] border border-rose-200 dark:border-rose-500/30 transition inline-flex items-center"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -1495,7 +1715,7 @@ export const AdminUsers = () => {
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[300px]">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-900/90 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
                 <tr>
@@ -1573,35 +1793,67 @@ export const AdminUsers = () => {
                         <td className="py-3 px-3 text-slate-500 dark:text-slate-400 text-[11px]">
                           {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : 'N/A'}
                         </td>
-                        <td className="py-3 px-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="py-3 px-3 text-right relative user-action-menu">
+                          <div className="relative inline-block text-left">
                             <button
-                              onClick={() => {
-                                setResetTargetUser(a);
-                                setShowResetModal(true);
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const id = a._id || a.id;
+                                setActiveMenuId(activeMenuId === `admin-${id}` ? null : `admin-${id}`);
                               }}
-                              title="Reset Admin Password"
-                              className="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-medium text-[11px] border border-amber-200 dark:border-amber-500/30 transition inline-flex items-center gap-1"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                              title="Actions"
                             >
-                              <Key className="w-3 h-3" /> Reset
+                              <MoreVertical className="w-4 h-4" />
                             </button>
-                            {!isSuper && (
-                              <>
+
+                            {activeMenuId === `admin-${a._id || a.id}` && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-0 mt-1 w-48 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl py-1 z-50 text-left animate-in fade-in zoom-in-95 duration-100"
+                              >
                                 <button
-                                  onClick={() => handleToggleAdminStatus(a)}
-                                  title={a.accountStatus === 'ACTIVE' ? 'Deactivate Admin' : 'Activate Admin'}
-                                  className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-[11px] border border-slate-200 dark:border-slate-700 transition"
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    setResetTargetUser(a);
+                                    setShowResetModal(true);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
                                 >
-                                  {a.accountStatus === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                                  <Key className="w-3.5 h-3.5 text-amber-500" /> Reset Password
                                 </button>
-                                <button
-                                  onClick={() => handleDeleteAdmin(a)}
-                                  title="Delete Admin"
-                                  className="p-1 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </>
+                                {!isSuper && (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setActiveMenuId(null);
+                                        handleToggleAdminStatus(a);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium transition"
+                                    >
+                                      {a.accountStatus === 'ACTIVE' ? (
+                                        <>
+                                          <UserMinus className="w-3.5 h-3.5 text-amber-500" /> Deactivate Admin
+                                        </>
+                                      ) : (
+                                        <>
+                                          <UserCheck className="w-3.5 h-3.5 text-emerald-500" /> Activate Admin
+                                        </>
+                                      )}
+                                    </button>
+                                    <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                                    <button
+                                      onClick={() => {
+                                        setActiveMenuId(null);
+                                        handleDeleteAdmin(a);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-medium transition"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Delete Administrator
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             )}
                           </div>
                         </td>

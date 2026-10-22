@@ -15,7 +15,9 @@ import {
   getAdmins,
   createAdmin,
   updateAdmin,
-  deleteAdmin
+  deleteAdmin,
+  deleteMentee,
+  deleteMentor
 } from '../controllers/userController.js';
 import {
   getTrainers,
@@ -51,6 +53,7 @@ router.get('/mentees', authorizeRoles('ADMIN', 'MENTOR'), getMentees);
 router.post('/mentees', authorizeRoles('ADMIN', 'MENTOR'), createMentee);
 router.get('/mentees/:id', getMenteeById);
 router.patch('/mentees/:id', updateMentee);
+router.delete('/mentees/:id', authorizeRoles('ADMIN'), deleteMentee);
 router.post('/mentees/:id/mentors', authorizeRoles('ADMIN'), assignMentorToMentee);
 router.post('/users/mentees/:id/mentors', authorizeRoles('ADMIN'), assignMentorToMentee);
 
@@ -59,6 +62,7 @@ router.get('/mentors', authorizeRoles('ADMIN', 'MENTOR'), getMentors);
 router.post('/mentors', authorizeRoles('ADMIN'), createMentor);
 router.get('/mentors/:id', authorizeRoles('ADMIN', 'MENTOR'), getMentorById);
 router.patch('/mentors/:id', authorizeRoles('ADMIN', 'MENTOR'), updateMentor);
+router.delete('/mentors/:id', authorizeRoles('ADMIN'), deleteMentor);
 
 // Trainers routes
 router.get('/trainers', authorizeRoles('ADMIN'), getTrainers);

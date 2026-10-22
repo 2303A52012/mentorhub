@@ -1478,3 +1478,77 @@ export const deleteAdmin = async (req, res, next) => {
   }
 };
 
+export const deleteMentee = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const mentee = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!mentee || mentee.role !== 'MENTEE') {
+      return res.status(404).json({ success: false, message: 'Mentee not found.' });
+    }
+
+    await prisma.user.delete({
+      where: { id }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user.id || req.user._id,
+        action: 'DELETE_MENTEE',
+        resourceType: 'User',
+        resourceId: id,
+        details: {
+          deletedMenteeEmail: mentee.email,
+          deletedMenteeName: mentee.name
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Student '${mentee.name}' has been permanently deleted.`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteMentor = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const mentor = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!mentor || mentor.role !== 'MENTOR') {
+      return res.status(404).json({ success: false, message: 'Mentor not found.' });
+    }
+
+    await prisma.user.delete({
+      where: { id }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user.id || req.user._id,
+        action: 'DELETE_MENTOR',
+        resourceType: 'User',
+        resourceId: id,
+        details: {
+          deletedMentorEmail: mentor.email,
+          deletedMentorName: mentor.name
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Faculty mentor '${mentor.name}' has been permanently deleted.`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
