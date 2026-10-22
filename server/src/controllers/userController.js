@@ -17,6 +17,17 @@ export const getMentees = async (req, res, next) => {
         select: { menteeId: true }
       });
       menteeUserIds = assignments.map((a) => a.menteeId);
+    } else if (req.user.role === 'TRAINER') {
+      const trainerBatches = await prisma.trainerBatch.findMany({
+        where: { trainerId: userId },
+        select: { batchId: true }
+      });
+      const trainerBatchIds = trainerBatches.map((tb) => tb.batchId);
+      const batchMentees = await prisma.batchMentee.findMany({
+        where: { batchId: { in: trainerBatchIds } },
+        select: { menteeId: true }
+      });
+      menteeUserIds = batchMentees.map((bm) => bm.menteeId);
     } else if (mentorId && mentorId !== 'ALL') {
       const assignments = await prisma.mentorMenteeAssignment.findMany({
         where: {

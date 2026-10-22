@@ -17,6 +17,21 @@ export const getTaskReviews = async (req, res, next) => {
       where = {
         OR: [{ reviewerId: userId }, { menteeId: { in: menteeIds } }]
       };
+    } else if (req.user.role === 'TRAINER') {
+      const trainerBatches = await prisma.trainerBatch.findMany({
+        where: { trainerId: userId },
+        select: { batchId: true }
+      });
+      const trainerBatchIds = trainerBatches.map((tb) => tb.batchId);
+      const batchMentees = await prisma.batchMentee.findMany({
+        where: { batchId: { in: trainerBatchIds } },
+        select: { menteeId: true }
+      });
+      const menteeIds = batchMentees.map((bm) => bm.menteeId);
+
+      where = {
+        OR: [{ reviewerId: userId }, { menteeId: { in: menteeIds } }]
+      };
     }
 
     if (status) {

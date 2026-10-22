@@ -218,7 +218,12 @@ export const MentorTasks = () => {
 
   const canManage = (task) => {
     if (!user) return false;
-    return user.role === 'ADMIN' || user.role === 'MENTOR' || isSelfCreator(task);
+    return (
+      user.role === 'ADMIN' ||
+      user.role === 'MENTOR' ||
+      user.role === 'TRAINER' ||
+      isSelfCreator(task)
+    );
   };
 
   const isPastDue = (lastDate) => {
@@ -298,7 +303,13 @@ export const MentorTasks = () => {
         </div>
 
         <Link
-          to={user?.role === 'ADMIN' ? '/admin/tasks/create' : '/mentor/tasks/create'}
+          to={
+            user?.role === 'ADMIN'
+              ? '/admin/tasks/create'
+              : user?.role === 'TRAINER'
+              ? '/trainer/tasks/create'
+              : '/mentor/tasks/create'
+          }
           className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition flex items-center gap-2 shadow-lg shadow-indigo-600/30"
         >
           <PlusCircle className="w-4 h-4" /> Create Weekly Task
@@ -478,7 +489,13 @@ export const MentorTasks = () => {
 
                 <div className="pt-2 flex flex-wrap items-center gap-2">
                   <Link
-                    to={user?.role === 'ADMIN' ? '/admin/reviews' : '/mentor/reviews'}
+                    to={
+                      user?.role === 'ADMIN'
+                        ? '/admin/reviews'
+                        : user?.role === 'TRAINER'
+                        ? '/trainer/reviews'
+                        : '/mentor/reviews'
+                    }
                     className="flex-1 py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-medium text-xs transition border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-1.5"
                   >
                     Submissions &rarr;

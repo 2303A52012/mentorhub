@@ -49,7 +49,7 @@ router.post('/reallocate-mentor', authorizeRoles('ADMIN'), reallocateMentor);
 router.post('/users/reallocate-mentor', authorizeRoles('ADMIN'), reallocateMentor);
 
 // Mentees routes
-router.get('/mentees', authorizeRoles('ADMIN', 'MENTOR'), getMentees);
+router.get('/mentees', authorizeRoles('ADMIN', 'MENTOR', 'TRAINER'), getMentees);
 router.post('/mentees', authorizeRoles('ADMIN', 'MENTOR'), createMentee);
 router.get('/mentees/:id', getMenteeById);
 router.patch('/mentees/:id', updateMentee);

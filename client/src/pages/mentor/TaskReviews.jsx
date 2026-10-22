@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { StatusBadge } from '../../components/common/Badge';
+import { useAuth } from '../../context/AuthContext';
 import { FileCheck, Search, Filter, Clock, Star, ArrowRight } from 'lucide-react';
 
 export const MentorTaskReviews = () => {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
@@ -138,7 +140,13 @@ export const MentorTaskReviews = () => {
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <Link
-                          to={`/mentor/reviews/${r._id}`}
+                          to={
+                            user?.role === 'ADMIN'
+                              ? `/admin/reviews/${r._id}`
+                              : user?.role === 'TRAINER'
+                              ? `/trainer/reviews/${r._id}`
+                              : `/mentor/reviews/${r._id}`
+                          }
                           className={`px-3 py-1.5 rounded-lg font-medium text-[11px] transition inline-flex items-center gap-1 ${
                             r.status === 'SUBMITTED' || r.status === 'UNDER_REVIEW'
                               ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30'

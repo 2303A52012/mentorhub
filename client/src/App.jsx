@@ -340,7 +340,7 @@ export default function App() {
           }
         />
 
-        {/* Trainer Routes */}
+        {/* Trainer Routes — Reusing finalized components */}
         <Route
           path="trainer/dashboard"
           element={
@@ -351,6 +351,14 @@ export default function App() {
         />
         <Route
           path="trainer/calendar"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <TrainingCalendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/training-calendar"
           element={
             <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
               <TrainingCalendar />
@@ -369,7 +377,15 @@ export default function App() {
           path="trainer/students"
           element={
             <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
-              <TrainerStudents />
+              <MentorMentees />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/students/:id"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <MentorMenteeProfile />
             </ProtectedRoute>
           }
         />
@@ -377,7 +393,39 @@ export default function App() {
           path="trainer/tasks"
           element={
             <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
-              <TrainerTasks />
+              <MentorTasks />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/tasks/create"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <CreateTask />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/reviews"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <MentorTaskReviews />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/reviews/:id"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <ReviewDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/batches"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <MentorBatches />
             </ProtectedRoute>
           }
         />

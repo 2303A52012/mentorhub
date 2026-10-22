@@ -195,6 +195,8 @@ export const MentorMenteeProfile = () => {
       ? '/admin/users'
       : user?.role === 'MENTOR'
       ? '/mentor/mentees'
+      : user?.role === 'TRAINER'
+      ? '/trainer/students'
       : '/mentee/dashboard';
 
   const backLabel =
@@ -202,6 +204,8 @@ export const MentorMenteeProfile = () => {
       ? 'Back to User Directory'
       : user?.role === 'MENTOR'
       ? 'Back to Mentee Directory'
+      : user?.role === 'TRAINER'
+      ? 'Back to Batch Students'
       : 'Back to Dashboard';
 
   return (

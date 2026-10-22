@@ -54,8 +54,10 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
       { to: '/trainer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/trainer/students', label: 'Batch Students', icon: Users },
       { to: '/trainer/calendar', label: 'Training Calendar', icon: Calendar },
+      { to: '/trainer/tasks', label: 'Weekly Tasks', icon: CheckSquare },
+      { to: '/trainer/reviews', label: 'Review Submissions', icon: FileCheck },
       { to: '/trainer/problems', label: 'Daily Problems', icon: Zap },
-      { to: '/trainer/tasks', label: 'Assign Tasks', icon: CheckSquare },
+      { to: '/trainer/batches', label: 'Batches', icon: FolderGit2 },
       { to: '/announcements', label: 'Announcements', icon: Megaphone },
     ];
   } else if (role === 'MENTOR') {

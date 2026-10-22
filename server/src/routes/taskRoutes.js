@@ -19,10 +19,10 @@ router.use(authenticate);
 router.get('/', getTasks);
 router.post('/', authorizeRoles('ADMIN', 'MENTOR', 'TRAINER'), createTask);
 router.get('/:id', getTaskById);
-router.patch('/:id', authorizeRoles('ADMIN', 'MENTOR'), updateTask);
-router.patch('/:id/extend-deadline', authorizeRoles('ADMIN', 'MENTOR'), extendTaskDeadline);
-router.delete('/:id', authorizeRoles('ADMIN', 'MENTOR'), deleteTask);
-router.post('/:id/assign', authorizeRoles('ADMIN', 'MENTOR'), assignTaskToRecipients);
-router.get('/:id/progress', authorizeRoles('ADMIN', 'MENTOR'), getTaskProgress);
+router.patch('/:id', authorizeRoles('ADMIN', 'MENTOR', 'TRAINER'), updateTask);
+router.patch('/:id/extend-deadline', authorizeRoles('ADMIN', 'MENTOR', 'TRAINER'), extendTaskDeadline);
+router.delete('/:id', authorizeRoles('ADMIN', 'MENTOR', 'TRAINER'), deleteTask);
+router.post('/:id/assign', authorizeRoles('ADMIN', 'MENTOR', 'TRAINER'), assignTaskToRecipients);
+router.get('/:id/progress', authorizeRoles('ADMIN', 'MENTOR', 'TRAINER'), getTaskProgress);
 
 export default router;

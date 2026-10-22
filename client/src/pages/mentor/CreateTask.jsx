@@ -158,7 +158,13 @@ export const CreateTask = () => {
           'Task Published Successfully',
           `"${title}" (Week ${weekNo}) has been published and distributed to target mentees.`
         );
-        navigate(user.role === 'ADMIN' ? '/admin/tasks' : '/mentor/tasks');
+        navigate(
+          user.role === 'ADMIN'
+            ? '/admin/tasks'
+            : user.role === 'TRAINER'
+            ? '/trainer/tasks'
+            : '/mentor/tasks'
+        );
       }
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Failed to publish task.';
@@ -181,7 +187,13 @@ export const CreateTask = () => {
           </p>
         </div>
         <Link
-          to={user?.role === 'ADMIN' ? '/admin/tasks' : '/mentor/tasks'}
+          to={
+            user?.role === 'ADMIN'
+              ? '/admin/tasks'
+              : user?.role === 'TRAINER'
+              ? '/trainer/tasks'
+              : '/mentor/tasks'
+          }
           className="text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition flex items-center gap-1"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back

@@ -23,8 +23,10 @@ import {
 } from 'lucide-react';
 
 import { useModal } from '../../context/ModalContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const ReviewDetails = () => {
+  const { user } = useAuth();
   const { id } = useParams();
   const { showSuccess, showError, showWarning, showToast } = useModal();
   const [data, setData] = useState(null);
@@ -163,7 +165,13 @@ export const ReviewDetails = () => {
       {/* Back button */}
       <div className="flex items-center justify-between">
         <Link
-          to="/mentor/reviews"
+          to={
+            user?.role === 'ADMIN'
+              ? '/admin/reviews'
+              : user?.role === 'TRAINER'
+              ? '/trainer/reviews'
+              : '/mentor/reviews'
+          }
           className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Review Queue

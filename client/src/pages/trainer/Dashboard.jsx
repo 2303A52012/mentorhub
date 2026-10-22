@@ -16,7 +16,10 @@ import {
   Layers,
   ArrowRight,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  PlusCircle,
+  CheckSquare,
+  FileCheck
 } from 'lucide-react';
 
 const StatCard = ({ icon: Icon, label, value, sub, color = 'indigo' }) => {
@@ -125,18 +128,24 @@ export const TrainerDashboard = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/trainer/tasks/create"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition"
+          >
+            <PlusCircle className="w-3.5 h-3.5" /> Create Weekly Task
+          </Link>
           <Link
             to="/trainer/calendar"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-600/20 transition"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-600/20 transition"
           >
-            <Calendar className="w-4 h-4" /> Training Calendar
+            <Calendar className="w-3.5 h-3.5" /> Training Calendar
           </Link>
           <Link
             to="/trainer/problems"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition"
           >
-            <Zap className="w-4 h-4" /> Post Daily Problem
+            <Zap className="w-3.5 h-3.5 text-amber-500" /> Post Daily Problem
           </Link>
         </div>
       </div>
