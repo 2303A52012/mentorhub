@@ -17,6 +17,12 @@ export const getBatches = async (req, res, next) => {
           some: { menteeId: userId }
         }
       };
+    } else if (req.user.role === 'TRAINER') {
+      where = {
+        trainers: {
+          some: { trainerId: userId }
+        }
+      };
     }
 
     const batches = await prisma.batch.findMany({

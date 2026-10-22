@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 import { Search, Filter, AlertTriangle, CheckCircle2, User, ArrowRight, Key } from 'lucide-react';
 import { ResetUserPasswordModal } from '../../components/common/ResetUserPasswordModal';
@@ -7,10 +7,12 @@ import { useAuth } from '../../context/AuthContext';
 
 export const MentorMentees = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialBatch = searchParams.get('batchId') || '';
   const [mentees, setMentees] = useState([]);
   const [batches, setBatches] = useState([]);
   const [search, setSearch] = useState('');
-  const [selectedBatch, setSelectedBatch] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState(initialBatch);
   const [completionFilter, setCompletionFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -39,7 +41,14 @@ export const MentorMentees = () => {
     try {
       const res = await api.get('/batches');
       if (res.data.success) {
-        setBatches(res.data.batches || []);
+        const bList = res.data.batches || [];
+        setBatches(bList);
+        const urlBatchId = searchParams.get('batchId');
+        if (urlBatchId && bList.some(b => (b._id || b.id) === urlBatchId)) {
+          setSelectedBatch(urlBatchId);
+        } else if (user?.role === 'TRAINER' && bList.length === 1 && !selectedBatch) {
+          setSelectedBatch(bList[0]._id || bList[0].id);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -90,12 +99,28 @@ export const MentorMentees = () => {
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={selectedBatch}
-            onChange={(e) => setSelectedBatch(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSelectedBatch(val);
+              if (val) {
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.set('batchId', val);
+                  return next;
+                });
+              } else {
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.delete('batchId');
+                  return next;
+                });
+              }
+            }}
             className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 shadow-xs"
           >
-            <option value="">All Batches</option>
+            <option value="">{user?.role === 'TRAINER' ? 'All Assigned Batches' : 'All Batches'}</option>
             {batches.map((b) => (
-              <option key={b._id} value={b._id}>
+              <option key={b._id || b.id} value={b._id || b.id}>
                 {b.name}
               </option>
             ))}
