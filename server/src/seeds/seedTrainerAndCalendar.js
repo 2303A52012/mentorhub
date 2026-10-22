@@ -90,85 +90,25 @@ async function seedTrainerAndCalendar() {
   // 3. Official Training Calendar Dates (Sep, Oct, Nov 2026)
   const officialSchedule = [
     // September 2026
-    {
-      date: new Date('2026-09-01T09:30:00Z'),
-      topics: ['Time & Space Complexity Analysis', 'Recursion Fundamentals', 'Master Theorem & Recurrence Relations'],
-      notes: 'Covered Big-O, Big-Theta, Big-Omega, recurrence tree method, and stack memory bounds in recursion.'
-    },
-    {
-      date: new Date('2026-09-04T09:30:00Z'),
-      topics: ['Arrays & Strings Mastery', 'Two Pointers Technique', 'Sliding Window Optimization'],
-      notes: 'Practiced 3-Sum, Container With Most Water, Minimum Window Substring, and Longest Substring Without Repeating Characters.'
-    },
-    {
-      date: new Date('2026-09-12T09:30:00Z'),
-      topics: ['Binary Search Variations', 'Search in Rotated Sorted Array', 'Binary Search on Answer Space'],
-      notes: 'Deep dive into lower_bound/upper_bound logic, Koko Eating Bananas, Capacity To Ship Packages Within D Days.'
-    },
-    {
-      date: new Date('2026-09-19T09:30:00Z'),
-      topics: ['Linked Lists Architecture', 'Fast & Slow Pointers Pattern', 'LRU Cache Design'],
-      notes: 'Floyd Cycle Finding algorithm, Palindrome Linked List, Reverse Nodes in k-Group, and Doubly-Linked-List LRU Cache.'
-    },
+    { date: new Date('2026-09-01T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-09-04T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-09-12T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-09-19T09:30:00Z'), topics: [], notes: '' },
 
     // October 2026
-    {
-      date: new Date('2026-10-03T09:30:00Z'),
-      topics: ['Stacks & Monotonic Stack Patterns', 'Next Greater Element', 'Largest Rectangle in Histogram'],
-      notes: 'Monotonic increasing/decreasing stack paradigm, Daily Temperatures, Trapping Rain Water using stack.'
-    },
-    {
-      date: new Date('2026-10-07T09:30:00Z'),
-      topics: ['Queues, Circular Queues & Deque', 'Sliding Window Maximum', 'BFS Queue Foundations'],
-      notes: 'Monotonic Deque design, Rotting Oranges, Shortest Path in Binary Matrix.'
-    },
-    {
-      date: new Date('2026-10-10T09:30:00Z'),
-      topics: ['Binary Trees: Core Traversals', 'Lowest Common Ancestor (LCA)', 'Binary Tree Maximum Path Sum'],
-      notes: 'Euler tour, Morris Inorder Traversal (O(1) space), Diameter of Binary Tree, and subtree problem solving.'
-    },
-    {
-      date: new Date('2026-10-17T09:30:00Z'),
-      topics: ['Binary Search Trees (BST)', 'Inorder Successor/Predecessor', 'BST Validation & Construction'],
-      notes: 'Validate BST, Kth Smallest Element in BST, Construct BST from Preorder, Recover BST with two swapped nodes.'
-    },
-    {
-      date: new Date('2026-10-23T09:30:00Z'),
-      topics: ['Heaps & Priority Queues', 'Top K Frequent Elements', 'Find Median from Data Stream'],
-      notes: 'Min-Heap/Max-Heap dual balancing, Merge k Sorted Lists, Task Scheduler.'
-    },
-    {
-      date: new Date('2026-10-24T09:30:00Z'),
-      topics: ['Greedy Algorithms', 'Interval Scheduling & Merging', 'Gas Station & Jump Game'],
-      notes: 'Non-overlapping Intervals, Minimum Number of Arrows to Burst Balloons, Huffman Coding fundamentals.'
-    },
-    {
-      date: new Date('2026-10-31T09:30:00Z'),
-      topics: ['Dynamic Programming 1: 1D DP', 'Memoization vs Tabulation', 'Frog Jump & House Robber'],
-      notes: 'State identification, transition relations, base cases, and space optimization from O(N) to O(1).'
-    },
+    { date: new Date('2026-10-03T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-10-07T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-10-10T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-10-17T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-10-23T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-10-24T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-10-31T09:30:00Z'), topics: [], notes: '' },
 
     // November 2026
-    {
-      date: new Date('2026-11-05T09:30:00Z'),
-      topics: ['Dynamic Programming 2: 2D Grid DP', '0/1 Knapsack Variants', 'Coin Change & Partition Equal Subset'],
-      notes: 'Grid paths with obstacles, Target Sum, Unbounded Knapsack, Rod Cutting problem.'
-    },
-    {
-      date: new Date('2026-11-14T09:30:00Z'),
-      topics: ['Dynamic Programming on Strings', 'Longest Common Subsequence (LCS)', 'Edit Distance & Wildcard Matching'],
-      notes: 'DP matrix construction, back-tracing optimal string alignment, Palindromic Partitioning II.'
-    },
-    {
-      date: new Date('2026-11-21T09:30:00Z'),
-      topics: ['Graphs 1: Graph Representation', 'DFS & BFS Algorithms', 'Topological Sort & Kahn’s Algorithm'],
-      notes: 'Adjacency list with weighted edges, Course Schedule I & II, Cycle detection in directed/undirected graphs.'
-    },
-    {
-      date: new Date('2026-11-22T09:30:00Z'),
-      topics: ['Graphs 2: Shortest Path Algorithms', 'Dijkstra & Bellman-Ford', 'Disjoint Set Union (DSU) & Kruskal’s MST'],
-      notes: 'Network Delay Time, Cheapest Flights Within K Stops, Number of Islands II using Path Compression + Union by Rank.'
-    }
+    { date: new Date('2026-11-05T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-11-14T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-11-21T09:30:00Z'), topics: [], notes: '' },
+    { date: new Date('2026-11-22T09:30:00Z'), topics: [], notes: '' }
   ];
 
   console.log(`Seeding official training schedule across ${batches.length} cohorts...`);
