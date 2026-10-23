@@ -1,101 +1,159 @@
-# SRU MentorHub — Technical Mentorship, Evaluation, Training & Grievance Platform
+# SRU MentorHub — Enterprise Mentorship, Training & Evaluation Platform
 
-> **SR University (SRU) · Engineering & Technology · Full-Stack Web Application**  
-> An enterprise-grade academic mentorship, continuous problem-solving evaluation, corporate trainer cohort management, live senior verification engine, mock interview training, mentor reallocation, and confidential student grievance management ecosystem.
-
----
-
-## 📌 Executive Summary
-
-**SRU MentorHub** is a unified platform engineered to bridge the gap between faculty mentors, corporate trainers, student mentees, and university administration. Designed specifically for competitive coding training, placement preparation, and student support, the platform eliminates manual tracking spreadsheets through automated workflows, persistent problem note-taking, structured rubric evaluations, seamless mentor reallocation, syllabus training logs, live senior target verification, and confidential student support desks.
+> **SR University (SRU) · School of Computer Science & Artificial Intelligence**  
+> Full-Stack Technical Mentorship Ecosystem for Competitive Programming, Placement Preparation, Corporate Training, Live Target Verification, Mock Interviews & Confidential Student Grievance Resolution.
 
 ---
 
-## 🎨 Modern Aesthetics & Dual Theme System
-
-The platform features a **Dual Light & Dark Theme** system with instant, persistent toggling:
-- **Light Theme**: Clean, high-contrast academic interface using slate palettes, crisp borders, and refined card surfaces.
-- **Dark Theme**: Deep obsidian / slate-950 backdrop with vibrant neon-indigo, amber, emerald, and sky accents.
-- **Persistent Toggle**: Integrated sun/moon switcher in the top navigation bar with `localStorage` persistence.
-- **Tailwind CSS & Micro-Animations**: Smooth transitions, glassmorphic panels, backdrop-blur modals, and custom scrollbars across all pages and components.
+## 📌 Table of Contents
+1. [Platform Overview & Executive Summary](#-platform-overview--executive-summary)
+2. [Dual Theme Design System & UX Standards](#-dual-theme-design-system--ux-standards)
+3. [System Architecture & Technology Stack](#-system-architecture--technology-stack)
+4. [Identity, Authentication & RBAC Hierarchy](#-identity-authentication--rbac-hierarchy)
+5. [In-Depth Feature Modules](#-in-depth-feature-modules)
+   - [Pillar 1: Corporate Trainer Portal & Batch Scope](#1-corporate-trainer-portal--batch-scope)
+   - [Pillar 2: Hierarchical Multicast Announcements](#2-hierarchical-multicast-announcements)
+   - [Pillar 3: Training Calendar & Company POTD](#3-training-calendar--company-potd)
+   - [Pillar 4: Weekly Cumulative Targets (W1–W12) & Live Senior Verification Engine](#4-weekly-cumulative-targets-w1w12--live-senior-verification-engine)
+   - [Platform Solved Counters with Real-Time Target Sync](#5-platform-solved-counters-with-real-time-target-sync)
+   - [Weekly Coding Tasks & Algorithmic Notes](#6-weekly-coding-tasks--algorithmic-notes)
+   - [Weekly Mock Interviews & 3-Criteria Scoring Rubric](#7-weekly-mock-interviews--3-criteria-scoring-rubric)
+   - [Mentor Reallocation & Cohort Transfer Engine](#8-mentor-reallocation--cohort-transfer-engine)
+   - [Confidential Grievance & Student Support Desk](#9-confidential-grievance--student-support-desk)
+   - [1-on-1 Personal Doubt Clearing Sessions](#10-1-on-1-personal-doubt-clearing-sessions)
+   - [High-Throughput Bulk Data Import (Excel/CSV)](#11-high-throughput-bulk-data-import-excelcsv)
+   - [Gamified Achievements & Cohort Leaderboard](#12-gamified-achievements--cohort-leaderboard)
+6. [Role Permissions Matrix](#-role-permissions-matrix)
+7. [Database Schema Architecture (Prisma ORM)](#-database-schema-architecture-prisma-orm)
+8. [RESTful API Reference](#-restful-api-reference)
+9. [Local Development & Deployment Guide](#-local-development--deployment-guide)
+10. [Default Institutional Credentials](#-default-institutional-credentials)
+11. [Verification & Health Checks](#-verification--health-checks)
 
 ---
 
-## 🏛️ System Architecture
+## 🌟 Platform Overview & Executive Summary
+
+**SRU MentorHub** is a production-grade academic management ecosystem deployed at SR University to supervise competitive coding progress, interview readiness, and student wellbeing. 
+
+The platform replaces fragmented spreadsheets and ad-hoc communication with:
+- **Batch-Scoped Corporate Training**: Dedicated cohort directors oversee syllabus coverage, training calendar dates, and daily problems of the day (POTD).
+- **Senior Live Verification Engine**: Strictly verifies problem claims during 1-on-1 review syncs against a 12-week cumulative target schedule (W1–W12).
+- **Competitive Profile Counters**: Live counters for LeetCode, CodeChef, Codeforces, HackerRank, and GeeksforGeeks with automatic target synchronization.
+- **Structured Rubric Evaluations**: Comprehensive 3-criteria grading for mock technical and behavioral interviews.
+- **Confidential Grievance System**: Conflict-of-interest-free support tickets with one-click administrative escalation.
+- **Seamless Mentor Reallocation**: Immediate single and cohort transfers with automated departing mentor deactivation.
+
+---
+
+## 🎨 Dual Theme Design System & UX Standards
+
+MentorHub delivers an ultra-modern, distraction-free visual experience across all 45+ views:
+
+- **Dual-Mode System**:
+  - **Light Theme**: High-contrast slate canvas (`#f8fafc`), crisp borders (`#e2e8f0`), deep indigo accents, and subtle elevation shadows.
+  - **Dark Theme**: Deep obsidian / slate-950 canvas (`#0b0f19`), frosted glass panels (`backdrop-blur-md`), and vibrant neon-indigo, amber, and emerald highlights.
+- **State Persistence**: Instant toggle stored in `localStorage` with zero flicker on initial page load.
+- **Responsive Layout**: Fluid desktop sidebar with collapsible mobile drawer, sticky action headers, and horizontal scroll tables.
+- **Micro-Interactions**: Smooth CSS transitions, animated badge states, inline counter spinners, and toast alerts via `ModalContext`.
+
+---
+
+## 🏛️ System Architecture & Technology Stack
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        SRU Client (React 19 + Vite)                    │
-│   Tailwind CSS · Dual Theme (Dark/Light) · Lucide · Recharts · RBAC    │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ HTTP / REST API (/api/v1)
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                      Express.js Backend (Node.js)                      │
-│   JWT Auth · Multi-Role RBAC · Excel Bulk Parser · Prisma Client       │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ Connection Pooling (Port 6543)
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                 PostgreSQL Database (Supabase Cloud)                   │
-│   Users · Batches · Tasks · Reviews · POTDs · Targets · Verifications │
-└────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         CLIENT LAYER (React 19 + Vite)                       │
+│    Tailwind CSS · Lucide Icons · Recharts · Dual Theme · RBAC Route Guards   │
+└──────────────────────────────────────┬───────────────────────────────────────┘
+                                       │ HTTPS / JSON REST API (/api/v1)
+                                       ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         API SERVER LAYER (Express.js)                        │
+│    JWT Auth · Cookie Parser · Multer · XLSX Stream · Prisma Client Engine    │
+└──────────────────────────────────────┬───────────────────────────────────────┘
+                                       │ PgBouncer Connection Pool (:6543)
+                                       ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                       PERSISTENCE LAYER (PostgreSQL Cloud)                   │
+│   Users · Batches · Targets · Verifications · Sessions · Tasks · Reviews    │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Technology Stack
-- **Database**: PostgreSQL (Supabase) via **Prisma ORM (v6)** with PgBouncer transaction pooling (`port 6543`) and direct connection for migrations (`port 5432`).
-- **Backend**: Node.js, Express.js (ES Modules), JWT Authentication, bcryptjs, Multer, XLSX parsing, Morgan logging.
-- **Frontend**: React 19, Vite, Tailwind CSS, Lucide React, Recharts, Axios with Bearer interceptors.
-- **Institutional Identity Standard**:
-  - Super Admin: `admin@sru.edu.in`
-  - Faculty Mentors: `<rollNumber>@sru.edu.in` (e.g., `2303a51812@sru.edu.in`)
-  - Corporate Trainers: `trainer.{batch}@sru.edu.in` (e.g., `trainer.b1@sru.edu.in`)
-  - Student Mentees: `<rollNumber>@sru.edu.in` (e.g., `2403a51015@sru.edu.in`)
+### Core Technologies
+- **Frontend**: React 19, Vite, Tailwind CSS, Lucide React, Recharts, Axios with Bearer authorization interceptors.
+- **Backend**: Node.js (ES Modules), Express.js, JWT (`jsonwebtoken`), bcryptjs, Multer, XLSX parsing, Morgan logging.
+- **Database**: PostgreSQL (hosted on Supabase) accessed via **Prisma ORM (v6)**.
+  - Port `6543`: PgBouncer transaction-mode connection pool for production scalability.
+  - Port `5432`: Direct database connection for schema migrations (`prisma db push`).
 
 ---
 
-## 🔄 Core Workflows & Functional Modules
+## 🔐 Identity, Authentication & RBAC Hierarchy
 
-### 1. Corporate Trainer Portal & Cohort Authority
-Trainers act as batch directors who oversee all students and mentors within their designated cohort (G6-B1, G6-B2, G6-B3, or G6-B4):
-- **Batch-Scoped Authority**: Trainers exclusively access and manage students and mentors within their assigned cohort.
-- **Batch Task Assignments**: Assign coding assignments to their entire batch or a custom subset of students.
-- **Submissions & Reviews**: Inspect source code, algorithmic complexity, and mentor feedback.
-- **Dedicated Trainer Profiles**: Configured with specialization, designations, cabins, and direct batch associations.
+All university member identities follow the standardized SRU institutional email format:
 
----
+| Role | Institutional Email Format | Scope of Authority |
+| :--- | :--- | :--- |
+| **Super Administrator** | `admin@sru.edu.in` | Global system authority; exclusively appoints and manages delegated platform administrators. |
+| **Administrator** | `admin.{name}@sru.edu.in` | Manages batches, mentors, mentees, global audit sheets, reports, and complaints. |
+| **Corporate Trainer** | `trainer.{batch}@sru.edu.in` | Batch director for a specific cohort (G6-B1, G6-B2, G6-B3, G6-B4); manages calendar, POTD, batch tasks, and pacing adjustments. |
+| **Faculty Mentor** | `<facultyRoll>@sru.edu.in` | Mentors ~10–12 assigned students; conducts mock evaluations, 1-on-1 doubt sessions, and weekly live target verifications. |
+| **Student Mentee** | `<studentRoll>@sru.edu.in` | Solves weekly tasks, POTD challenges, reports platform solved counts, attends mocks, and tracks W1–W12 target badges. |
 
-### 2. Pillar 2: Hierarchical Multicast Announcements
-A targeted institutional communication engine with strict audience selection and parent-visibility rules:
-- **Targeted Audiences**:
-  - `ALL`: Broadcast to all platform members.
-  - `BATCH`: Target an entire academic cohort (e.g., G6-B1).
-  - `MENTOR_GROUP`: Target a specific mentor's mentees.
-  - `INDIVIDUAL`: Target custom selected individuals.
-- **Auto-CC / Superior Visibility Guarantee**:
-  - Super Admin & Admins retain global transparency across all posted announcements.
-  - When announcements target students, their assigned **Mentor** and batch **Trainer** automatically gain visibility to ensure cohesive academic support.
-- **Read Receipts**: Tracks individual reads with timestamps per user.
+### Security Measures
+- **Password Protection**: Hashed using `bcryptjs` with salt rounds = 10.
+- **Token Security**: Signed JWT tokens stored in HTTP-only cookies and supported via `Authorization: Bearer <token>`.
+- **Account Status Enforcer**: Accounts marked `INACTIVE` or `SUSPENDED` are immediately locked out at the authentication middleware.
+- **Self-Service & Admin Password Reset**: Students can submit password reset tickets, and mentors/admins can trigger immediate password resets directly from user profiles.
 
 ---
 
-### 3. Pillar 3: Training Calendar & Daily Problem of the Day (POTD)
-- **Official Training Dates Log**:
-  - Pre-seeded official calendar schedule across September, October, and November 2026.
-  - Dropdown batch switcher to view covered syllabus and problems solved on any selected training date.
-  - Trainers log topics covered, solution notes, and problems discussed per date.
-- **Company-Specific Daily Problem (POTD)**:
-  - Trainers publish company-tagged coding problems (e.g. Amazon, Google, Microsoft) with difficulty (`EASY`, `MEDIUM`, `HARD`) and platform auto-detection (`LEETCODE`, `CODECHEF`, `CODEFORCES`, `HACKERRANK`, `CUSTOM`).
-  - Problem reflected on the student dashboard and daily problems hub.
-  - **Student Submissions**: Mentees submit solutions directly with source code, language selector, time complexity $O(N)$, and space complexity $O(1)$.
-  - **Trainer Inspection Drawer**: Trainers track solved vs. pending student counts and inspect student source code with 1-click clipboard copying.
+## 🚀 In-Depth Feature Modules
 
 ---
 
-### 4. Pillar 4: Weekly Cumulative Targets (W1–W12) & Live Senior Verification Engine
-Ensures that student LeetCode metrics reflect authentic, mentor-verified work rather than unverified profile claims:
+### 1. Corporate Trainer Portal & Batch Scope
+- **Batch Cohort Directors**: Trainers manage one of four designated student batches:
+  - `G6-B1`: Trainer `trainer.b1@sru.edu.in`
+  - `G6-B2`: Trainer `trainer.b2@sru.edu.in`
+  - `G6-B3`: Trainer `trainer.b3@sru.edu.in`
+  - `G6-B4`: Trainer `trainer.b4@sru.edu.in`
+- **Batch Isolation**: Trainers exclusively access students, mentors, and submissions belonging to their assigned batch.
+- **Batch Task Assignments**: Post assignments targeted to the entire cohort or custom student subsets.
+- **Batch Profile Management**: Dedicated trainer profile pages display assigned batches, cabin venues, and specialization.
 
-#### 4.1 Target Schedule (Starting 05 Oct 2026)
+---
+
+### 2. Hierarchical Multicast Announcements
+- **Audience Targeting Engine**:
+  - `ALL`: Broadcast to every user across the university.
+  - `BATCH`: Target an entire cohort batch (e.g. G6-B1).
+  - `MENTOR_GROUP`: Target a specific mentor's assigned mentee group.
+  - `INDIVIDUAL`: Target custom selected user IDs.
+- **Superior Auto-CC Visibility Rule**:
+  - Whenever an announcement targets **Students**, their assigned **Mentor** and batch **Trainer** automatically receive visibility.
+  - Platform Administrators maintain global audit visibility across all announcements.
+- **Engagement Tracking**: Individual read receipts recorded in `AnnouncementRead` with read timestamps.
+
+---
+
+### 3. Training Calendar & Company POTD
+- **Official Training Date Schedules**:
+  - Pre-seeded institutional training days across September, October, and November 2026.
+  - Date-picker and batch dropdown allow switching cohorts to view topics covered, problems solved, and session notes.
+- **Company Daily Problem of the Day (POTD)**:
+  - Trainers publish company-tagged coding problems (Amazon, Google, Microsoft, Meta).
+  - **Platform Auto-Detection**: Pasting links automatically maps domains to database enums (`LEETCODE`, `CODECHEF`, `CODEFORCES`, `HACKERRANK`, `CUSTOM`).
+  - **Student Submissions**: Mentees write or paste solutions with language selection (C++, Java, Python, JavaScript), algorithmic complexities ($O(N)$ time / $O(1)$ space), and approach notes.
+  - **Submission Inspection Drawer**: Trainers view live submission status (Completed vs Pending) and inspect student code with 1-click clipboard copying.
+
+---
+
+### 4. Weekly Cumulative Targets (W1–W12) & Live Senior Verification Engine
+Ensures that LeetCode metrics reflect verified problem-solving ability rather than unverified profile claims.
+
+#### Target Schedule (Starting 05 Oct 2026)
 | Week | Start Date | Cumulative LeetCode Target | Verification Requirement |
 | :---: | :---: | :---: | :---: |
 | **W1** | 05 Oct 2026 | **98** Problems | Senior Live Review Required |
@@ -111,92 +169,100 @@ Ensures that student LeetCode metrics reflect authentic, mentor-verified work ra
 | **W11** | 14 Dec 2026 | **207** Problems | Senior Live Review Required |
 | **W12** | 21 Dec 2026 | **207** Problems | Senior Live Review Required |
 
-#### 4.2 Strict Verification Logic & Mentor Scoping
-- **Strict Target Rule**:
-  $$\text{Target Met} \iff \text{Mentor Verified Count} \ge \text{Week Cumulative Target}$$
-- **Crucial Rule**: Unverified LeetCode solves or self-reported submissions *never* satisfy the target without Senior live review.
-- **Mentor Scoping**: When a faculty mentor logs in to the weekly audit sheet, they see **only their assigned mentees** (~10–12 students) rather than the entire 120-student batch.
-- **Live Verification Workflow**:
-  1. The Senior Mentor opens the student's weekly audit sheet during the 1-on-1 sync.
-  2. Senior verifies code authenticity and problem solutions live.
-  3. Senior enters the verified problem count and clicks **"Confirm & Save Verification"**.
-  4. System timestamps the verification, records Senior ID, and updates the student's **Target Met** badge.
-- **Batch Target Customization**:
-  - Trainers and Admins can customize target problem counts per batch for pacing adjustments (e.g. fast-track cohorts).
+#### Verification Rules & Workflow
+1. **Strict Target Rule**:
+   $$\text{Target Met} \iff \text{Mentor Verified Count} \ge \text{Week Cumulative Target}$$
+2. **Unverified Solves Policy**: Self-reported submissions or profile counters never satisfy the target without Senior live verification.
+3. **Mentor Scoping**: Mentors strictly see their assigned mentees (~10–12 students) on the audit sheet, preventing cohort data overflow.
+4. **Live Verification Procedure**:
+   - Senior Mentor opens the mentee's audit sheet during the weekly 1-on-1 sync.
+   - Senior inspects solution authenticity and tests problem understanding.
+   - Senior enters the verified count, optional review notes, and clicks **"Confirm & Save Verification"**.
+   - System timestamps the verification, records the Senior's ID, and updates the student's **Target Met** badge.
+5. **Batch Pacing Customization**: Trainers and Admins can customize target problem counts per batch for accelerated or foundational pacing.
 
 ---
 
-### 5. Profile Platform Solved Counters with Auto-Sync
-- Student profiles feature interactive counter blocks for major competitive platforms:
+### 5. Platform Solved Counters with Real-Time Target Sync
+- Interactive solved problem counter blocks embedded directly in student profiles:
   - **LeetCode** *(Live Synced with Weekly Cumulative Targets)*
   - **Codeforces**
   - **CodeChef**
   - **HackerRank**
   - **GeeksforGeeks**
-- **Interactive Controls**:
-  - Initialized to 0 by default.
-  - Direct **`+`** increment (+1) and **`-`** decrement (-1).
-  - **`Custom`** button: Quick presets (`+1`, `+5`, `+10`, `+20`) or direct exact count input.
-  - **Real-Time Sync**: Updating the LeetCode counter immediately reflects in Weekly Cumulative Targets and updates the Senior Mentor's live review sheet.
+- **Adjustment Modes**:
+  - `+` (Increment by 1)
+  - `-` (Decrement by 1, floor at 0)
+  - `Custom` (Quick add `+1`, `+5`, `+10`, `+20` or set exact count)
+- **Automatic Target Synchronization**: Updating the LeetCode counter immediately updates the student's self-reported count across the platform and reflects on the Senior Mentor's live audit sheet.
 
 ---
 
-### 6. Mentor Reallocation & Cohort Transfer System
-- **Bulk Cohort Transfer**: Transfer all or selected mentees from a departing faculty mentor to a target mentor in 1 click.
-- **Departing Mentor Deactivation**: Automatically marks departing mentors as `INACTIVE`.
-- **Individual Reassignments**: Quick 1-click reassignment directly from the Mentees directory table.
-- **Audit Ledger**: Records an immutable `MENTOR_REALLOCATION` audit log with source/target mentors and administrative justifications.
+### 6. Weekly Coding Tasks & Algorithmic Notes
+1. **Creation**: Mentors, Trainers, or Admins configure weekly problem sets with instructions, target audience, and external coding links.
+2. **Persistent Notes**: Students save draft solution notes per problem (approach, complexity, edge cases) as they practice.
+3. **Submission Snapshot**: When finalized, the student submits code and notes, locking the submission for evaluation.
+4. **Grading & Rubrics**:
+   - `APPROVED`: Confirms mastery, awards points, and updates cohort rank.
+   - `RESUBMISSION_REQUIRED`: Returns the task to the mentee with mentor feedback for revisions.
 
 ---
 
-### 7. Weekly Tasks & Evaluated Submissions (`Assign → Solve → Submit → Review`)
-1. **Assignment**: Mentors, Trainers, or Admins publish weekly tasks targeting **All**, **Batch**, or **Individuals**.
-2. **Problem Progress Notes**: Students record per-problem persistent solution notes (approach, time complexity $O(N)$, space complexity $O(1)$).
-3. **Submission**: Mentees submit code and solutions, locking the submission during review.
-4. **Evaluation**: Evaluators score solutions (1–10) with problem-level feedback:
-   - **`APPROVED`**: Awards achievement points and updates cohort leaderboard.
-   - **`RESUBMISSION_REQUIRED`**: Unlocks the submission for revisions based on mentor notes.
-
----
-
-### 8. Weekly Mock Interviews (`Section → Session → Slot → Rubric Evaluation`)
-1. **Mock Sections**: Created for specific interview rounds (DSA, System Design, HR & Behavioral).
-2. **Slot Scheduling & Allocation**: Sessions scheduled with dates, room venues, and duration slots.
-3. **Rubric Evaluation**: Evaluators grade students across 3 criteria:
+### 7. Weekly Mock Interviews & 3-Criteria Scoring Rubric
+1. **Mock Sections**: Created for specific interview rounds (Technical DSA, System Architecture, Behavioral & HR).
+2. **Slot Allocations**: Evaluators, room venues/meeting links, dates, and timeslot durations configured per student.
+3. **Evaluation Rubric**: Evaluators score students on 10-point scales across 3 pillars:
    - **Technical Knowledge** (1–10)
    - **Communication & Articulation** (1–10)
    - **Problem Solving & Analytical Thinking** (1–10)
-   - **Overall Recommendation**: `STRONGLY_RECOMMENDED`, `RECOMMENDED`, `RECOMMENDED_WITH_IMPROVEMENT`, or `NOT_RECOMMENDED_YET`.
-4. **Audit Trail**: Slot cancellations and rescheduling logged in `MockSlotHistory`.
+   - **Recommendation Level**: `STRONGLY_RECOMMENDED`, `RECOMMENDED`, `RECOMMENDED_WITH_IMPROVEMENT`, `NOT_RECOMMENDED_YET`.
+4. **Audit History**: All slot changes and rescheduling recorded in `MockSlotHistory`.
 
 ---
 
-### 9. Confidential Grievance & Complaint Desk
-Strict data isolation rules safeguard student privacy:
+### 8. Mentor Reallocation & Cohort Transfer Engine
+Designed for operational continuity during faculty transitions or workload rebalancing:
+1. **Bulk Cohort Transfer**: Select a source mentor, review their mentee roster, toggle individual students or click **"Select All"**, and transfer to a target mentor.
+2. **Departing Mentor Deactivation**: Optional checkbox automatically marks departing faculty as `INACTIVE`, terminating session tokens.
+3. **Single Mentee Reassignment**: Instant 1-click reassignment directly from the Mentees directory table.
+4. **Audit Ledger**: Generates an immutable `MENTOR_REALLOCATION` audit record detailing source, destination, students, and admin rationale.
 
-| Scenario | Mentee Visibility | Assigned Mentor Visibility | Administration Visibility |
+---
+
+### 9. Confidential Grievance & Student Support Desk
+Strict data isolation rules protect student privacy and avoid conflicts of interest:
+
+| Ticket Type | Mentee Visibility | Assigned Mentor Visibility | Administrator Visibility |
 | :--- | :---: | :---: | :---: |
-| **Mentee files complaint to Mentor** | ✅ Full Access | ✅ Full Access | ❌ **Hidden** until escalated |
-| **Mentee files complaint to Admin** | ✅ Full Access | ❌ **Strictly Hidden** | ✅ Full Access |
-| **Mentor files grievance to Admin** | ❌ Hidden | ✅ Full Access | ✅ Full Access |
-| **Mentee/Mentor Escalates Complaint** | ✅ Full Access | ✅ Full Access | ✅ **Revealed** with escalation audit reason |
+| **Mentee $\rightarrow$ Mentor** | ✅ Full Access | ✅ Full Access | ❌ **Hidden** until escalated |
+| **Mentee $\rightarrow$ Admin** | ✅ Full Access | ❌ **Strictly Hidden** | ✅ Full Access |
+| **Mentor $\rightarrow$ Admin** | ❌ Hidden | ✅ Full Access | ✅ Full Access |
+| **Escalated Ticket** | ✅ Full Access | ✅ Full Access | ✅ **Revealed** with escalation audit trail |
 
-- **Escalation Mechanism**: If unresolved, tickets can be escalated directly to administration with justification notes.
-- **Threaded Communication**: Interactive follow-up messages with real-time status tracking (`PENDING`, `IN_REVIEW`, `RESOLVED`, `REJECTED`).
-
----
-
-### 10. 1-on-1 Doubt Clearing & Guidance Sessions
-- Mentees request personal doubt clearing on specific concepts, project guidance, or code debugging.
-- Mentors schedule confirmed timeslots, **Google Meet / Zoom URLs** (online), or **Campus Venues** (offline).
-- Conducted sessions are closed with mentor outcome takeaways.
+- **Escalation Trigger**: If unresolved, either party can escalate to Administration with an explanation.
+- **Threaded Communication**: Real-time replies, status progression (`PENDING`, `IN_REVIEW`, `RESOLVED`, `REJECTED`), and outcome notes.
 
 ---
 
-### 11. High-Throughput Bulk Data Loader
-- Import hundreds of student and mentor records from CSV or XLSX spreadsheets in seconds.
-- Automatically generates institutional `<rollNumber>@sru.edu.in` identity schema.
-- Pre-import preview detects format discrepancies, valid records, and duplicates.
+### 10. 1-on-1 Personal Doubt Clearing Sessions
+- Direct, confidential student-mentor consultation desk (disabled on the Admin side to preserve academic confidentiality).
+- Students submit session requests specifying topics, detailed questions, and mode preference (**Online Google Meet** or **In-Person Cabin**).
+- Mentors accept, assign meeting links or room venues, and log completion takeaways.
+
+---
+
+### 11. High-Throughput Bulk Data Import (Excel/CSV)
+- Administrators upload `.xlsx` or `.csv` spreadsheets to provision hundreds of users in seconds.
+- **Header Normalization**: Auto-maps roll numbers, names, departments, sections, and emails.
+- **Identity Synthesis**: Transforms IDs directly into official `<rollNumber>@sru.edu.in` accounts.
+- **Dry-Run Preview**: Detects duplicate emails, invalid formats, and missing fields before persisting.
+- **Import Modes**: Supports `CREATE_NEW`, `UPDATE_EXISTING`, and `UPSERT`.
+
+---
+
+### 12. Gamified Achievements & Cohort Leaderboard
+- Badges awarded for milestones: Task completion streaks, mock interview excellence, and target achievements.
+- Real-time leaderboard displays student standing within batches.
 
 ---
 
@@ -205,84 +271,229 @@ Strict data isolation rules safeguard student privacy:
 | Feature / Module | Mentee | Mentor | Corporate Trainer | Administrator | Super Admin (`admin@sru.edu.in`) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Dual Theme Switcher** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Dashboard & KPIs** | Personal Stats | Assigned Mentees | Assigned Batch | Platform Metrics | Full System Metrics |
-| **Weekly Tasks (Practice & Notes)**| Submit & Notes | Review & Rubrics | Assign & Review | Create & Publish | Create & Publish |
+| **Personalized Dashboard** | Personal Stats | Assigned Mentees | Assigned Batch | Platform Metrics | Full System Metrics |
 | **Weekly Targets (W1-W12)** | Track & Self-Report | Live Verify (Mentees) | Batch Audit & Custom | Batch Audit & Custom | Global Audit & Custom |
 | **Profile Platform Counters** | Adjust (+/-) | View Mentees | View Batch | View All | View All |
 | **Training Calendar** | View Syllabus | View Batch | Log Topics & Problems | Manage & Oversee | Manage & Oversee |
 | **Daily Problems (POTD)** | Solve & Submit | View Problem | Publish & Track Code | Manage All | Manage All |
+| **Weekly Tasks (Practice & Notes)**| Submit & Notes | Review & Rubrics | Assign & Review | Create & Publish | Create & Publish |
 | **Weekly Mock Interviews** | View Slot & Report | Evaluate & Schedule | View Batch | Global Reports | Global Reports |
 | **1-on-1 Doubt Sessions** | Request & Join | Schedule & Conduct | *N/A* | *Disabled for privacy* | *Disabled for privacy* |
 | **Confidential Grievance Box** | Raise Ticket | Review Assigned | *N/A* | Resolve & Oversee | Resolve & Oversee |
 | **Multicast Announcements** | Read & Acknowledge | Post to Mentees | Post to Batch | Post Platform-wide | Post Platform-wide |
 | **Mentor Reallocation** | ❌ No | ❌ No | ❌ No | ✅ Full Access | ✅ Full Access |
-| **Batch Management** | *Own batch* | Assigned Batch | Assigned Batch | Full Access | Full Access |
 | **Administrator Delegation** | ❌ No | ❌ No | ❌ No | ❌ No | ✅ Exclusive Access |
 | **Bulk Excel / CSV Loader** | ❌ No | ❌ No | ❌ No | ✅ Full Access | ✅ Full Access |
 | **CSV & Analytics Export** | ❌ No | Mentees CSV | Batch CSV | Global Reports | Global Reports |
 
 ---
 
-## 🗄️ Database Schema Highlights (Prisma)
+## 🗄️ Database Schema Architecture (Prisma ORM)
 
-- `User`: Institutional account with `Role` (`ADMIN`, `TRAINER`, `MENTOR`, `MENTEE`), account status (`ACTIVE`, `INACTIVE`, `SUSPENDED`).
-- `TrainerProfile` & `TrainerBatch`: Corporate trainer metadata and batch mappings.
-- `CodingProfile`: Competitive platform profile URLs and live solved counters (`leetcodeSolved`, `codeforcesSolved`, `codechefSolved`, `hackerrankSolved`, `gfgSolved`).
-- `WeeklyTargetVerification`: Stores Senior live verification (`verifiedCount`, `targetMet`, `notes`, `verifiedAt`, `verifierId`).
-- `BatchWeeklyTarget`: Customized weekly problem targets and start dates per batch.
-- `TrainingSession`: Syllabus dates, topics covered, and problems discussed.
-- `DailyProblem` & `DailyProblemSubmission`: Company-tagged daily challenges with source code, complexities, and submission statuses.
-- `Announcement` & `AnnouncementRead`: Multicast notices with audience targeting and read receipts.
-- `MentorProfile` & `MenteeProfile`: Academic information (roll number, section, branch, faculty designation).
-- `Batch`, `BatchMentor`, `BatchMentee`, `MentorMenteeAssignment`: Academic cohort and mentorship hierarchy.
-- `Task`, `Problem`, `MenteeTask`, `TaskSubmission`, `TaskReview`: Problem sets, student notes, and mentor evaluations.
-- `MockSection`, `MockSession`, `MockSlot`, `MockSlotHistory`: Mock interview management and 3-criteria scoring rubric.
-- `Complaint`, `ComplaintMessage`: Privacy-scoped grievance tickets with escalation trail.
-- `DoubtSession`: 1-on-1 personal mentorship session requests.
-- `Notification` & `AuditLog`: User alerts and immutable administrative action ledger.
+```prisma
+// Core Identity
+model User {
+  id                 String         @id @default(uuid())
+  name               String
+  email              String         @unique
+  passwordHash       String
+  role               Role           @default(MENTEE) // ADMIN, TRAINER, MENTOR, MENTEE
+  accountStatus      AccountStatus  @default(ACTIVE) // ACTIVE, INACTIVE, SUSPENDED
+  mustChangePassword Boolean        @default(false)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  mentorProfile      MentorProfile?
+  menteeProfile      MenteeProfile?
+  trainerProfile     TrainerProfile?
+  codingProfile      CodingProfile?
+  ...
+}
+
+// Competitive Programming Counters
+model CodingProfile {
+  id               String   @id @default(uuid())
+  menteeId         String   @unique
+  mentee           User     @relation(fields: [menteeId], references: [id], onDelete: Cascade)
+  leetcodeUrl      String   @default("")
+  codeforcesUrl    String   @default("")
+  codechefUrl      String   @default("")
+  hackerrankUrl    String   @default("")
+  gfgUrl           String   @default("")
+  resumeUrl        String   @default("")
+  leetcodeSolved   Int      @default(0) // Live synced to Weekly Targets
+  codeforcesSolved Int      @default(0)
+  codechefSolved   Int      @default(0)
+  hackerrankSolved Int      @default(0)
+  gfgSolved        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// Weekly Cumulative Targets & Verifications
+model WeeklyTargetVerification {
+  id            String   @id @default(uuid())
+  menteeId      String
+  mentee        User     @relation("MenteeVerifications", fields: [menteeId], references: [id], onDelete: Cascade)
+  verifierId    String
+  verifier      User     @relation("VerifierVerifications", fields: [verifierId], references: [id], onDelete: Cascade)
+  weekNo        Int
+  verifiedCount Int      @default(0)
+  targetMet     Boolean  @default(false)
+  verified      Boolean  @default(false)
+  notes         String   @default("")
+  verifiedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([menteeId, weekNo])
+}
+
+model BatchWeeklyTarget {
+  id          String   @id @default(uuid())
+  batchId     String
+  batch       Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  weekNo      Int
+  startDate   DateTime
+  targetCount Int      @default(98)
+  requirement String   @default("Senior Live Review Required")
+
+  @@unique([batchId, weekNo])
+}
+
+// Training Calendar & POTD
+model TrainingSession {
+  id             String   @id @default(uuid())
+  batchId        String
+  batch          Batch    @relation("BatchTrainingSessions", fields: [batchId], references: [id], onDelete: Cascade)
+  trainerId      String
+  date           DateTime
+  topicsTaught   String[] @default([])
+  problemsSolved String[] @default([])
+  notes          String   @default("")
+}
+
+model DailyProblem {
+  id          String   @id @default(uuid())
+  batchId     String
+  batch       Batch    @relation("BatchDailyProblems", fields: [batchId], references: [id], onDelete: Cascade)
+  postedById  String
+  title       String
+  description String
+  company     String   @default("")
+  difficulty  String   @default("MEDIUM")
+  platform    Platform @default(CUSTOM) // LEETCODE, CODECHEF, CODEFORCES, HACKERRANK, CUSTOM
+  link        String   @default("")
+  submissions DailyProblemSubmission[]
+}
+
+model DailyProblemSubmission {
+  id              String       @id @default(uuid())
+  dailyProblemId  String
+  dailyProblem    DailyProblem @relation(fields: [dailyProblemId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status          String       @default("COMPLETED")
+  sourceCode      String       @default("")
+  language        String       @default("cpp")
+  timeComplexity  String       @default("")
+  spaceComplexity String       @default("")
+  approach        String       @default("")
+  submittedAt     DateTime     @default(now())
+
+  @@unique([dailyProblemId, studentId])
+}
+```
 
 ---
 
-## 🔌 Key API Endpoints Reference
+## 🔌 RESTful API Reference
 
-All routes are prefixed with `/api/v1` and authenticated using JWT Bearer headers:
+All endpoints are mounted under `/api/v1` and protected with JWT Bearer authentication:
 
-### Weekly Cumulative Targets & Counters (`/api/v1/weekly-targets`)
+### 1. Weekly Cumulative Targets & Counters (`/api/v1/weekly-targets`)
 - `GET /schedule`: Get 12-week schedule with active week and student verification records.
-- `GET /student/:studentId`: Retrieve specific student's verification records across W1–W12.
+- `GET /student/:studentId`: Retrieve student's target status and verification history across W1–W12.
 - `GET /batch/:batchId/audit?weekNo=...`: (Mentor/Trainer/Admin) Senior audit sheet (strictly scoped to assigned mentees for Mentors).
-- `POST /verify`: (Mentor/Trainer/Admin) Confirm and save senior live verification with strict target check.
-- `PATCH /batch/:batchId/custom`: (Trainer/Admin) Customize weekly target counts for a batch.
-- `PATCH /counters`: Increment, decrement, or set platform solved problem counters with live target sync.
+- `POST /verify`: (Mentor/Trainer/Admin) Confirm and save senior live verification.
+- `PATCH /batch/:batchId/custom`: (Trainer/Admin) Customize weekly target problem counts for a batch.
+- `PATCH /counters`: Increment, decrement, or set platform solved counters with live target sync.
 
-### Training Calendar & POTD (`/api/v1/trainer`)
+### 2. Trainer Portal & Daily Problems (`/api/v1/trainer`)
 - `GET /calendar`: Fetch scheduled training dates and syllabus logs.
 - `POST /sessions`: Log topics taught and problems discussed for a training date.
 - `GET /daily-problems`: Fetch published company daily problems.
 - `POST /daily-problems`: Publish new company-tagged coding challenge.
 - `POST /daily-problems/:id/submit`: (Mentee) Submit daily problem solution with code and complexity.
 - `GET /daily-problems/:id/submissions`: (Trainer/Admin) Inspect student submissions and source code.
+- `GET /profile`: Retrieve trainer profile and assigned batches.
+- `PATCH /profile`: Update trainer profile details.
 
-### Hierarchical Announcements (`/api/v1/announcements`)
+### 3. Hierarchical Announcements (`/api/v1/announcements`)
 - `GET /`: Retrieve announcements with audience filtering and superior auto-CC visibility.
 - `POST /`: Post targeted announcement (`ALL`, `BATCH`, `MENTOR_GROUP`, `INDIVIDUAL`).
 - `POST /:id/read`: Mark announcement as read.
 
-### Authentication (`/api/v1/auth`)
-- `POST /login`: Authenticate with institutional email/roll number and password.
+### 4. Authentication & Security (`/api/v1/auth`)
+- `POST /login`: Authenticate with roll number or institutional email.
 - `GET /me`: Fetch authenticated user profile, permissions, and `isSuperAdmin` flag.
-- `POST /logout`: Clear session cookies.
+- `POST /logout`: Terminate session and clear cookies.
+- `POST /reset-request`: Submit a self-service password reset request.
+- `GET /reset-requests`: (Admin) View and approve student password reset tickets.
+
+### 5. Mentor Reallocation (`/api/v1`)
+- `POST /reallocate-mentor`: Bulk transfer students from source to destination mentor.
+- `POST /mentees/:id/mentors`: Reassign an individual student to a new mentor.
+- `GET /mentees?mentorId=...`: Filter mentees list by assigned mentor.
+
+### 6. Tasks & Evaluations (`/api/v1/tasks`, `/api/v1/mentee`, `/api/v1/mentor`)
+- `GET /tasks`: List published weekly tasks.
+- `POST /tasks`: (Mentor/Trainer/Admin) Create a new weekly coding task.
+- `GET /mentee/tasks/:taskId`: Fetch mentee problem notes and submission status.
+- `POST /mentee/tasks/:taskId/notes`: Save draft problem notes.
+- `POST /mentee/tasks/:taskId/submit`: Finalize and submit task version.
+- `GET /mentor/task-reviews`: View pending mentee submission queue.
+- `POST /mentor/task-reviews/:submissionId`: Submit review decision (`APPROVED` or `RESUBMISSION_REQUIRED`).
+
+### 7. Mock Interviews (`/api/v1`)
+- `GET /mentor/mocks`: List mock sections and summary statistics.
+- `POST /mentor/mocks`: Create new mock interview section.
+- `POST /mentor/mocks/:id/slots`: Assign mentee to evaluator, date, time, and room.
+- `POST /mentor/mocks/slots/:slotId/evaluate`: Record rubric evaluation (Technical, Communication, Problem Solving).
+- `GET /mentee/mocks`: Mentee's upcoming scheduled mock slots and past evaluation reports.
+
+### 8. Grievances & Support (`/api/v1/complaints`)
+- `GET /complaints`: List complaints scoped to user role and privacy filters.
+- `POST /complaints`: Submit a grievance (choose Mentor vs. Admin target).
+- `GET /complaints/:id`: Retrieve complaint details and conversation history.
+- `POST /complaints/:id/messages`: Post a reply in the discussion thread.
+- `POST /complaints/:id/forward`: Escalate a mentor-level complaint to administration.
+- `PATCH /complaints/:id/status`: Update status (`IN_REVIEW`, `RESOLVED`, `REJECTED`).
+
+### 9. 1-on-1 Doubt Sessions (`/api/v1/doubt-sessions`)
+- `GET /doubt-sessions`: List sessions for mentee or mentor.
+- `POST /doubt-sessions`: Mentee requests 1-on-1 doubt clearing session.
+- `POST /doubt-sessions/:id/schedule`: Mentor assigns timeslot, Google Meet URL, or venue.
+- `POST /doubt-sessions/:id/complete`: Mentor marks session completed with outcome notes.
+- `POST /doubt-sessions/:id/cancel`: Cancel or decline request with reason.
+
+### 10. Bulk Import & Reports (`/api/v1/bulk-import`, `/api/v1/reports`)
+- `POST /bulk-import/preview`: Parse and validate uploaded Excel/CSV file.
+- `POST /bulk-import/execute`: Execute bulk user creation or update.
+- `GET /reports/tasks/csv`: Export weekly tasks completion report.
+- `GET /reports/mentees/csv`: Export student performance and coding profile stats.
+- `GET /reports/mocks/csv`: Export mock interview scores and evaluations.
 
 ---
 
-## 🚀 Local Setup & Installation Guide
+## 🛠️ Local Development & Deployment Guide
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18.0.0 or higher)
 - [npm](https://www.npmjs.com/) (v9.0.0 or higher)
 - Active PostgreSQL database or Supabase project
 
-### 1. Repository Setup
+### 1. Clone Repository
 ```bash
 git clone https://github.com/2303A52012/mentorhub.git
 cd mentorhub
@@ -294,8 +505,8 @@ cd mentorhub
 ```env
 PORT=5001
 NODE_ENV=development
-DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.<project-ref>:<password>@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.<ref>:<password>@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
 JWT_SECRET="mentorhub_jwt_super_secret_production_key_2026"
 JWT_EXPIRES_IN="7d"
 CLIENT_URL="http://localhost:5173"
@@ -306,22 +517,20 @@ CLIENT_URL="http://localhost:5173"
 VITE_API_URL="/api/v1"
 ```
 
-### 3. Install Dependencies & Initialize Database
-
+### 3. Install Dependencies & Synchronize Database
 ```bash
-# Install server dependencies and synchronize Prisma schema
+# Server setup
 cd server
 npm install
 npx prisma db push
 npx prisma generate
 
-# Install client dependencies
+# Client setup
 cd ../client
 npm install
 ```
 
-### 4. Running the Development Environment
-
+### 4. Start Development Servers
 Run backend and frontend in separate terminals:
 ```bash
 # Terminal 1 - Backend API:
@@ -333,40 +542,41 @@ cd client
 npm run dev
 ```
 
-- **Frontend Client**: `http://localhost:5173`
+- **Client Application**: `http://localhost:5173`
 - **Backend API**: `http://localhost:5001`
-- **API Health Check**: `http://localhost:5001/api/health`
+- **Health Endpoint**: `http://localhost:5001/api/health`
 
 ---
 
-## 🔐 Default Access & Sample Credentials
+## 🔑 Default Institutional Credentials
 
-All registered accounts use their institutional email address:
-
-| Persona | Sample Login Email / ID | Default Password | Role Access |
+| Persona | Email / Identifier | Default Password | Scope / Permissions |
 | :--- | :--- | :--- | :--- |
-| **Super Administrator** | `admin@sru.edu.in` | `Password@123` | Platform Admin + Admin Management |
-| **Corporate Trainer (Batch 1)** | `trainer.b1@sru.edu.in` | `Password@123` | Batch 1 Calendar, POTD, Batch Audit |
-| **Corporate Trainer (Batch 2)** | `trainer.b2@sru.edu.in` | `Password@123` | Batch 2 Calendar, POTD, Batch Audit |
-| **Faculty Lead / Mentor** | `2303a51812@sru.edu.in` | `Password@123` | Mentor Dashboard, Review Queue & Live Audit |
-| **Student Mentee** | `2403a51015@sru.edu.in` | `Password@123` | Mentee Tasks, POTD, Targets, Counters |
+| **Super Administrator** | `admin@sru.edu.in` | `Password@123` | Global Platform & Admin Delegation Authority |
+| **Corporate Trainer (Batch 1)** | `trainer.b1@sru.edu.in` | `Password@123` | G6-B1 Calendar, POTD, Batch Audit & Tasks |
+| **Corporate Trainer (Batch 2)** | `trainer.b2@sru.edu.in` | `Password@123` | G6-B2 Calendar, POTD, Batch Audit & Tasks |
+| **Corporate Trainer (Batch 3)** | `trainer.b3@sru.edu.in` | `Password@123` | G6-B3 Calendar, POTD, Batch Audit & Tasks |
+| **Corporate Trainer (Batch 4)** | `trainer.b4@sru.edu.in` | `Password@123` | G6-B4 Calendar, POTD, Batch Audit & Tasks |
+| **Faculty Lead / Mentor** | `2303a51812@sru.edu.in` | `Password@123` | Mentor Reviews, Mocks, Live Target Audit (Mentees) |
+| **Student Mentee** | `2403a51015@sru.edu.in` | `Password@123` | Mentee Dashboard, POTD, Targets, Platform Counters |
 
 ---
 
-## 🧪 Testing & Verification
+## 🧪 Verification & Health Checks
 
 ```bash
-# Validate client production bundle and Tailwind compilation:
+# Validate frontend compilation & Tailwind CSS bundle:
 cd client
 npm run build
 
-# Run server syntax and integration checks:
+# Verify backend syntax & route controllers:
 cd ../server
 node --check src/controllers/weeklyTargetController.js
 node --check src/controllers/trainerController.js
+node --check src/controllers/userController.js
 ```
 
 ---
 
-## 📄 License
-Developed for SR University by Palakurthi Lalith Prakash. All rights reserved. Built with modern full-stack best practices for scalable academic training.
+## 📄 License & Attribution
+Developed for **SR University** by **Palakurthi Lalith Prakash**. All rights reserved. Engineered for institutional scalability, secure student mentorship, and placement excellence.
