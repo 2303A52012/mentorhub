@@ -97,7 +97,7 @@ All university member identities follow the standardized SRU institutional email
 | :--- | :--- | :--- |
 | **Super Administrator** | `admin@sru.edu.in` | Global system authority; exclusively appoints and manages delegated platform administrators. |
 | **Administrator** | `admin.{name}@sru.edu.in` | Manages batches, mentors, mentees, global audit sheets, reports, and complaints. |
-| **Corporate Trainer** | `trainer.{batch}@sru.edu.in` | Batch director for a specific cohort (G6-B1, G6-B2, G6-B3, G6-B4); manages calendar, POTD, batch tasks, and pacing adjustments. |
+| **Corporate Trainer** | `trainer.{batch}@sru.edu.in` (e.g. `trainer.g6-b1@sru.edu.in`) | Batch director for a specific cohort (G6-B1, G6-B2, G6-B3, G6-B4); manages calendar, POTD, batch tasks, and pacing adjustments. |
 | **Faculty Mentor** | `<facultyRoll>@sru.edu.in` | Mentors ~10–12 assigned students; conducts mock evaluations, 1-on-1 doubt sessions, and weekly live target verifications. |
 | **Student Mentee** | `<studentRoll>@sru.edu.in` | Solves weekly tasks, POTD challenges, reports platform solved counts, attends mocks, and tracks W1–W12 target badges. |
 
@@ -114,11 +114,11 @@ All university member identities follow the standardized SRU institutional email
 ---
 
 ### 1. Corporate Trainer Portal & Batch Scope
-- **Batch Cohort Directors**: Trainers manage one of four designated student batches:
-  - `G6-B1`: Trainer `trainer.b1@sru.edu.in`
-  - `G6-B2`: Trainer `trainer.b2@sru.edu.in`
-  - `G6-B3`: Trainer `trainer.b3@sru.edu.in`
-  - `G6-B4`: Trainer `trainer.b4@sru.edu.in`
+- **Batch Cohort Directors**: Dedicated trainers manage each designated student batch:
+  - `G6-B1`: **Prof. Rajesh Sharma** (`trainer.g6-b1@sru.edu.in`)
+  - `G6-B2`: **Prof. Sneha Kulkarni** (`trainer.g6-b2@sru.edu.in`)
+  - `G6-B3`: **Prof. Vikram Rao** (`trainer.g6-b3@sru.edu.in`)
+  - `G6-B4`: **Dr. Ananya Roy** (`trainer.g6-b4@sru.edu.in`)
 - **Batch Isolation**: Trainers exclusively access students, mentors, and submissions belonging to their assigned batch.
 - **Batch Task Assignments**: Post assignments targeted to the entire cohort or custom student subsets.
 - **Batch Profile Management**: Dedicated trainer profile pages display assigned batches, cabin venues, and specialization.
@@ -550,15 +550,17 @@ npm run dev
 
 ## 🔑 Default Institutional Credentials
 
-| Persona | Email / Identifier | Default Password | Scope / Permissions |
-| :--- | :--- | :--- | :--- |
-| **Super Administrator** | `admin@sru.edu.in` | `Password@123` | Global Platform & Admin Delegation Authority |
-| **Corporate Trainer (Batch 1)** | `trainer.b1@sru.edu.in` | `Password@123` | G6-B1 Calendar, POTD, Batch Audit & Tasks |
-| **Corporate Trainer (Batch 2)** | `trainer.b2@sru.edu.in` | `Password@123` | G6-B2 Calendar, POTD, Batch Audit & Tasks |
-| **Corporate Trainer (Batch 3)** | `trainer.b3@sru.edu.in` | `Password@123` | G6-B3 Calendar, POTD, Batch Audit & Tasks |
-| **Corporate Trainer (Batch 4)** | `trainer.b4@sru.edu.in` | `Password@123` | G6-B4 Calendar, POTD, Batch Audit & Tasks |
-| **Faculty Lead / Mentor** | `2303a51812@sru.edu.in` | `Password@123` | Mentor Reviews, Mocks, Live Target Audit (Mentees) |
-| **Student Mentee** | `2403a51015@sru.edu.in` | `Password@123` | Mentee Dashboard, POTD, Targets, Platform Counters |
+| Persona | Full Name / Identity | Institutional Email | Default Password | Scope / Permissions |
+| :--- | :--- | :--- | :--- | :--- |
+| **Super Administrator** | Sunil Reddy | `admin@sru.edu.in` | `Password@123` | Global Platform & Admin Delegation Authority |
+| **Corporate Trainer (Batch 1)** | Prof. Rajesh Sharma | `trainer.g6-b1@sru.edu.in` | `Password@123` | G6-B1 Calendar, POTD, Batch Audit & Tasks |
+| **Corporate Trainer (Batch 2)** | Prof. Sneha Kulkarni | `trainer.g6-b2@sru.edu.in` | `Password@123` | G6-B2 Calendar, POTD, Batch Audit & Tasks |
+| **Corporate Trainer (Batch 3)** | Prof. Vikram Rao | `trainer.g6-b3@sru.edu.in` | `Password@123` | G6-B3 Calendar, POTD, Batch Audit & Tasks |
+| **Corporate Trainer (Batch 4)** | Dr. Ananya Roy | `trainer.g6-b4@sru.edu.in` | `Password@123` | G6-B4 Calendar, POTD, Batch Audit & Tasks |
+| **Faculty Lead / Mentor** | Faculty Lead (Sample) | `2303a51812@sru.edu.in` | `Password@123` | Mentor Reviews, Mocks, Live Target Audit (Mentees) |
+| **Faculty Mentor (Sample)** | Mattapally Meghana | `2303a52505@sru.edu.in` | `Password@123` | Mentor Reviews, Mocks, Live Target Audit (Mentees) |
+| **Student Mentee (Sample)** | Student (Sample) | `2403a51015@sru.edu.in` | `Password@123` | Mentee Dashboard, POTD, Targets, Platform Counters |
+| **Student Mentee (Sample)** | Kankanala Rishikesh Reddy | `2403a52353@sru.edu.in` | `Password@123` | Mentee Dashboard, POTD, Targets, Platform Counters |
 
 ---
 
