@@ -21,6 +21,7 @@ import complaintRoutes from './routes/complaintRoutes.js';
 import doubtSessionRoutes from './routes/doubtSessionRoutes.js';
 import trainerRoutes from './routes/trainerRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
+import weeklyTargetRoutes from './routes/weeklyTargetRoutes.js';
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use('/api/v1/complaints', complaintRoutes);
 app.use('/api/v1/doubt-sessions', doubtSessionRoutes);
 app.use('/api/v1/trainer', trainerRoutes);
 app.use('/api/v1/announcements', announcementRoutes);
+app.use('/api/v1/weekly-targets', weeklyTargetRoutes);
 
 // Error handler
 app.use(errorHandler);

@@ -50,6 +50,7 @@ import { TrainerProfilePage } from './pages/trainer/Profile';
 import { Complaints } from './pages/common/Complaints';
 import { DoubtSessions } from './pages/common/DoubtSessions';
 import { Announcements } from './pages/common/Announcements';
+import { WeeklyTargets } from './pages/common/WeeklyTargets';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -219,6 +220,14 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="admin/targets"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <WeeklyTargets />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Mentor Routes */}
         <Route
@@ -341,6 +350,14 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="mentor/targets"
+          element={
+            <ProtectedRoute allowedRoles={['MENTOR', 'ADMIN']}>
+              <WeeklyTargets />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Trainer Routes — Reusing finalized components */}
         <Route
@@ -436,6 +453,14 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
               <TrainerProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="trainer/targets"
+          element={
+            <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+              <WeeklyTargets />
             </ProtectedRoute>
           }
         />
@@ -544,6 +569,22 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['MENTEE']}>
               <DoubtSessions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="mentee/targets"
+          element={
+            <ProtectedRoute allowedRoles={['MENTEE']}>
+              <WeeklyTargets />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="weekly-targets"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER', 'MENTOR', 'MENTEE']}>
+              <WeeklyTargets />
             </ProtectedRoute>
           }
         />

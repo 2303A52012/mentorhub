@@ -27,6 +27,7 @@ import {
   Key
 } from 'lucide-react';
 import { ResetUserPasswordModal } from '../../components/common/ResetUserPasswordModal';
+import { PlatformCountersBlock } from '../../components/profile/PlatformCountersBlock';
 
 export const MentorMenteeProfile = () => {
   const { id: paramId } = useParams();
@@ -488,6 +489,18 @@ export const MentorMenteeProfile = () => {
                   </span>
                 )}
             </div>
+          </div>
+
+          {/* Platform Solved Problem Counters Block (Live Synced with Weekly Cumulative Targets) */}
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 shadow-sm">
+            <PlatformCountersBlock
+              codingProfile={coding}
+              studentId={targetId}
+              canEdit={canEdit}
+              onUpdate={(updatedCoding) => {
+                setMentee((prev) => (prev ? { ...prev, codingProfile: { ...prev.codingProfile, ...updatedCoding } } : prev));
+              }}
+            />
           </div>
 
           {/* Assigned Tasks History */}

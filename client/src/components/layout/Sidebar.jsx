@@ -24,7 +24,8 @@ import {
   X,
   Megaphone,
   Zap,
-  Layers
+  Layers,
+  Target
 } from 'lucide-react';
 
 export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
@@ -39,6 +40,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
       { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/admin/users', label: 'User Directory', icon: Users },
       { to: '/admin/batches', label: 'Batches', icon: FolderGit2 },
+      { to: '/admin/targets', label: 'Weekly Targets (W1-W12)', icon: Target },
       { to: '/admin/training-calendar', label: 'Training Calendar', icon: Calendar },
       { to: '/admin/bulk-import', label: 'Bulk Data Import', icon: UploadCloud },
       { to: '/admin/tasks', label: 'Weekly Tasks', icon: CheckSquare },
@@ -53,6 +55,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
     links = [
       { to: '/trainer/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/trainer/students', label: 'Batch Students', icon: Users },
+      { to: '/trainer/targets', label: 'Weekly Targets (W1-W12)', icon: Target },
       { to: '/trainer/calendar', label: 'Training Calendar', icon: Calendar },
       { to: '/trainer/tasks', label: 'Weekly Tasks', icon: CheckSquare },
       { to: '/trainer/reviews', label: 'Review Submissions', icon: FileCheck },
@@ -65,6 +68,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
     links = [
       { to: '/mentor/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/mentor/mentees', label: 'My Mentees', icon: Users },
+      { to: '/mentor/targets', label: 'Weekly Targets (W1-W12)', icon: Target },
       { to: '/mentor/training-calendar', label: 'Training Calendar', icon: Calendar },
       { to: '/mentor/mocks', label: 'Weekly Mocks', icon: CalendarCheck },
       { to: '/mentor/doubt-sessions', label: 'Doubt Sessions', icon: BookOpen },
@@ -79,6 +83,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
   } else if (role === 'MENTEE') {
     links = [
       { to: '/mentee/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/mentee/targets', label: 'Weekly Targets (W1-W12)', icon: Target },
       { to: '/mentee/daily-problems', label: 'Daily Problems (POTD)', icon: Zap },
       { to: '/mentee/training-calendar', label: 'Training Calendar', icon: Calendar },
       { to: '/mentee/mocks', label: 'Weekly Mocks', icon: CalendarCheck },

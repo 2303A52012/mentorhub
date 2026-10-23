@@ -178,6 +178,7 @@ model Batch {
   mockSections     MockSection[]
   trainingSessions TrainingSession[]  @relation("BatchTrainingSessions")
   dailyProblems    DailyProblem[]     @relation("BatchDailyProblems")
+  weeklyTargets    BatchWeeklyTarget[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 }
@@ -323,6 +324,11 @@ model CodingProfile {
   gfgUrl         String   @default("")
   resumeUrl      String   @default("")
   customProfiles Json     @default("[]")
+  leetcodeSolved   Int    @default(0)
+  codechefSolved   Int    @default(0)
+  codeforcesSolved Int    @default(0)
+  hackerrankSolved Int    @default(0)
+  gfgSolved        Int    @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -759,19 +765,36 @@ model AnnouncementRead {
 // ─── Weekly Cumulative Target Verification ────────────────────────────────────
 
 model WeeklyTargetVerification {
-  id         String   @id @default(uuid())
-  menteeId   String
-  mentee     User     @relation("MenteeVerifications", fields: [menteeId], references: [id], onDelete: Cascade)
-  verifierId String
-  verifier   User     @relation("VerifierVerifications", fields: [verifierId], references: [id], onDelete: Cascade)
-  weekNo     Int
-  verified   Boolean  @default(false)
-  notes      String   @default("")
-  verifiedAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(uuid())
+  menteeId      String
+  mentee        User     @relation("MenteeVerifications", fields: [menteeId], references: [id], onDelete: Cascade)
+  verifierId    String
+  verifier      User     @relation("VerifierVerifications", fields: [verifierId], references: [id], onDelete: Cascade)
+  weekNo        Int
+  verifiedCount Int      @default(0)
+  targetMet     Boolean  @default(false)
+  verified      Boolean  @default(false)
+  notes         String   @default("")
+  verifiedAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([menteeId, weekNo])
   @@index([menteeId])
   @@index([verifierId])
+}
+
+model BatchWeeklyTarget {
+  id          String   @id @default(uuid())
+  batchId     String
+  batch       Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  weekNo      Int
+  startDate   DateTime
+  targetCount Int      @default(98)
+  requirement String   @default("Senior Live Review Required")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([batchId, weekNo])
+  @@index([batchId])
 }
