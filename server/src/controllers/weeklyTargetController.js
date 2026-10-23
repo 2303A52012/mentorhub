@@ -232,56 +232,123 @@ export const getBatchAuditSheet = async (req, res, next) => {
     const defaultDef = DEFAULT_TARGET_SCHEDULE.find((d) => d.weekNo === weekNo) || DEFAULT_TARGET_SCHEDULE[0];
     const targetCount = customTarget?.targetCount ?? defaultDef.targetCount;
 
-    // Get all students in this batch
-    const batchMentees = await prisma.batchMentee.findMany({
-      where: { batchId },
-      include: {
-        mentee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            menteeProfile: true,
-            codingProfile: true,
-            weeklyTargetVerificationsReceived: {
-              where: { weekNo },
-              include: {
-                verifier: {
-                  select: { id: true, name: true, email: true, role: true }
+    let students = [];
+
+    if (req.user.role === 'MENTOR') {
+      // Mentors only see their assigned mentees in this batch
+      const myAssignments = await prisma.mentorMenteeAssignment.findMany({
+        where: {
+          mentorId: req.user.id,
+          status: 'ACTIVE',
+          ...(batchId
+            ? {
+                mentee: {
+                  menteeBatches: {
+                    some: { batchId }
+                  }
+                }
+              }
+            : {})
+        },
+        include: {
+          mentee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              menteeProfile: true,
+              codingProfile: true,
+              weeklyTargetVerificationsReceived: {
+                where: { weekNo },
+                include: {
+                  verifier: {
+                    select: { id: true, name: true, email: true, role: true }
+                  }
                 }
               }
             }
           }
+        },
+        orderBy: {
+          mentee: { name: 'asc' }
         }
-      },
-      orderBy: {
-        mentee: { name: 'asc' }
-      }
-    });
+      });
 
-    const students = batchMentees.map((bm) => {
-      const m = bm.mentee;
-      const ver = m.weeklyTargetVerificationsReceived[0] || null;
-      const selfReportedLeetCode = m.codingProfile?.leetcodeSolved ?? 0;
-      const verifiedCount = ver?.verifiedCount ?? 0;
-      const targetMet = ver ? !!ver.targetMet : false;
+      students = myAssignments.map((a) => {
+        const m = a.mentee;
+        const ver = m.weeklyTargetVerificationsReceived[0] || null;
+        const selfReportedLeetCode = m.codingProfile?.leetcodeSolved ?? 0;
+        const verifiedCount = ver?.verifiedCount ?? 0;
+        const targetMet = ver ? !!ver.targetMet : false;
 
-      return {
-        id: m.id,
-        name: m.name,
-        email: m.email,
-        rollNumber: m.menteeProfile?.rollNumber || '',
-        studentId: m.menteeProfile?.studentId || '',
-        section: m.menteeProfile?.section || 'A',
-        selfReportedLeetCode,
-        verified: !!ver?.verified,
-        verifiedCount,
-        targetMet,
-        notes: ver?.notes || '',
-        verifiedAt: ver?.verifiedAt || null,
-        verifier: ver?.verifier ? { id: ver.verifier.id, name: ver.verifier.name, role: ver.verifier.role } : null
-      };
-    });
+        return {
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          rollNumber: m.menteeProfile?.rollNumber || '',
+          studentId: m.menteeProfile?.studentId || '',
+          section: m.menteeProfile?.section || 'A',
+          selfReportedLeetCode,
+          verified: !!ver?.verified,
+          verifiedCount,
+          targetMet,
+          notes: ver?.notes || '',
+          verifiedAt: ver?.verifiedAt || null,
+          verifier: ver?.verifier ? { id: ver.verifier.id, name: ver.verifier.name, role: ver.verifier.role } : null
+        };
+      });
+    } else {
+      // Trainer or Admin: view all students in this batch
+      const batchMentees = await prisma.batchMentee.findMany({
+        where: { batchId },
+        include: {
+          mentee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              menteeProfile: true,
+              codingProfile: true,
+              weeklyTargetVerificationsReceived: {
+                where: { weekNo },
+                include: {
+                  verifier: {
+                    select: { id: true, name: true, email: true, role: true }
+                  }
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          mentee: { name: 'asc' }
+        }
+      });
+
+      students = batchMentees.map((bm) => {
+        const m = bm.mentee;
+        const ver = m.weeklyTargetVerificationsReceived[0] || null;
+        const selfReportedLeetCode = m.codingProfile?.leetcodeSolved ?? 0;
+        const verifiedCount = ver?.verifiedCount ?? 0;
+        const targetMet = ver ? !!ver.targetMet : false;
+
+        return {
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          rollNumber: m.menteeProfile?.rollNumber || '',
+          studentId: m.menteeProfile?.studentId || '',
+          section: m.menteeProfile?.section || 'A',
+          selfReportedLeetCode,
+          verified: !!ver?.verified,
+          verifiedCount,
+          targetMet,
+          notes: ver?.notes || '',
+          verifiedAt: ver?.verifiedAt || null,
+          verifier: ver?.verifier ? { id: ver.verifier.id, name: ver.verifier.name, role: ver.verifier.role } : null
+        };
+      });
+    }
 
     const summary = {
       totalStudents: students.length,
@@ -317,6 +384,23 @@ export const verifyStudentTarget = async (req, res, next) => {
 
     if (!menteeId) {
       return res.status(400).json({ success: false, message: 'Mentee ID is required.' });
+    }
+
+    // If caller is a MENTOR, verify that mentee is assigned to them
+    if (req.user.role === 'MENTOR') {
+      const assignment = await prisma.mentorMenteeAssignment.findFirst({
+        where: {
+          mentorId: req.user.id,
+          menteeId,
+          status: 'ACTIVE'
+        }
+      });
+      if (!assignment) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access restricted: You can only verify targets for your assigned mentees.'
+        });
+      }
     }
 
     const numWeek = Number(weekNo) || 1;

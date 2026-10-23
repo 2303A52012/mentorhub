@@ -650,7 +650,9 @@ export const WeeklyTargets = () => {
           {auditData?.summary && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
               <div className="glass-panel p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Total Cohort Students</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400">
+                  {role === 'MENTOR' ? 'My Assigned Mentees' : 'Total Cohort Students'}
+                </span>
                 <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
                   {auditData.summary.totalStudents}
                 </div>
@@ -695,7 +697,7 @@ export const WeeklyTargets = () => {
                     }`}
                   >
                     {tab === 'ALL'
-                      ? 'All Students'
+                      ? role === 'MENTOR' ? 'My Mentees' : 'All Students'
                       : tab === 'MET'
                       ? 'Target Met'
                       : tab === 'BELOW'
@@ -725,7 +727,11 @@ export const WeeklyTargets = () => {
               </div>
             ) : filteredStudents.length === 0 ? (
               <div className="py-16 text-center space-y-2">
-                <p className="text-xs text-slate-400">No students found matching this criteria.</p>
+                <p className="text-xs text-slate-400">
+                  {role === 'MENTOR'
+                    ? 'No assigned mentees found for this week in this batch.'
+                    : 'No students found matching this criteria.'}
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
