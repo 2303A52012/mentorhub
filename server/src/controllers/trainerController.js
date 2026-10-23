@@ -539,18 +539,71 @@ export const createDailyProblem = async (req, res, next) => {
     const { id: userId, role } = req.user;
     const { batchId, title, description, company = '', difficulty = 'MEDIUM', platform = 'CUSTOM', link = '', tags = [], date } = req.body;
 
-    if (!batchId || !title?.trim() || !description?.trim()) return res.status(400).json({ success: false, message: 'batchId, title, and description are required.' });
-
-    if (role === 'TRAINER') {
-      const access = await prisma.trainerBatch.findUnique({ where: { trainerId_batchId: { trainerId: userId, batchId } } });
-      if (!access) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
+    if (!title?.trim()) {
+      return res.status(400).json({ success: false, message: 'Problem title is required.' });
     }
 
+    let targetBatchId = batchId;
+    if (!targetBatchId && role === 'TRAINER') {
+      const myBatches = await prisma.trainerBatch.findMany({ where: { trainerId: userId }, select: { batchId: true } });
+      if (myBatches.length > 0) targetBatchId = myBatches[0].batchId;
+    }
+
+    if (!targetBatchId) {
+      return res.status(400).json({ success: false, message: 'Target batch is required.' });
+    }
+
+    if (role === 'TRAINER') {
+      const access = await prisma.trainerBatch.findUnique({
+        where: { trainerId_batchId: { trainerId: userId, batchId: targetBatchId } }
+      });
+      if (!access) return res.status(403).json({ success: false, message: 'Access denied: You are not assigned to this batch.' });
+    }
+
+    // Auto-detect platform from link
+    let cleanPlatform = platform || 'CUSTOM';
+    const lowerLink = (link || '').toLowerCase();
+    if (lowerLink.includes('leetcode.com')) cleanPlatform = 'LEETCODE';
+    else if (lowerLink.includes('hackerrank.com')) cleanPlatform = 'HACKERRANK';
+    else if (lowerLink.includes('codechef.com')) cleanPlatform = 'CODECHEF';
+    else if (lowerLink.includes('codeforces.com')) cleanPlatform = 'CODEFORCES';
+    else if (!['LEETCODE', 'CODECHEF', 'CODEFORCES', 'HACKERRANK', 'CUSTOM'].includes(cleanPlatform)) {
+      cleanPlatform = 'CUSTOM';
+    }
+
+    const cleanDesc = (description && description.trim()) ? description.trim() : title.trim();
+    const cleanDiff = ['EASY', 'MEDIUM', 'HARD'].includes(difficulty) ? difficulty : 'MEDIUM';
+
     const problem = await prisma.dailyProblem.create({
-      data: { batchId, postedById: userId, title: title.trim(), description: description.trim(), company, difficulty, platform, link, tags, date: date ? new Date(date) : new Date() },
-      include: { postedBy: { select: { id: true, name: true } }, batch: { select: { id: true, name: true } } }
+      data: {
+        batchId: targetBatchId,
+        postedById: userId,
+        title: title.trim(),
+        description: cleanDesc,
+        company: (company || '').trim(),
+        difficulty: cleanDiff,
+        platform: cleanPlatform,
+        link: (link || '').trim(),
+        tags: Array.isArray(tags) ? tags : [],
+        date: date ? new Date(date) : new Date()
+      },
+      include: {
+        postedBy: { select: { id: true, name: true } },
+        batch: { select: { id: true, name: true, _count: { select: { mentees: true } } } },
+        _count: { select: { submissions: true } }
+      }
     });
-    return res.status(201).json({ success: true, problem });
+
+    const formattedProblem = {
+      ...problem,
+      totalStudents: problem.batch?._count?.mentees || 0,
+      solvedCount: 0,
+      pendingCount: problem.batch?._count?.mentees || 0,
+      isSolved: false,
+      mySubmission: null
+    };
+
+    return res.status(201).json({ success: true, problem: formattedProblem });
   } catch (err) { next(err); }
 };
 
@@ -560,21 +613,50 @@ export const updateDailyProblem = async (req, res, next) => {
     const problem = await prisma.dailyProblem.findUnique({ where: { id: req.params.id } });
     if (!problem) return res.status(404).json({ success: false, message: 'Problem not found.' });
     if (role !== 'ADMIN' && problem.postedById !== userId) return res.status(403).json({ success: false, message: 'Permission denied.' });
-    const { title, description, company, difficulty, platform, link, tags, date } = req.body;
+
+    const { title, description, company, difficulty, platform, link, tags, date, batchId } = req.body;
+
+    let cleanPlatform = platform;
+    if (link) {
+      const lowerLink = link.toLowerCase();
+      if (lowerLink.includes('leetcode.com')) cleanPlatform = 'LEETCODE';
+      else if (lowerLink.includes('hackerrank.com')) cleanPlatform = 'HACKERRANK';
+      else if (lowerLink.includes('codechef.com')) cleanPlatform = 'CODECHEF';
+      else if (lowerLink.includes('codeforces.com')) cleanPlatform = 'CODEFORCES';
+    }
+
     const updated = await prisma.dailyProblem.update({
       where: { id: req.params.id },
       data: {
-        ...(title       ? { title: title.trim() }       : {}),
-        ...(description ? { description: description.trim() } : {}),
-        ...(company !== undefined  ? { company }   : {}),
-        ...(difficulty ? { difficulty }             : {}),
-        ...(platform   ? { platform }               : {}),
-        ...(link !== undefined     ? { link }       : {}),
-        ...(tags       ? { tags }                   : {}),
-        ...(date       ? { date: new Date(date) }   : {})
+        ...(title ? { title: title.trim() } : {}),
+        ...(description !== undefined ? { description: description.trim() } : {}),
+        ...(company !== undefined ? { company: (company || '').trim() } : {}),
+        ...(difficulty ? { difficulty } : {}),
+        ...(cleanPlatform ? { platform: cleanPlatform } : {}),
+        ...(link !== undefined ? { link: (link || '').trim() } : {}),
+        ...(tags !== undefined ? { tags: Array.isArray(tags) ? tags : [] } : {}),
+        ...(date ? { date: new Date(date) } : {}),
+        ...(batchId ? { batchId } : {})
+      },
+      include: {
+        postedBy: { select: { id: true, name: true } },
+        batch: { select: { id: true, name: true, _count: { select: { mentees: true } } } },
+        _count: { select: { submissions: true } }
       }
     });
-    return res.json({ success: true, problem: updated });
+
+    const totalStudents = updated.batch?._count?.mentees || 0;
+    const solvedCount = updated._count?.submissions || 0;
+    const formatted = {
+      ...updated,
+      totalStudents,
+      solvedCount,
+      pendingCount: Math.max(0, totalStudents - solvedCount),
+      isSolved: false,
+      mySubmission: null
+    };
+
+    return res.json({ success: true, problem: formatted });
   } catch (err) { next(err); }
 };
 

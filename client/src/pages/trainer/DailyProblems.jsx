@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'];
+const PLATFORMS = ['LEETCODE', 'CODECHEF', 'CODEFORCES', 'HACKERRANK', 'CUSTOM'];
 const TYPES = ['DSA', 'SYSTEM_DESIGN', 'APTITUDE', 'CODING', 'SQL', 'OTHER'];
 
 const diffColor = {
@@ -54,11 +55,13 @@ export const DailyProblems = () => {
   const [copiedCodeId, setCopiedCodeId] = useState(null);
 
   const defaultForm = {
+    batchId: '',
     title: '',
     description: '',
     link: '',
     company: '',
     difficulty: 'MEDIUM',
+    platform: 'CUSTOM',
     type: 'DSA',
     tags: [],
     tagInput: ''
@@ -67,7 +70,7 @@ export const DailyProblems = () => {
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
   };
 
   useEffect(() => {
@@ -106,18 +109,23 @@ export const DailyProblems = () => {
 
   const openCreate = () => {
     setEditTarget(null);
-    setForm({ ...defaultForm });
+    setForm({
+      ...defaultForm,
+      batchId: selectedBatch || (batches[0]?._id || batches[0]?.id || '')
+    });
     setShowForm(true);
   };
 
   const openEdit = (p) => {
     setEditTarget(p);
     setForm({
-      title: p.title,
+      batchId: p.batchId || selectedBatch,
+      title: p.title || '',
       description: p.description || '',
       link: p.link || '',
       company: p.company || '',
-      difficulty: p.difficulty,
+      difficulty: p.difficulty || 'MEDIUM',
+      platform: p.platform || 'CUSTOM',
       type: p.type || 'DSA',
       tags: p.tags || [],
       tagInput: ''
@@ -127,33 +135,42 @@ export const DailyProblems = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title.trim()) return showToast('Title is required.', 'error');
+    if (!form.title.trim()) return showToast('Problem title is required.', 'error');
+    const targetBatch = form.batchId || selectedBatch || (batches[0]?._id || batches[0]?.id);
+    if (!targetBatch) return showToast('Please select a batch for this problem.', 'error');
+
     setSubmitting(true);
     try {
       const payload = {
-        batchId: selectedBatch,
-        title: form.title,
-        description: form.description,
-        link: form.link,
-        company: form.company,
-        difficulty: form.difficulty,
-        type: form.type,
-        tags: form.tags
+        batchId: targetBatch,
+        title: form.title.trim(),
+        description: form.description?.trim() || form.title.trim(),
+        link: (form.link || '').trim(),
+        company: (form.company || '').trim(),
+        difficulty: form.difficulty || 'MEDIUM',
+        platform: form.platform || 'CUSTOM',
+        tags: form.tags || []
       };
       if (editTarget) {
         const res = await api.patch(`/trainer/daily-problems/${editTarget.id}`, payload);
         setProblems((prev) =>
           prev.map((p) => (p.id === editTarget.id ? { ...p, ...res.data.problem } : p))
         );
-        showToast('Problem updated!');
+        showToast('Problem updated successfully!');
       } else {
         await api.post('/trainer/daily-problems', payload);
-        await fetchProblems();
+        if (targetBatch !== selectedBatch) {
+          setSelectedBatch(targetBatch);
+        } else {
+          await fetchProblems();
+        }
         showToast('Problem posted successfully!');
       }
       setShowForm(false);
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to save problem.', 'error');
+      console.error('Failed to save daily problem:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Failed to save problem.';
+      showToast(errMsg, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -175,6 +192,22 @@ export const DailyProblems = () => {
     if (t && !form.tags.includes(t)) {
       setForm((f) => ({ ...f, tags: [...f.tags, t], tagInput: '' }));
     }
+  };
+
+  const handleLinkChange = (e) => {
+    const rawLink = e.target.value;
+    let detectedPlatform = form.platform || 'CUSTOM';
+    const lk = rawLink.toLowerCase();
+    if (lk.includes('leetcode.com')) detectedPlatform = 'LEETCODE';
+    else if (lk.includes('codechef.com')) detectedPlatform = 'CODECHEF';
+    else if (lk.includes('codeforces.com')) detectedPlatform = 'CODEFORCES';
+    else if (lk.includes('hackerrank.com')) detectedPlatform = 'HACKERRANK';
+
+    setForm((f) => ({
+      ...f,
+      link: rawLink,
+      platform: detectedPlatform
+    }));
   };
 
   // Open Submissions Modal
@@ -748,6 +781,24 @@ export const DailyProblems = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                  Target Batch *
+                </label>
+                <select
+                  value={form.batchId || selectedBatch}
+                  onChange={(e) => setForm((f) => ({ ...f, batchId: e.target.value }))}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 font-semibold"
+                  required
+                >
+                  {batches.map((b) => (
+                    <option key={b._id || b.id} value={b._id || b.id} className="dark:bg-slate-900">
+                      {b.name} ({b.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                   Problem Title *
                 </label>
                 <input
@@ -759,7 +810,7 @@ export const DailyProblems = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                     Difficulty Level
@@ -778,7 +829,23 @@ export const DailyProblems = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-                    Problem Category
+                    Platform
+                  </label>
+                  <select
+                    value={form.platform}
+                    onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 font-semibold"
+                  >
+                    {PLATFORMS.map((p) => (
+                      <option key={p} value={p} className="dark:bg-slate-900">
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                    Category
                   </label>
                   <select
                     value={form.type}
@@ -797,6 +864,17 @@ export const DailyProblems = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                    Problem Link (Optional)
+                  </label>
+                  <input
+                    value={form.link}
+                    onChange={handleLinkChange}
+                    placeholder="https://leetcode.com/problems/…"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                     Company Tag (Optional)
                   </label>
                   <input
@@ -806,28 +884,17 @@ export const DailyProblems = () => {
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-                    Problem Link
-                  </label>
-                  <input
-                    value={form.link}
-                    onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
-                    placeholder="https://leetcode.com/problems/…"
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono"
-                  />
-                </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-                  Brief Description &amp; Hints
+                  Brief Description &amp; Hints <span className="text-[10px] lowercase text-slate-400 font-normal">(optional)</span>
                 </label>
                 <textarea
                   rows={3}
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Problem summary, approach hints, expected complexity…"
+                  placeholder="Problem summary, approach hints, expected complexity... (defaults to title if left blank)"
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-amber-500 resize-none font-sans"
                 />
               </div>
