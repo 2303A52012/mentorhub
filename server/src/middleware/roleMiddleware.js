@@ -71,6 +71,24 @@ export const checkMentorMenteeAccess = async (req, res, next) => {
       return next();
     }
 
+    if (req.user.role === 'TRAINER') {
+      const myBatches = await prisma.trainerBatch.findMany({
+        where: { trainerId: userId },
+        select: { batchId: true }
+      });
+      const batchIds = myBatches.map((b) => b.batchId);
+      const inBatch = await prisma.batchMentee.findFirst({
+        where: { menteeId: menteeId, batchId: { in: batchIds } }
+      });
+      if (!inBatch) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: Mentee is not in your assigned training batches.'
+        });
+      }
+      return next();
+    }
+
     return res.status(403).json({ success: false, message: 'Forbidden' });
   } catch (error) {
     return next(error);

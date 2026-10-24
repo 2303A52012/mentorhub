@@ -26,7 +26,7 @@ import {
   deleteTrainer
 } from '../controllers/trainerController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
-import { authorizeRoles, requireSuperAdmin } from '../middleware/roleMiddleware.js';
+import { authorizeRoles, requireSuperAdmin, checkMentorMenteeAccess } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
@@ -51,8 +51,8 @@ router.post('/users/reallocate-mentor', authorizeRoles('ADMIN'), reallocateMento
 // Mentees routes
 router.get('/mentees', authorizeRoles('ADMIN', 'MENTOR', 'TRAINER'), getMentees);
 router.post('/mentees', authorizeRoles('ADMIN', 'MENTOR'), createMentee);
-router.get('/mentees/:id', getMenteeById);
-router.patch('/mentees/:id', updateMentee);
+router.get('/mentees/:id', checkMentorMenteeAccess, getMenteeById);
+router.patch('/mentees/:id', checkMentorMenteeAccess, updateMentee);
 router.delete('/mentees/:id', authorizeRoles('ADMIN'), deleteMentee);
 router.post('/mentees/:id/mentors', authorizeRoles('ADMIN'), assignMentorToMentee);
 router.post('/users/mentees/:id/mentors', authorizeRoles('ADMIN'), assignMentorToMentee);

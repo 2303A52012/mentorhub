@@ -100,6 +100,17 @@ export const getMenteeReports = async (req, res, next) => {
         select: { menteeId: true }
       });
       where.id = { in: assignments.map((a) => a.menteeId) };
+    } else if (req.user.role === 'TRAINER') {
+      const trainerBatches = await prisma.trainerBatch.findMany({
+        where: { trainerId: userId },
+        select: { batchId: true }
+      });
+      const batchIds = trainerBatches.map((tb) => tb.batchId);
+      const batchMentees = await prisma.batchMentee.findMany({
+        where: { batchId: { in: batchIds } },
+        select: { menteeId: true }
+      });
+      where.id = { in: batchMentees.map((bm) => bm.menteeId) };
     }
 
     const mentees = await prisma.user.findMany({
@@ -185,6 +196,17 @@ export const getMockReports = async (req, res, next) => {
         { evaluatorId: userId },
         { section: { createdById: userId } }
       ];
+    } else if (req.user.role === 'TRAINER') {
+      const trainerBatches = await prisma.trainerBatch.findMany({
+        where: { trainerId: userId },
+        select: { batchId: true }
+      });
+      const batchIds = trainerBatches.map((tb) => tb.batchId);
+      where.mentee = {
+        menteeBatches: {
+          some: { batchId: { in: batchIds } }
+        }
+      };
     }
 
     if (weekNumber) {

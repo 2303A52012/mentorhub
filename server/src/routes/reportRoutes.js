@@ -6,7 +6,7 @@ import { authorizeRoles } from '../middleware/roleMiddleware.js';
 const router = express.Router();
 
 router.use(authenticate);
-router.use(authorizeRoles('ADMIN', 'MENTOR'));
+router.use(authorizeRoles('ADMIN', 'MENTOR', 'TRAINER'));
 
 router.get('/tasks', getTaskReports);
 router.get('/mentees', getMenteeReports);

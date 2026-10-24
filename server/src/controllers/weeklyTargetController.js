@@ -553,7 +553,40 @@ export const updateBatchTargets = async (req, res, next) => {
  */
 export const updateCodingCounters = async (req, res, next) => {
   try {
-    const userId = req.body.studentId && req.user.role !== 'MENTEE' ? req.body.studentId : req.user.id;
+    const isTargetingOther = req.body.studentId && req.body.studentId !== req.user.id;
+    let userId = req.user.id;
+
+    if (isTargetingOther) {
+      if (req.user.role === 'MENTEE') {
+        return res.status(403).json({ success: false, message: 'Forbidden: Mentees can only update their own counters.' });
+      }
+
+      if (req.user.role === 'MENTOR') {
+        const assignment = await prisma.mentorMenteeAssignment.findFirst({
+          where: { mentorId: req.user.id, menteeId: req.body.studentId, status: 'ACTIVE' }
+        });
+        if (!assignment) {
+          return res.status(403).json({ success: false, message: 'Access denied: You can only adjust counters for your assigned mentees.' });
+        }
+      }
+
+      if (req.user.role === 'TRAINER') {
+        const myBatches = await prisma.trainerBatch.findMany({
+          where: { trainerId: req.user.id },
+          select: { batchId: true }
+        });
+        const batchIds = myBatches.map(b => b.batchId);
+        const inBatch = await prisma.batchMentee.findFirst({
+          where: { menteeId: req.body.studentId, batchId: { in: batchIds } }
+        });
+        if (!inBatch) {
+          return res.status(403).json({ success: false, message: 'Access denied: Student is not in your assigned training batches.' });
+        }
+      }
+
+      userId = req.body.studentId;
+    }
+
     const { platform, action, amount, leetcodeSolved, codechefSolved, codeforcesSolved, hackerrankSolved, gfgSolved } = req.body;
 
     // Fetch existing coding profile

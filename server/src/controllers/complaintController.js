@@ -185,22 +185,17 @@ export const getComplaintById = async (req, res, next) => {
     }
 
     // STRICT PERMISSION CHECK:
-    // Mentee: can only view if creator
-    if (user.role === 'MENTEE' && complaint.creatorId !== userId) {
-      return res.status(403).json({ success: false, message: 'Unauthorized to view this complaint.' });
-    }
-
-    // Mentor: can only view if creator OR (targetType === MENTOR && mentorId === userId)
-    if (user.role === 'MENTOR') {
+    if (user.role === 'MENTEE') {
+      if (complaint.creatorId !== userId) {
+        return res.status(403).json({ success: false, message: 'Unauthorized to view this complaint.' });
+      }
+    } else if (user.role === 'MENTOR') {
       const isCreator = complaint.creatorId === userId;
       const isAssignedMentor = complaint.targetType === 'MENTOR' && complaint.mentorId === userId;
       if (!isCreator && !isAssignedMentor) {
         return res.status(403).json({ success: false, message: 'Unauthorized: You cannot view this complaint.' });
       }
-    }
-
-    // Admin: can only view if targetType === ADMIN OR isForwardedToAdmin === true
-    if (user.role === 'ADMIN') {
+    } else if (user.role === 'ADMIN') {
       const isDirectToAdmin = complaint.targetType === 'ADMIN';
       const isForwarded = complaint.isForwardedToAdmin === true;
       if (!isDirectToAdmin && !isForwarded) {
@@ -209,6 +204,12 @@ export const getComplaintById = async (req, res, next) => {
           message: 'Admin cannot view mentor-confidential complaints until forwarded by mentee or mentor.'
         });
       }
+    } else {
+      // TRAINER or any other unpermitted role is strictly forbidden
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Grievances are strictly confidential between student mentees, faculty mentors, and administration.'
+      });
     }
 
     res.status(200).json({ success: true, complaint });
@@ -295,9 +296,11 @@ export const createComplaint = async (req, res, next) => {
       // Mentor raising a grievance -> directed to Admin
       finalTargetType = 'ADMIN';
       assignedMentorId = null;
-    } else {
+    } else if (user.role === 'ADMIN') {
       // Admin creating a record (if applicable)
       finalTargetType = 'ADMIN';
+    } else {
+      return res.status(403).json({ success: false, message: 'Forbidden: Your role is not permitted to raise grievances.' });
     }
 
     const complaint = await prisma.complaint.create({

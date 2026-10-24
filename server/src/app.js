@@ -23,28 +23,83 @@ import trainerRoutes from './routes/trainerRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
 import weeklyTargetRoutes from './routes/weeklyTargetRoutes.js';
 
+import prisma from './config/prisma.js';
+
 const app = express();
+
+// Disable X-Powered-By header to prevent fingerprinting
+app.disable('x-powered-by');
+
+// Security headers middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  if (ENV.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
+// Production-aware CORS configuration
+const allowedOrigins = [
+  ENV.CLIENT_URL,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000'
+].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow localhost and any client port in dev
-      callback(null, true);
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      if (ENV.NODE_ENV === 'production') {
+        const isAllowed = allowedOrigins.includes(origin) || origin.endsWith('.sru.edu.in');
+        if (isAllowed) {
+          return callback(null, true);
+        }
+        return callback(new Error(`CORS blocked: Origin ${origin} not permitted in production.`));
+      }
+
+      // Development mode: permit localhost and dev environments
+      return callback(null, true);
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
   })
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 if (ENV.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', service: 'MentorHub API', timestamp: new Date() });
+// Deep Health check endpoint with database connectivity check
+app.get('/api/health', async (req, res) => {
+  try {
+    // Ping PostgreSQL to verify PgBouncer and DB responsiveness
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      status: 'ok',
+      service: 'MentorHub API',
+      database: 'connected',
+      environment: ENV.NODE_ENV,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'degraded',
+      service: 'MentorHub API',
+      database: 'disconnected',
+      error: ENV.NODE_ENV === 'production' ? 'Database connection failure' : err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // REST API v1 routes

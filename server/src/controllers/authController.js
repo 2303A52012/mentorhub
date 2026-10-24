@@ -441,6 +441,47 @@ export const forgotPassword = async (req, res, next) => {
       });
     }
 
+    if (user.role === 'TRAINER') {
+      const adminUsers = await prisma.user.findMany({
+        where: { role: 'ADMIN', accountStatus: 'ACTIVE' }
+      });
+
+      for (const admin of adminUsers) {
+        await prisma.notification.create({
+          data: {
+            userId: admin.id,
+            type: 'PASSWORD_RESET_REQUEST',
+            title: 'Trainer Password Reset Request',
+            message: `Corporate Trainer ${user.name} (${user.email}) requested a password reset.`,
+            link: '/admin/users'
+          }
+        });
+      }
+
+      await prisma.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: 'PASSWORD_RESET_REQUEST',
+          resourceType: 'User',
+          resourceId: user.id,
+          details: {
+            requesterId: user.id,
+            name: user.name,
+            email: user.email,
+            role: 'TRAINER',
+            status: 'PENDING',
+            requestedAt: now
+          }
+        }
+      });
+
+      return res.status(200).json({
+        success: true,
+        role: 'TRAINER',
+        message: 'Password reset request submitted to the administrator. The admin will review and reset your password.'
+      });
+    }
+
     return res.status(200).json({
       success: true,
       role: 'ADMIN',
