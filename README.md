@@ -557,8 +557,6 @@ npm run dev
 | **Corporate Trainer (Batch 2)** | Prof. Sneha Kulkarni | `trainer.g6-b2@sru.edu.in` | `Password@123` | G6-B2 Calendar, POTD, Batch Audit & Tasks |
 | **Corporate Trainer (Batch 3)** | Prof. Vikram Rao | `trainer.g6-b3@sru.edu.in` | `Password@123` | G6-B3 Calendar, POTD, Batch Audit & Tasks |
 | **Corporate Trainer (Batch 4)** | Dr. Ananya Roy | `trainer.g6-b4@sru.edu.in` | `Password@123` | G6-B4 Calendar, POTD, Batch Audit & Tasks |
-| **Faculty Lead / Mentor** | Faculty Lead (Sample) | `2303a51812@sru.edu.in` | `Password@123` | Mentor Reviews, Mocks, Live Target Audit (Mentees) |
-| **Faculty Mentor (Sample)** | Mattapally Meghana | `2303a52505@sru.edu.in` | `Password@123` | Mentor Reviews, Mocks, Live Target Audit (Mentees) |
 | **Student Mentee (Sample)** | Student (Sample) | `2403a51015@sru.edu.in` | `Password@123` | Mentee Dashboard, POTD, Targets, Platform Counters |
 | **Student Mentee (Sample)** | Kankanala Rishikesh Reddy | `2403a52353@sru.edu.in` | `Password@123` | Mentee Dashboard, POTD, Targets, Platform Counters |
 
