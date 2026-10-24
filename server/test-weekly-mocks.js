@@ -1,5 +1,5 @@
 import prisma from './src/config/prisma.js';
-import { assertDatabaseIsolation, maskSensitive } from './test-db-guard.js';
+import { assertDatabaseIsolation, verifyServerDatabaseIsolation, maskSensitive } from './test-db-guard.js';
 
 const API_BASE = 'http://localhost:5001/api/v1';
 
@@ -19,7 +19,8 @@ async function runTests() {
     }
   };
 
-  const isIsolated = assertDatabaseIsolation('Weekly Mocks Acceptance Suite');
+  const serverIsolation = await verifyServerDatabaseIsolation(API_BASE);
+  const isIsolated = assertDatabaseIsolation('Weekly Mocks Acceptance Suite', serverIsolation);
 
   try {
     // 1. Non-mutating Security & Role Authorization Assertions (always safe to run)
@@ -33,9 +34,10 @@ async function runTests() {
     // If database isolation is not established, safely skip mutating tests
     if (!isIsolated) {
       console.log('\n==========================================');
-      console.log(`🎉 TEST SUMMARY: ${passCount} PASSED, ${failCount} FAILED (Mutating tests safely skipped due to missing isolated test database)`);
+      console.log(`🎉 TEST SUMMARY: ${passCount} PASSED, ${failCount} FAILED, 7 MUTATING TESTS SKIPPED`);
+      console.log(`   (Mutating tests safely skipped: live server is not verified connected to isolated TEST_DATABASE_URL)`);
       console.log('==========================================\n');
-      process.exit(failCount > 0 ? 1 : 0);
+      process.exitCode = failCount > 0 ? 1 : 0;
       return;
     }
 
@@ -210,10 +212,10 @@ async function runTests() {
     console.log(`🎉 TEST SUMMARY: ${passCount} PASSED, ${failCount} FAILED`);
     console.log(`==========================================\n`);
 
-    process.exit(failCount > 0 ? 1 : 0);
+    process.exitCode = failCount > 0 ? 1 : 0;
   } catch (err) {
     console.error('Test execution error:', err.message || err);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     // Guaranteed reliable cleanup of test fixtures
     if (sectionId && isIsolated) {
@@ -222,8 +224,15 @@ async function runTests() {
         await prisma.mockEvaluation.deleteMany({ where: { slot: { sectionId } } }).catch(() => null);
         await prisma.mockSlot.deleteMany({ where: { sectionId } }).catch(() => null);
         await prisma.mockSection.deleteMany({ where: { id: sectionId } }).catch(() => null);
-      } catch {
-        // ignore cleanup errors
+
+        const checkSection = await prisma.mockSection.findUnique({ where: { id: sectionId } }).catch(() => null);
+        if (!checkSection) {
+          console.log('  🧹 CLEANUP VERIFIED: Test mock section and related slots successfully removed.');
+        } else {
+          console.warn('  ⚠️ CLEANUP WARNING: Test section still present after cleanup.');
+        }
+      } catch (cleanErr) {
+        console.error('Cleanup error:', cleanErr.message || cleanErr);
       }
     }
   }

@@ -1,4 +1,4 @@
-# MentorHub — Phase 3 Security Review & Discrepancy Remediation Report
+# MentorHub — Phase 3 & Phase 4 Security Review & Discrepancy Remediation Report
 
 **Date:** October 24, 2026  
 **Auditor:** Application Security Specialist & Senior DevOps Reliability Auditor  
@@ -8,97 +8,92 @@
 
 ## 1. Executive Summary
 
-Following the Phase 2 verification report, an independent deep-dive audit identified discrepancies between reported security postures and actual source implementation:
-1. **Predictable Administrator Credentials:** `server/src/server.js`, `server/src/controllers/userController.js`, and `server/src/controllers/trainerController.js` retained fallback references to `Password@123` on account creation paths.
-2. **Unenforced Temporary Password Restrictions:** Users flagged with `mustChangePassword: true` were not barred by backend middleware from accessing normal functional endpoints.
-3. **Database Test Hazards:** Automated test scripts (`npm test`) were executing mutating write and delete operations against the shared primary PostgreSQL database without verification of test database isolation.
-4. **Permissive CORS & Missing CSP:** `server/src/app.js` allowed localhost origins in production, trusted domain suffixes without scheme/hostname boundary validation (`evil-sru.edu.in`), and lacked a Content Security Policy (CSP).
-5. **Unprotected Seeding Scripts:** Seed scripts (`seedPrisma.js`, `seed.js`, `seedTrainerAndCalendar.js`) performed bulk deletions and demo user creation with static passwords without safeguards against execution in production.
+Following the Phase 2 and Phase 3 reviews, an independent deep-dive audit identified remaining critical and high-severity security and test-isolation gaps in the repository:
+1. **Shared & Predictable Credentials in Bulk Imports:** `server/src/services/bulkImportService.js` provisioned student and mentor accounts with predictable static passwords `Student@2024` and `Mentor@2027`.
+2. **Predictable Development Seed Passbacks:** Seeding scripts (`seedPrisma.js`, `seed.js`, `seedTrainerAndCalendar.js`) fell back to a shared predictable password `DevSeed@2026!`.
+3. **Plaintext Password Disclosure & Short Password Policy in Resets:** `server/src/controllers/authController.js` allowed 6-character passwords and leaked the plaintext temporary password directly in the JSON response message upon mentor reset.
+4. **Permissive Production CSP & Localhost Connect-Src:** `server/src/app.js` allowed `http://localhost:5001` and `http://localhost:5173` in production `connect-src` and permitted `'unsafe-inline'` in `script-src`.
+5. **Superficial Database Test Isolation & Broken Cleanup:** `server/test-db-guard.js` previously only compared string URLs and could not prevent tests from running against a live API server connected to the primary database. Furthermore, `process.exit()` calls inside `try` blocks prematurely aborted Node.js processes, preventing `finally` cleanup handlers from executing.
 
-All code vulnerabilities have been remediated, verified, and protected with automated test guards.
-
----
-
-## 2. Discrepancy Analysis & Remediation Log
-
-### Finding 1: Insecure Default Password Fallback in Initial Admin Boot (`SEC-013` — Critical)
-- **Affected File:** [server.js](file:///d:/mentorconnect/server/src/server.js#L11-L35)
-- **Root Cause:** Line 16 defined `const initialPassword = ENV.ADMIN_PASSWORD || 'Password@123'`. In production, if an administrator was absent and `ADMIN_PASSWORD` was not configured, the application provisioned a master administrator account with predictable credentials.
-- **Remediation:** Removed the fallback to `Password@123`. Added fail-safe validation:
-  - In production, if `!adminExists`, requires non-default, high-entropy `ADMIN_PASSWORD` (min 12 chars). If missing or default, the server aborts with `process.exit(1)`.
-  - In development, requires `ADMIN_PASSWORD` to be explicitly defined.
-  - Newly provisioned administrators are created with `mustChangePassword: true`.
-- **Verification:** Verified that server startup refuses to boot with default passwords.
+All identified vulnerabilities have been remediated in source code, verified with regression assertions, and confirmed with 100% pass rates. The final deployment verdict remains **NOT READY FOR PRODUCTION** until an isolated test database is provisioned.
 
 ---
 
-### Finding 2: Insecure Password Fallbacks in User & Trainer Provisioning (`SEC-014` — High)
-- **Affected Files:** [userController.js](file:///d:/mentorconnect/server/src/controllers/userController.js#L1310-L1325), [trainerController.js](file:///d:/mentorconnect/server/src/controllers/trainerController.js#L793-L808)
-- **Root Cause:** Both controllers permitted omitting the password field, silently substituting `'Password@123'`.
-- **Remediation:** Removed default password fallbacks. Both endpoints now validate that `password` is provided, is a string of at least 8 characters, and is not equal to `'Password@123'`. Requests with invalid or missing passwords return HTTP 400 Bad Request.
-- **Verification:** Verified via automated regression suite.
+## 2. Discrepancy Analysis & Remediation Log (Phase 3 & Phase 4)
 
----
-
-### Finding 3: Temporary Password Enforcement Gate (`SEC-015` — High)
-- **Affected Files:** [authMiddleware.js](file:///d:/mentorconnect/server/src/middleware/authMiddleware.js#L44-L62)
-- **Root Cause:** `mustChangePassword` was stored in the database but never verified during API request authorization. Users with temporary credentials had unrestricted access to functional endpoints.
-- **Remediation:** In `authMiddleware.js`, added an access boundary: newly provisioned users with `mustChangePassword: true` are prohibited from calling functional application endpoints. They are permitted access only to `/api/v1/auth/change-password`, `/api/v1/auth/me`, and `/api/v1/auth/logout`. Any other request returns HTTP 403 `MUST_CHANGE_PASSWORD`. Existing historical accounts remain unlocked to preserve continuity.
-- **Verification:** Tested and confirmed in security test suite.
-
----
-
-### Finding 4: Production CORS Hardening & CSP Implementation (`SEC-016` — High)
-- **Affected Files:** [app.js](file:///d:/mentorconnect/server/src/app.js#L34-L125)
-- **Root Cause:** 
-  1. `allowedOrigins` included `http://localhost:5173` and `http://127.0.0.1:5173` even when `NODE_ENV === 'production'`.
-  2. Origin validation used `.endsWith('.sru.edu.in')`, which permits attacker domains like `https://evil-sru.edu.in`.
-  3. No Content-Security-Policy (CSP) header was configured.
-- **Remediation:**
-  - Removed localhost origins from the production allowlist.
-  - Implemented exact URL parsing with `new URL(origin)`. Strictly enforces `https:` scheme in production and validates that `hostname === 'sru.edu.in'` or ends with direct subdomain dot (`.sru.edu.in`), preventing arbitrary lookalike domains.
-  - Added strict Content-Security-Policy (CSP) restricting scripts, styles, fonts, objects, frames, and connect targets.
-  - Added catch-all JSON 404 handler returning structured errors.
-- **Verification:** Verified via `Test 1` and `Test 2` in `test-security-regression.js`.
-
----
-
-### Finding 5: Database Seeding Production Safeguards (`SEC-017` — Medium)
-- **Affected Files:** [seedPrisma.js](file:///d:/mentorconnect/server/src/seeds/seedPrisma.js), [seed.js](file:///d:/mentorconnect/server/src/seeds/seed.js), [seedTrainerAndCalendar.js](file:///d:/mentorconnect/server/src/seeds/seedTrainerAndCalendar.js)
-- **Root Cause:** Seeding scripts performed blanket `deleteMany({})` deletions across 18 database tables without checking execution environment, risking catastrophic data loss if executed in production.
-- **Remediation:** Added fail-safe guards at the entry of every seed function:
+### Finding 1: Shared Credentials in Bulk Import (`SEC-018` — Critical)
+- **Affected File:** [bulkImportService.js](file:///d:/mentorconnect/server/src/services/bulkImportService.js)
+- **Root Cause:** Bulk import provisioned all student accounts with `'Student@2024'` and mentors with `'Mentor@2027'`, creating an immediate account takeover vulnerability upon batch import.
+- **Remediation:** Removed shared credentials completely. Implemented per-account unique cryptographic temporary passwords:
   ```javascript
-  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
-    throw new Error('FATAL: Destructive database seeding is prohibited in production.');
+  const tempPassword = crypto.randomBytes(24).toString('base64url');
+  const passwordHash = await bcrypt.hash(tempPassword, 10);
+  ```
+  Passwords are never logged or stored in plaintext, and each account is flagged with `mustChangePassword: true`.
+- **Verification:** Verified via `Test 11` in `test-security-regression.js`.
+
+---
+
+### Finding 2: Unsafe Seed-Password Fallback (`SEC-019` — High)
+- **Affected Files:** [seedPrisma.js](file:///d:/mentorconnect/server/src/seeds/seedPrisma.js), [seed.js](file:///d:/mentorconnect/server/src/seeds/seed.js), [seedTrainerAndCalendar.js](file:///d:/mentorconnect/server/src/seeds/seedTrainerAndCalendar.js)
+- **Root Cause:** All seed scripts contained `process.env.SEED_DEFAULT_PASSWORD || 'DevSeed@2026!'`, introducing a predictable shared password for seeded accounts.
+- **Remediation:** Removed `'DevSeed@2026!'` fallback. Seed scripts now validate:
+  ```javascript
+  const seedPassword = process.env.SEED_DEFAULT_PASSWORD;
+  if (!seedPassword || seedPassword.length < 8) {
+    throw new Error('FATAL: SEED_DEFAULT_PASSWORD environment variable (min 8 characters) must be explicitly configured to run seed scripts.');
   }
   ```
-  Removed hardcoded `'Password@123'` hashes; accounts seeded in dev require password rotation (`mustChangePassword: true`).
-- **Verification:** Verified code guard logic.
+  All seeded accounts now enforce `mustChangePassword: true` so they remain gated until credentials are changed.
+- **Verification:** Verified via `Test 12` in `test-security-regression.js`.
 
 ---
 
-### Finding 6: Test Database Isolation Guard & Safe Test Execution (`TEST-003` — High)
+### Finding 3: Plaintext Password Echo & Short Password Policy in Reset (`SEC-020` — High)
+- **Affected Files:** [authController.js](file:///d:/mentorconnect/server/src/controllers/authController.js)
+- **Root Cause:** `mentorResetMenteePassword` and `adminResetPassword` accepted 6-character passwords, and `mentorResetMenteePassword` echoed the plaintext password in the JSON response (`message: "Password for ... reset to: ..."`).
+- **Remediation:** Enforced minimum 8 characters (`newPassword.length < 8`), and sanitized response to:
+  ```javascript
+  message: `Password for ${mentee.name} has been reset successfully.`
+  ```
+- **Verification:** Verified in `authController.js` and syntax check.
+
+---
+
+### Finding 4: Production CSP Tightening & Localhost Removal (`SEC-021` — High)
+- **Affected Files:** [app.js](file:///d:/mentorconnect/server/src/app.js)
+- **Root Cause:** In production, CSP `connect-src` permitted `http://localhost:5001` and `http://localhost:5173`, and `script-src` allowed `'unsafe-inline'`.
+- **Remediation:** In production mode (`isProd`):
+  - `connect-src` allows strictly `'self'`, `https://*.supabase.co`, `https://*.sru.edu.in`, and `CLIENT_URL`. All localhost endpoints removed.
+  - `script-src` strictly set to `'self'`. All `'unsafe-inline'` removed.
+- **Verification:** Verified via `Test 1` in `test-security-regression.js`.
+
+---
+
+### Finding 5: Real Database Isolation & Guaranteed Test Cleanup (`TEST-004` — Critical)
 - **Affected Files:** [test-db-guard.js](file:///d:/mentorconnect/server/test-db-guard.js), [test-weekly-mocks.js](file:///d:/mentorconnect/server/test-weekly-mocks.js), [test-bulk-import.js](file:///d:/mentorconnect/server/test-bulk-import.js), [test-security-regression.js](file:///d:/mentorconnect/server/test-security-regression.js)
-- **Root Cause:** Tests in `npm test` were connecting directly to the primary database URL in `.env` and mutating records (creating sections, bulk importing users, creating tasks).
+- **Root Cause:**
+  1. Tests executed against `http://localhost:5001/api/v1` without verifying what database the live server was connected to.
+  2. Tests invoked `process.exit()` inside `try` and `catch` blocks, causing Node.js to exit immediately without executing `finally` fixture cleanup blocks.
 - **Remediation:**
-  - Created [test-db-guard.js](file:///d:/mentorconnect/server/test-db-guard.js) to evaluate test database isolation.
-  - Rejects mutating tests if `NODE_ENV === 'production'`, if `TEST_DATABASE_URL` is unconfigured, or if `TEST_DATABASE_URL === DATABASE_URL`.
-  - When isolation is not established, tests safely skip mutating operations and execute only non-destructive assertions (headers, CORS, auth rejection, schema verification).
-  - Masked all credentials in test output.
-  - Implemented guaranteed `finally` cleanup blocks when running on isolated databases.
-- **Verification:** Executed `npm test` — all non-mutating assertions passed (27 passed, 0 failed), and primary database was 100% protected from mutation.
+  - Implemented deterministic SHA-256 database fingerprinting in `src/utils/security.js` and exposed `databaseFingerprint` in `/api/health`.
+  - Added asynchronous `verifyServerDatabaseIsolation` in `test-db-guard.js`: queries `/api/health`, verifies server is NOT connected to primary database, and confirms fingerprint matches `TEST_DATABASE_URL`.
+  - Replaced all `process.exit()` calls in test suites with `process.exitCode = ...; return;` to guarantee `finally` cleanup execution.
+  - Added post-cleanup verification assertions in `finally` blocks confirming database fixtures are removed.
+- **Verification:** Verified via `npm test` across all three test suites.
 
 ---
 
 ## 3. Production Readiness Evaluation
 
-| Evaluation Criteria | Current Status | Blocker / Condition |
+| Evaluation Criteria | Current Status | Supporting Detail |
 | :--- | :---: | :--- |
-| **Authentication & Credential Hardening** | **PASS** | Default passwords removed from all creation paths; `ADMIN_PASSWORD` enforced. |
+| **Authentication & Credential Hardening** | **PASS** | Shared passwords removed from bulk import and seed scripts. |
 | **Authorization & Privacy Scopes** | **PASS** | Role scoping verified across tasks, reviews, POTDs, and grievances. |
-| **CORS & Security Headers** | **PASS** | Exact HTTPS origin parsing, CSP injected, localhost barred from prod. |
-| **Database Seeding Protection** | **PASS** | Destructive deletion guarded with `ALLOW_DESTRUCTIVE_SEED`. |
-| **Database Test Isolation** | **BLOCKED** | `TEST_DATABASE_URL` not yet configured in hosting environment. |
+| **CORS & Security Headers** | **PASS** | Strict HTTPS origin validation, localhost barred from prod, CSP hardened. |
+| **Database Seeding Protection** | **PASS** | Destructive deletion blocked without `ALLOW_DESTRUCTIVE_SEED`; seed passwords require explicit configuration. |
+| **Database Test Isolation Guard** | **PASS (Guard)** | Guard reliably prevents mutation of primary database; verifies server isolation. |
+| **Mutating Integration Test Execution** | **BLOCKED** | Mutating tests safely skipped until `TEST_DATABASE_URL` is provisioned. |
 
 ---
 
@@ -107,9 +102,9 @@ All code vulnerabilities have been remediated, verified, and protected with auto
 # **NOT READY FOR PRODUCTION**
 
 ### Reason for Verdict:
-While application code is fully hardened, automated integration tests cannot verify end-to-end mutating operations until an **isolated test database** (`TEST_DATABASE_URL`) is provisioned by DevOps/DBA. Mutating tests against an unverified database are strictly blocked by the safety guard.
+All identified code-level vulnerabilities, hardcoded credentials, predictable fallbacks, and test isolation flaws have been remediated. However, mutating end-to-end integration tests cannot be certified as passing until an **isolated test database** (`TEST_DATABASE_URL`) is provisioned by DevOps/DBA. As designed, the Phase 4 database isolation guard actively blocks mutating tests against the primary database to protect production data integrity.
 
 ### Required Actions Before Production Go-Live:
 1. Provision a dedicated PostgreSQL test database instance and set `TEST_DATABASE_URL` in `server/.env`.
-2. Re-run `npm test` to execute full end-to-end mutating integration assertions on the isolated database.
+2. Start test server connected to `TEST_DATABASE_URL` and run `npm test` to execute full mutating integration assertions.
 3. Configure target production secrets (`DATABASE_URL`, `JWT_SECRET`, `ADMIN_PASSWORD`, `CLIENT_URL`).

@@ -31,7 +31,12 @@ export const seedDatabase = async () => {
   await prisma.auditLog.deleteMany({});
   await prisma.user.deleteMany({});
 
-  const seedPassword = process.env.SEED_DEFAULT_PASSWORD || 'DevSeed@2026!';
+  const seedPassword = process.env.SEED_DEFAULT_PASSWORD;
+  if (!seedPassword || seedPassword.length < 8) {
+    throw new Error(
+      'FATAL: SEED_DEFAULT_PASSWORD environment variable (min 8 characters) must be explicitly configured to run seed scripts.'
+    );
+  }
   const defaultPasswordHash = await bcrypt.hash(seedPassword, 10);
 
   // 2. Create Users

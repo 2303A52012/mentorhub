@@ -378,9 +378,7 @@ export const executeImport = async (importId, importMode = 'CREATE', customMappi
   const { fileName, fileSize, records, rawHeaders } = session;
   const activeMapping = customMapping || session.detectedMapping;
 
-  // Hashes for default passwords
-  const studentDefaultPasswordHash = await bcrypt.hash('Student@2024', 10);
-  const mentorDefaultPasswordHash = await bcrypt.hash('Mentor@2027', 10);
+  // Per-account unique cryptographic temporary passwords are generated during individual account creation.
 
   // Stats accumulators
   let studentsCreated = 0;
@@ -451,11 +449,15 @@ export const executeImport = async (importId, importMode = 'CREATE', customMappi
           ? `${mentorData.rollNumber ? mentorData.rollNumber.trim().toLowerCase() : mentorData.name.trim().replace(/\s+/g, '.').toLowerCase()}.${crypto.randomUUID().substring(0, 4)}@sru.edu.in`
           : mentorEmail;
 
+        // Generate unique cryptographically secure temporary credential for new mentor
+        const tempMentorSecret = crypto.randomBytes(24).toString('base64url');
+        const mentorPasswordHash = await bcrypt.hash(tempMentorSecret, 10);
+
         const newMentor = await prisma.user.create({
           data: {
             name: mentorData.name,
             email: finalEmail,
-            passwordHash: mentorDefaultPasswordHash,
+            passwordHash: mentorPasswordHash,
             role: 'MENTOR',
             accountStatus: 'ACTIVE',
             mustChangePassword: true,
@@ -564,14 +566,16 @@ export const executeImport = async (importId, importMode = 'CREATE', customMappi
       let studentUserId = null;
 
       if (!existingProfile && !existingUserByEmail) {
-        // Create new Student account with default password Student@2024
+        // Generate unique cryptographically secure temporary credential for new student
+        const tempStudentSecret = crypto.randomBytes(24).toString('base64url');
+        const studentPasswordHash = await bcrypt.hash(tempStudentSecret, 10);
         const finalEmail = studentEmail;
 
         const newUser = await prisma.user.create({
           data: {
             name: cleanName,
             email: finalEmail,
-            passwordHash: studentDefaultPasswordHash,
+            passwordHash: studentPasswordHash,
             role: 'MENTEE',
             accountStatus: 'ACTIVE',
             mustChangePassword: true,

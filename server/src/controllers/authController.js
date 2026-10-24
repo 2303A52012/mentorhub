@@ -548,10 +548,10 @@ export const mentorResetMenteePassword = async (req, res, next) => {
     const { menteeId, newPassword } = req.body;
     const mentorId = req.user.id || req.user._id;
 
-    if (!menteeId || !newPassword || newPassword.length < 6) {
+    if (!menteeId || !newPassword || newPassword.length < 8) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide valid mentee ID and a new password (min 6 characters).'
+        message: 'Please provide valid mentee ID and a new password (min 8 characters).'
       });
     }
 
@@ -622,7 +622,7 @@ export const mentorResetMenteePassword = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: `Password for ${mentee.name} has been successfully reset to: ${newPassword}`
+      message: `Password for ${mentee.name} has been reset successfully.`
     });
   } catch (error) {
     next(error);
@@ -634,10 +634,10 @@ export const adminResetPassword = async (req, res, next) => {
     const { userId, newPassword } = req.body;
     const adminId = req.user.id || req.user._id;
 
-    if (!userId || !newPassword || newPassword.length < 6) {
+    if (!userId || !newPassword || newPassword.length < 8) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide user ID and a new password (min 6 characters).'
+        message: 'Please provide user ID and a new password (min 8 characters).'
       });
     }
 

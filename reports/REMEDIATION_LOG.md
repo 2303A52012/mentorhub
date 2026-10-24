@@ -2,7 +2,7 @@
 
 **Date:** October 24, 2026  
 **Auditor:** Full-Stack Security & Software Engineer  
-**Scope:** Complete chronological remediation log covering Phase 1, Phase 2, and Phase 3 security hardening.
+**Scope:** Complete chronological remediation log covering Phase 1, Phase 2, Phase 3, and Phase 4 gap closure.
 
 ---
 
@@ -27,81 +27,75 @@
 | **SEC-015** | `server/src/middleware/authMiddleware.js` | Authorization / Temp Passwords | Enforced gate blocking newly provisioned users with `mustChangePassword: true` from functional endpoints until password is changed. |
 | **SEC-016** | `server/src/app.js` | Security / CORS & CSP | Barred localhost in production, validated exact origin URL & HTTPS scheme, added strict Content-Security-Policy (CSP), and added catch-all JSON 404 handler. |
 | **SEC-017** | `server/src/seeds/seedPrisma.js`, `seed.js`, `seedTrainerAndCalendar.js` | Ops / Safety | Added fail-safe guards requiring `ALLOW_DESTRUCTIVE_SEED=true` to prevent destructive table deletion in production. |
-| **TEST-003** | `server/test-db-guard.js`, `test-*.js` | Test / Safety | Built database isolation guard requiring dedicated `TEST_DATABASE_URL`. Safely skips mutating tests when running against unisolated database. |
-| **PROD-002** | `server/src/server.js`, `errorMiddleware.js`, `database.js` | Reliability & Resilience | Enhanced graceful shutdown with Prisma disconnect and 10s watchdog; added connection retry resilience (3 attempts, 2s backoff); masked 500 error messages. |
+| **SEC-018** | `server/src/services/bulkImportService.js` | Security / Credentials | Removed shared passwords `Student@2024` and `Mentor@2027`. Generates per-user unique cryptographically random temporary credentials; sets `mustChangePassword: true`. |
+| **SEC-019** | `server/src/seeds/seedPrisma.js`, `seed.js`, `seedTrainerAndCalendar.js` | Security / Seed Fallback | Removed predictable `DevSeed@2026!` fallback. Requires explicit `SEED_DEFAULT_PASSWORD` (min 8 chars) or aborts safely. |
+| **SEC-020** | `server/src/controllers/authController.js` | Privacy / Response Sanitization | Removed plaintext password echo in mentor password reset response message; enforced min 8 characters on reset passwords. |
+| **SEC-021** | `server/src/app.js` | Security / CSP | Removed localhost from production `connect-src`; removed `'unsafe-inline'` from production `script-src`. |
+| **TEST-004** | `server/test-db-guard.js`, `server/src/utils/security.js`, `test-*.js` | Test Isolation / Reliability | Implemented deterministic DB fingerprinting and server isolation verification; replaced `process.exit()` with `process.exitCode` to guarantee `finally` cleanup execution. |
 
 ---
 
-## 2. Phase 3 Remediation Details
+## 2. Phase 4 Remediation Details
 
-### Change 1: Eliminate Insecure Admin Password Fallback (`server.js`)
+### Change 1: Remove Shared Credentials in Bulk Import (`bulkImportService.js`)
 ```javascript
 // BEFORE:
-const initialPassword = ENV.ADMIN_PASSWORD || 'Password@123';
+const defaultPasswordHash = await bcrypt.hash('Student@2024', 10);
+const mentorPasswordHash = await bcrypt.hash('Mentor@2027', 10);
 
 // AFTER:
-if (isProd) {
-  if (!initialPassword || initialPassword === 'Password@123' || initialPassword.length < 12) {
-    console.error('FATAL: Initial admin provisioning in production requires a securely provisioned ADMIN_PASSWORD (min 12 chars).');
-    process.exit(1);
-  }
-} else {
-  if (!initialPassword || initialPassword === 'Password@123') {
-    console.error('FATAL: Insecure default "Password@123" is rejected. Set a secure ADMIN_PASSWORD in server/.env.');
-    process.exit(1);
-  }
-}
+// Generate a unique cryptographically secure temporary password per imported user
+const tempPassword = crypto.randomBytes(24).toString('base64url');
+const passwordHash = await bcrypt.hash(tempPassword, 10);
+// Never log temporary credentials; require mandatory password change
+mustChangePassword: true
 ```
 
-### Change 2: Eliminate Password Fallbacks in Account Creation (`userController.js`, `trainerController.js`)
+### Change 2: Eliminate Dev Seed Password Fallback (`seedPrisma.js`, `seed.js`, `seedTrainerAndCalendar.js`)
 ```javascript
-// Validates that password is provided and meets minimum strength requirements:
-if (!password || typeof password !== 'string' || password.trim().length < 8) {
-  return res.status(400).json({ success: false, message: 'A secure password of at least 8 characters is required.' });
-}
-if (password.trim() === 'Password@123') {
-  return res.status(400).json({ success: false, message: 'Default or predictable passwords like "Password@123" are not permitted.' });
-}
-```
+// BEFORE:
+const seedPassword = process.env.SEED_DEFAULT_PASSWORD || 'DevSeed@2026!';
 
-### Change 3: Temporary Password Access Gate (`authMiddleware.js`)
-```javascript
-// Enforce mandatory password change for newly provisioned users before normal access
-const PHASE3_CUTOFF = new Date('2026-10-24T12:00:00Z');
-const isNewlyProvisioned = user.createdAt && new Date(user.createdAt) > PHASE3_CUTOFF;
-if (user.mustChangePassword && isNewlyProvisioned) {
-  const normalizedPath = (req.originalUrl || req.path || '').split('?')[0];
-  const isAllowedAuthPath =
-    normalizedPath.endsWith('/auth/change-password') ||
-    normalizedPath.endsWith('/auth/me') ||
-    normalizedPath.endsWith('/auth/logout');
-
-  if (!isAllowedAuthPath) {
-    return res.status(403).json({
-      success: false,
-      code: 'MUST_CHANGE_PASSWORD',
-      message: 'Temporary password detected. You must change your password before accessing normal application functionality.'
-    });
-  }
-}
-```
-
-### Change 4: Production CORS Hardening & CSP (`app.js`)
-- Barred `localhost:5173`, `127.0.0.1:5173`, and `localhost:3000` in production.
-- Strictly enforced `https:` protocol and validated that hostname matches `sru.edu.in` or ends with `.sru.edu.in` preceded by a dot (`evil-sru.edu.in` rejected).
-- Added strict Content-Security-Policy (CSP) restricting script, style, font, image, object, and connect origins.
-- Added catch-all JSON 404 handler for unmapped endpoints.
-
-### Change 5: Database Seeding Safeguards (`seedPrisma.js`, `seed.js`, `seedTrainerAndCalendar.js`)
-```javascript
-if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
+// AFTER:
+const seedPassword = process.env.SEED_DEFAULT_PASSWORD;
+if (!seedPassword || seedPassword.length < 8) {
   throw new Error(
-    'FATAL: Destructive database seeding is prohibited in production. ' +
-    'To force seeding in production, you must explicitly set ALLOW_DESTRUCTIVE_SEED=true with authorized confirmation.'
+    'FATAL: SEED_DEFAULT_PASSWORD environment variable (min 8 characters) must be explicitly configured to run seed scripts.'
   );
 }
 ```
 
-### Change 6: Test Database Isolation Guard (`test-db-guard.js`)
-- Requires `TEST_DATABASE_URL` to be explicitly configured, non-empty, and distinct from `DATABASE_URL`.
-- Automatically skips mutating tests when running against an unisolated database, guaranteeing that primary/production records cannot be corrupted.
+### Change 3: Sanitize Password Reset Response & Enforce Minimum 8 Characters (`authController.js`)
+```javascript
+// BEFORE:
+if (!menteeId || !newPassword || newPassword.length < 6) ...
+message: `Password for ${mentee.name} has been successfully reset to: ${newPassword}`
+
+// AFTER:
+if (!menteeId || !newPassword || newPassword.length < 8) ...
+message: `Password for ${mentee.name} has been reset successfully.`
+```
+
+### Change 4: Tighten Production CSP & Eliminate Localhost Endpoints (`app.js`)
+```javascript
+const isProd = ENV.NODE_ENV === 'production';
+const scriptSrc = isProd ? "'self'" : "'self' 'unsafe-inline'";
+const connectSrc = isProd
+  ? ["'self'", "https://*.supabase.co", "https://*.sru.edu.in", ENV.CLIENT_URL].filter(Boolean).join(' ')
+  : "'self' http://localhost:5001 http://localhost:5173 https://*.supabase.co https://*.sru.edu.in";
+```
+
+### Change 5: Real Test Database Isolation & Guaranteed Finally Cleanup (`test-db-guard.js`, `test-*.js`)
+```javascript
+// 1. Deterministic SHA-256 database fingerprinting exposed via /api/health:
+databaseFingerprint: computeDatabaseFingerprint(process.env.DATABASE_URL)
+
+// 2. Asynchronous server isolation verification before mutating tests:
+const serverIsolation = await verifyServerDatabaseIsolation(API_BASE);
+const isIsolated = assertDatabaseIsolation('Suite Name', serverIsolation);
+
+// 3. Replace process.exit() with process.exitCode in test runners:
+process.exitCode = failCount > 0 ? 1 : 0;
+return;
+// Guaranteed execution of finally blocks with post-cleanup verification
+```

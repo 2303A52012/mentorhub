@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import prisma from './src/config/prisma.js';
 import bcrypt from 'bcryptjs';
-import { assertDatabaseIsolation, maskSensitive } from './test-db-guard.js';
+import { assertDatabaseIsolation, verifyServerDatabaseIsolation, maskSensitive } from './test-db-guard.js';
 
 const API_BASE = 'http://localhost:5001/api/v1';
 
@@ -23,7 +23,8 @@ async function runTests() {
     }
   };
 
-  const isIsolated = assertDatabaseIsolation('Bulk Import Verification Suite');
+  const serverIsolation = await verifyServerDatabaseIsolation(API_BASE);
+  const isIsolated = assertDatabaseIsolation('Bulk Import Verification Suite', serverIsolation);
 
   try {
     // 1. Authenticate Admin (read-only token acquisition)
@@ -79,9 +80,10 @@ async function runTests() {
     // If database is not verified isolated, safely skip mutating import commit
     if (!isIsolated) {
       console.log('\n==========================================');
-      console.log(`🎉 TEST SUMMARY: ${passCount} PASSED, ${failCount} FAILED (Mutating bulk commit safely skipped due to missing isolated test database)`);
+      console.log(`🎉 TEST SUMMARY: ${passCount} PASSED, ${failCount} FAILED, 2 MUTATING TESTS SKIPPED`);
+      console.log(`   (Mutating bulk commit safely skipped: live server is not verified connected to isolated TEST_DATABASE_URL)`);
       console.log('==========================================\n');
-      process.exit(failCount > 0 ? 1 : 0);
+      process.exitCode = failCount > 0 ? 1 : 0;
       return;
     }
 
@@ -146,10 +148,10 @@ async function runTests() {
     console.log(`🎉 TEST SUMMARY: ${passCount} PASSED, ${failCount} FAILED`);
     console.log(`==========================================\n`);
 
-    process.exit(failCount > 0 ? 1 : 0);
+    process.exitCode = failCount > 0 ? 1 : 0;
   } catch (err) {
     console.error('Test execution error:', err.message || err);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     // Guaranteed cleanup of temp files
     tempFiles.forEach((f) => {
@@ -158,14 +160,25 @@ async function runTests() {
       }
     });
 
-    // Cleanup test records on isolated DB
+    // Cleanup test records on isolated DB and verify removal
     if (isIsolated) {
       try {
         await prisma.codingProfile.deleteMany({ where: { mentee: { menteeProfile: { rollNumber: 'TEST_99A01' } } } }).catch(() => null);
         await prisma.menteeProfile.deleteMany({ where: { rollNumber: 'TEST_99A01' } }).catch(() => null);
         await prisma.user.deleteMany({ where: { email: { contains: 'test_99a01' } } }).catch(() => null);
         await prisma.user.deleteMany({ where: { email: { contains: 'fac-test-001' } } }).catch(() => null);
-      } catch {}
+
+        const remaining = await prisma.user.findMany({
+          where: { OR: [{ email: { contains: 'test_99a01' } }, { email: { contains: 'fac-test-001' } }] }
+        }).catch(() => []);
+        if (remaining.length === 0) {
+          console.log('  🧹 CLEANUP VERIFIED: Bulk import test fixtures successfully removed from database.');
+        } else {
+          console.warn(`  ⚠️ CLEANUP WARNING: ${remaining.length} test records still present.`);
+        }
+      } catch (cleanErr) {
+        console.error('Cleanup error:', cleanErr.message || cleanErr);
+      }
     }
   }
 }

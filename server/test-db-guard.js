@@ -1,11 +1,35 @@
 import dotenv from 'dotenv';
+import crypto from 'crypto';
+
 dotenv.config();
 
 /**
+ * Computes a deterministic SHA-256 fingerprint for a database connection URL.
+ * Sanitizes and extracts host/database while preserving a unique cryptographic hash
+ * so that live servers and test runners can verify exact database identity without
+ * leaking credentials in API responses or logs.
+ */
+export function computeDatabaseFingerprint(url) {
+  if (!url || typeof url !== 'string' || !url.trim()) return 'none';
+  const cleanUrl = url.trim();
+  try {
+    const parsed = new URL(cleanUrl);
+    const host = parsed.hostname;
+    const port = parsed.port || '5432';
+    const dbName = parsed.pathname.replace(/^\//, '');
+    const hash = crypto.createHash('sha256').update(cleanUrl).digest('hex').substring(0, 16);
+    return `${host}:${port}/${dbName}#${hash}`;
+  } catch {
+    const hash = crypto.createHash('sha256').update(cleanUrl).digest('hex').substring(0, 16);
+    return `opaque#${hash}`;
+  }
+}
+
+/**
  * Evaluates whether the current test execution environment has an explicitly
- * configured, verified isolated test database.
+ * configured, verified isolated test database configuration.
  * 
- * Safety Rules:
+ * Static Safety Rules:
  * 1. NODE_ENV === 'production' immediately blocks all mutating tests.
  * 2. TEST_DATABASE_URL must be explicitly configured.
  * 3. TEST_DATABASE_URL cannot match the primary/production DATABASE_URL.
@@ -29,7 +53,10 @@ export function checkDatabaseIsolation() {
     };
   }
 
-  if (testDbUrl === primaryDbUrl) {
+  const testFingerprint = computeDatabaseFingerprint(testDbUrl);
+  const primaryFingerprint = computeDatabaseFingerprint(primaryDbUrl);
+
+  if (testFingerprint === primaryFingerprint) {
     return {
       isIsolated: false,
       reason: 'TEST_DATABASE_URL matches the primary DATABASE_URL. An isolated test database is required for mutating tests.'
@@ -38,22 +65,83 @@ export function checkDatabaseIsolation() {
 
   return {
     isIsolated: true,
-    testDbUrl
+    testDbUrl,
+    testFingerprint,
+    primaryFingerprint
   };
 }
 
 /**
- * Asserts database isolation for mutating tests.
- * If not isolated, logs a standardized safety warning and returns false so the caller
- * can safely skip mutating operations without throwing uncaught errors.
+ * Asynchronously verifies that the live API server is actually connected to
+ * the isolated test database, preventing tests from silently continuing against
+ * a pre-existing server connected to the primary or an unknown database.
  */
-export function assertDatabaseIsolation(testSuiteName) {
-  const status = checkDatabaseIsolation();
+export async function verifyServerDatabaseIsolation(apiBase = 'http://localhost:5001') {
+  const envCheck = checkDatabaseIsolation();
+  if (!envCheck.isIsolated) {
+    return envCheck;
+  }
+
+  try {
+    const healthUrl = apiBase.endsWith('/api/health') ? apiBase : `${apiBase.replace(/\/api\/v1\/?$/, '')}/api/health`;
+    const res = await fetch(healthUrl, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) {
+      return {
+        isIsolated: false,
+        reason: `Live API server responded with HTTP ${res.status} at ${healthUrl}.`
+      };
+    }
+
+    const data = await res.json();
+    const serverFingerprint = data.databaseFingerprint;
+
+    if (!serverFingerprint) {
+      return {
+        isIsolated: false,
+        reason: 'Live API server did not return a databaseFingerprint. Server must be restarted with Phase 4 security update.'
+      };
+    }
+
+    // Refuse mutating tests if server connects to primary database
+    if (serverFingerprint === envCheck.primaryFingerprint) {
+      return {
+        isIsolated: false,
+        reason: `Live API server is connected to the PRIMARY database (${serverFingerprint}). Mutating tests strictly blocked.`
+      };
+    }
+
+    // Refuse mutating tests if server connects to anything other than TEST_DATABASE_URL
+    if (serverFingerprint !== envCheck.testFingerprint) {
+      return {
+        isIsolated: false,
+        reason: `Live API server database (${serverFingerprint}) does not match configured TEST_DATABASE_URL (${envCheck.testFingerprint}). Tests cannot continue against unverified server.`
+      };
+    }
+
+    return {
+      isIsolated: true,
+      serverFingerprint,
+      testFingerprint: envCheck.testFingerprint
+    };
+  } catch (err) {
+    return {
+      isIsolated: false,
+      reason: `Could not verify live server isolation: ${err.message}`
+    };
+  }
+}
+
+/**
+ * Asserts database isolation for mutating tests.
+ * Logs standardized safety information and returns isolation status.
+ */
+export function assertDatabaseIsolation(testSuiteName, isolationStatus = null) {
+  const status = isolationStatus || checkDatabaseIsolation();
   if (!status.isIsolated) {
     console.log(`\n🛡️  [TEST SAFETY GUARD] ${testSuiteName} — Mutating database tests SKIPPED`);
     console.log(`   Reason: ${status.reason}`);
     console.log(`   Safety Guarantee: Primary database records preserved; no mutating operations performed.`);
-    console.log(`   To enable mutating integration tests: configure an isolated TEST_DATABASE_URL in server/.env.\n`);
+    console.log(`   To enable mutating integration tests: configure an isolated TEST_DATABASE_URL and start API against it.\n`);
     return false;
   }
   return true;

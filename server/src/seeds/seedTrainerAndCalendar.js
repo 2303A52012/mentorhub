@@ -29,7 +29,12 @@ async function seedTrainerAndCalendar() {
   console.log(`Found ${batches.length} cohorts:`, Object.keys(batchMap).join(', '));
 
   // 2. Create or ensure Default Trainers
-  const seedPassword = process.env.SEED_DEFAULT_PASSWORD || 'DevSeed@2026!';
+  const seedPassword = process.env.SEED_DEFAULT_PASSWORD;
+  if (!seedPassword || seedPassword.length < 8) {
+    throw new Error(
+      'FATAL: SEED_DEFAULT_PASSWORD environment variable (min 8 characters) must be explicitly configured to run seed scripts.'
+    );
+  }
   const passwordHash = await bcrypt.hash(seedPassword, 10);
 
   const trainersData = [
@@ -78,7 +83,7 @@ async function seedTrainerAndCalendar() {
           passwordHash,
           role: 'TRAINER',
           accountStatus: 'ACTIVE',
-          mustChangePassword: false,
+          mustChangePassword: true,
           trainerProfile: {
             create: {
               designation: tData.designation,

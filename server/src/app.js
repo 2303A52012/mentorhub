@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import { ENV } from './config/env.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
+import { isAllowedOrigin, computeDatabaseFingerprint } from './utils/security.js';
 
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -40,13 +41,19 @@ app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
 
   // Content-Security-Policy (CSP) tailored for MentorHub React SPA
+  const isProd = ENV.NODE_ENV === 'production';
+  const scriptSrc = isProd ? "'self'" : "'self' 'unsafe-inline'";
+  const connectSrc = isProd
+    ? ["'self'", "https://*.supabase.co", "https://*.sru.edu.in", ENV.CLIENT_URL].filter(Boolean).join(' ')
+    : "'self' http://localhost:5001 http://localhost:5173 https://*.supabase.co https://*.sru.edu.in";
+
   const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' http://localhost:5001 http://localhost:5173 https://*.supabase.co https://*.sru.edu.in",
+    `connect-src ${connectSrc}`,
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
@@ -60,67 +67,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Production-aware CORS origin validator
-const isAllowedOrigin = (origin) => {
-  if (!origin) return true;
-
-  if (ENV.NODE_ENV === 'production') {
-    try {
-      const parsed = new URL(origin);
-      // In production, strictly require https protocol
-      if (parsed.protocol !== 'https:') {
-        return false;
-      }
-
-      // Check explicit CLIENT_URL
-      if (ENV.CLIENT_URL) {
-        try {
-          const clientParsed = new URL(ENV.CLIENT_URL);
-          if (parsed.origin === clientParsed.origin) return true;
-        } catch {
-          // ignore invalid client URL
-        }
-      }
-
-      // Validate exact university domain or exact subdomain of sru.edu.in
-      const hostname = parsed.hostname.toLowerCase();
-      if (hostname === 'sru.edu.in' || hostname.endsWith('.sru.edu.in')) {
-        // Ensure not evil-sru.edu.in: prefix must be dot
-        const suffix = '.sru.edu.in';
-        if (hostname === 'sru.edu.in' || (hostname.endsWith(suffix) && hostname.length > suffix.length)) {
-          return true;
-        }
-      }
-
-      return false;
-    } catch {
-      return false;
-    }
-  }
-
-  // Development mode: permit explicitly configured local dev origins
-  const devAllowed = [
-    ENV.CLIENT_URL,
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:3000'
-  ].filter(Boolean);
-
-  try {
-    const parsed = new URL(origin);
-    return devAllowed.includes(parsed.origin);
-  } catch {
-    return false;
-  }
-};
-
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g., server-to-server, mobile app native fetch, health checks)
       if (!origin) return callback(null, true);
 
-      if (isAllowedOrigin(origin)) {
+      if (isAllowedOrigin(origin, ENV.NODE_ENV, ENV.CLIENT_URL)) {
         return callback(null, true);
       }
 
@@ -141,7 +94,7 @@ if (ENV.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// Deep Health check endpoint with database connectivity check
+// Deep Health check endpoint with database connectivity check and isolation fingerprint
 app.get('/api/health', async (req, res) => {
   try {
     // Ping PostgreSQL to verify PgBouncer and DB responsiveness
@@ -150,6 +103,7 @@ app.get('/api/health', async (req, res) => {
       status: 'ok',
       service: 'MentorHub API',
       database: 'connected',
+      databaseFingerprint: computeDatabaseFingerprint(process.env.DATABASE_URL || ENV.DATABASE_URL),
       environment: ENV.NODE_ENV,
       timestamp: new Date().toISOString()
     });
@@ -158,6 +112,7 @@ app.get('/api/health', async (req, res) => {
       status: 'degraded',
       service: 'MentorHub API',
       database: 'disconnected',
+      databaseFingerprint: computeDatabaseFingerprint(process.env.DATABASE_URL || ENV.DATABASE_URL),
       error: ENV.NODE_ENV === 'production' ? 'Database connection failure' : err.message,
       timestamp: new Date().toISOString()
     });
