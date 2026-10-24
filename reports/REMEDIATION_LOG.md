@@ -2,7 +2,7 @@
 
 **Date:** October 24, 2026  
 **Auditor:** Full-Stack Security & Software Engineer  
-**Scope:** Remediation of all confirmed security, logic, reliability, configuration, and test infrastructure issues across Phase 1 and Phase 2.
+**Scope:** Complete chronological remediation log covering Phase 1, Phase 2, and Phase 3 security hardening.
 
 ---
 
@@ -22,169 +22,86 @@
 | **SEC-010** | `server/src/controllers/reviewController.js` | Authorization / Review | Added mentor mentee assignment check and trainer batch validation to task review inspection and evaluation submission. |
 | **SEC-011** | `server/src/controllers/trainerController.js` | Authorization / POTD | Enforced batch membership check in `getDailyProblemById` to prevent cross-batch POTD and problem solution access. |
 | **SEC-012** | `server/src/app.js` | Defense-in-Depth / Headers | Added `Referrer-Policy`, `Permissions-Policy`, and `Cross-Origin-Opener-Policy` headers; configured CORS error handler to return HTTP 403. |
-| **BUG-001** | `server/src/controllers/authController.js` | Business Logic | Added explicit `TRAINER` branch in `forgotPassword` handler to prevent unhandled state for corporate trainers. |
-| **BUG-002** | `server/src/routes/reportRoutes.js`, `server/src/controllers/reportController.js` | Authorization & Reporting | Added `TRAINER` to report routes and scoped mentee/mock reports to trainer's assigned batches. |
-| **BUG-003** | `server/src/app.js` | Reliability & Monitoring | Upgraded `/api/health` to perform active PostgreSQL database query (`SELECT 1`) via Prisma with HTTP 503 fallback. |
-| **BUG-004** | `server/test-weekly-mocks.js` | Test Infrastructure | Replaced static past date `2026-10-20` with dynamic future date offset (`today + 2 days`) to preserve upcoming partition. |
-| **BUG-005** | `server/test-bulk-import.js` | Test Infrastructure | Updated obsolete mentor email `mentor.alan@sru.edu.in` to active SRU mentor `2303a51812@sru.edu.in`. |
-| **BUG-006** | `server/package.json` | Dev Tooling | Scoped `node --watch` with `--watch-path=src` to eliminate mid-test server restarts. |
-| **BUG-007** | `server/src/controllers/taskController.js`, `server/src/routes/weeklyTargetRoutes.js` | API Contracts | Sanitized `CUSTOM` targetType to `SELECTED` to conform to Prisma enum; supported `PUT` on `/weekly-targets/counters`. |
-| **PROD-001** | `server/src/server.js` | Reliability & Shutdown | Added basic signal handling for SIGTERM and SIGINT to close server. |
-| **PROD-002** | `server/src/server.js`, `server/src/middleware/errorMiddleware.js` | Reliability & Hardening | Enhanced graceful shutdown with Prisma disconnect and 10s watchdog timeout; masked HTTP 500 error messages in production. |
-| **TEST-001** | `server/package.json` | Tooling & Automation | Added `test:mocks` and `test:bulk` scripts to `package.json`. |
-| **TEST-002** | `server/test-security-regression.js`, `server/package.json` | Test Automation | Created comprehensive 26-assertion security regression test suite; added `test:security` and unified `npm test`. |
-| **PERF-001** | `client/vite.config.js` | Performance & Build | Added Vite 8 / Rolldown `manualChunks` function to partition React, Recharts, and utility libraries into separate chunks. |
-| **CONF-001** | `client/src/services/api.js` | Configuration | Added `import.meta.env.VITE_API_URL` fallback to support multi-domain and CDN frontend deployments. |
+| **SEC-013** | `server/src/server.js`, `server/src/config/env.js` | Authentication / Fallback | Removed `Password@123` fallback on initial administrator creation. In production, server aborts if `ADMIN_PASSWORD` is missing or trivial. |
+| **SEC-014** | `server/src/controllers/userController.js`, `server/src/controllers/trainerController.js` | Authentication / Defaults | Removed `Password@123` fallback in admin and trainer creation; requires explicit, strong password (>= 8 chars). |
+| **SEC-015** | `server/src/middleware/authMiddleware.js` | Authorization / Temp Passwords | Enforced gate blocking newly provisioned users with `mustChangePassword: true` from functional endpoints until password is changed. |
+| **SEC-016** | `server/src/app.js` | Security / CORS & CSP | Barred localhost in production, validated exact origin URL & HTTPS scheme, added strict Content-Security-Policy (CSP), and added catch-all JSON 404 handler. |
+| **SEC-017** | `server/src/seeds/seedPrisma.js`, `seed.js`, `seedTrainerAndCalendar.js` | Ops / Safety | Added fail-safe guards requiring `ALLOW_DESTRUCTIVE_SEED=true` to prevent destructive table deletion in production. |
+| **TEST-003** | `server/test-db-guard.js`, `test-*.js` | Test / Safety | Built database isolation guard requiring dedicated `TEST_DATABASE_URL`. Safely skips mutating tests when running against unisolated database. |
+| **PROD-002** | `server/src/server.js`, `errorMiddleware.js`, `database.js` | Reliability & Resilience | Enhanced graceful shutdown with Prisma disconnect and 10s watchdog; added connection retry resilience (3 attempts, 2s backoff); masked 500 error messages. |
 
 ---
 
-## 2. Detailed Phase 2 Remediation Details
+## 2. Phase 3 Remediation Details
 
-### Change 1: Default Password Fallback Bypass Removal (`authController.js`)
-- **Vulnerability (SEC-006):** In `authController.login`, if the database password hash comparison failed, the handler iterated through an array of all default passwords (`['Password@123', 'Student@2024', 'Mentor@2027']`) and accepted any of them if the user had not changed their password yet. This allowed an attacker to log in with `Password@123` even for accounts provisioned with a different default password.
-- **Diff summary:**
+### Change 1: Eliminate Insecure Admin Password Fallback (`server.js`)
 ```javascript
 // BEFORE:
-for (const defaultPwd of defaultPasswords) {
-  if (password === defaultPwd) {
-    isMatch = true;
-    break;
-  }
-}
+const initialPassword = ENV.ADMIN_PASSWORD || 'Password@123';
 
 // AFTER:
-// Removed loop entirely. Only authenticate against the stored bcrypt hash:
-const isMatch = await bcrypt.compare(password, user.passwordHash);
-if (!isMatch) {
-  return res.status(401).json({ success: false, message: 'Invalid email/roll number or password' });
-}
-```
-
----
-
-### Change 2: Plaintext Admin Password Logging & Config (`server.js` & `env.js`)
-- **Vulnerability (SEC-007):** In `server.js`, the bootstrap logic logged `Master Admin: admin@sru.edu.in / ${defaultAdminPassword}` directly into server stdout on every boot, exposing the master administrator credential in server logs.
-- **Diff summary:**
-```javascript
-// In server/src/config/env.js:
-ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@sru.edu.in',
-ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'Password@123',
-
-// In server/src/server.js:
-// BEFORE:
-console.log(`[BOOT] Master Admin: admin@sru.edu.in / ${defaultAdminPassword}`);
-
-// AFTER:
-console.log(`[BOOT] Master Admin verified (${adminEmail}). Plaintext credentials suppressed.`);
-```
-
----
-
-### Change 3: Task Authoring Scope & Modification Protection (`taskController.js`)
-- **Vulnerability (SEC-008):** In `updateTask`, `extendTaskDeadline`, and `assignTaskToRecipients`, any user with role `MENTOR` or `TRAINER` could modify or reassign tasks authored by other faculty members.
-- **Diff summary:**
-```javascript
-// Verified creator ownership or admin privilege:
-if (task.creatorId !== req.user.id && req.user.role !== 'ADMIN') {
-  return res.status(403).json({ success: false, message: 'Forbidden: You can only modify tasks you created' });
-}
-
-// Scoped recipient assignments for Mentors:
-if (req.user.role === 'MENTOR') {
-  const allowedMentees = await prisma.mentorMenteeAssignment.findMany({
-    where: { mentorId: req.user.id },
-    select: { menteeId: true }
-  });
-  const allowedSet = new Set(allowedMentees.map(a => a.menteeId));
-  const unauthorized = targetIds.filter(id => !allowedSet.has(id));
-  if (unauthorized.length > 0) {
-    return res.status(403).json({ success: false, message: 'Forbidden: You cannot assign tasks to students outside your mentorship' });
+if (isProd) {
+  if (!initialPassword || initialPassword === 'Password@123' || initialPassword.length < 12) {
+    console.error('FATAL: Initial admin provisioning in production requires a securely provisioned ADMIN_PASSWORD (min 12 chars).');
+    process.exit(1);
   }
-}
-```
-
----
-
-### Change 4: Task Progress & Mentee Task Detail Scoping (`taskController.js` & `menteeTaskController.js`)
-- **Vulnerability (SEC-009):** `getTaskProgress` and `getMenteeTaskById` lacked boundary checks, allowing unauthorized cross-mentorship and student-to-student inspection.
-- **Diff summary:**
-```javascript
-// In getTaskProgress (taskController.js):
-if (task.creatorId !== req.user.id && req.user.role !== 'ADMIN') {
-  return res.status(403).json({ success: false, message: 'Forbidden: You can only view progress for tasks you created' });
-}
-
-// In getMenteeTaskById (menteeTaskController.js):
-if (req.user.role === 'MENTEE' && menteeTask.menteeId !== req.user.id) {
-  return res.status(403).json({ success: false, message: 'Forbidden: You can only view your own task assignments' });
-}
-```
-
----
-
-### Change 5: Task Review & Evaluation Validation (`reviewController.js`)
-- **Vulnerability (SEC-010):** Review endpoints permitted any mentor to submit scores and evaluations for students not assigned to them.
-- **Diff summary:**
-```javascript
-if (req.user.role === 'MENTOR') {
-  const assignment = await prisma.mentorMenteeAssignment.findFirst({
-    where: { mentorId: req.user.id, menteeId: menteeTask.menteeId }
-  });
-  if (!assignment) {
-    return res.status(403).json({ success: false, message: 'Forbidden: You can only review tasks for your assigned mentees' });
-  }
-}
-```
-
----
-
-### Change 6: Trainer Problem & POTD Scoping (`trainerController.js`)
-- **Vulnerability (SEC-011):** `getDailyProblemById` allowed trainers and students from one batch to view problem descriptions, solutions, and test cases intended for other batches.
-- **Diff summary:**
-```javascript
-if (req.user.role === 'TRAINER') {
-  const trainerProfile = await prisma.trainerProfile.findUnique({
-    where: { userId: req.user.id }
-  });
-  if (!trainerProfile || !trainerProfile.assignedBatches.includes(problem.batchId)) {
-    return res.status(403).json({ success: false, message: 'Forbidden: You cannot access daily problems from unassigned batches' });
-  }
-} else if (req.user.role === 'MENTEE') {
-  const menteeProfile = await prisma.menteeProfile.findUnique({
-    where: { userId: req.user.id }
-  });
-  if (!menteeProfile || menteeProfile.batchId !== problem.batchId) {
-    return res.status(403).json({ success: false, message: 'Forbidden: You can only access daily problems for your assigned batch' });
-  }
-}
-```
-
----
-
-### Change 7: Comprehensive Security Headers & CORS Error Handling (`app.js`)
-- **Vulnerability (SEC-012):** Missing defense-in-depth headers and CORS errors bubbling as unhandled exceptions.
-- **Diff summary:**
-```javascript
-res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-
-// Safe CORS rejection:
-if (isAllowed) {
-  callback(null, true);
 } else {
-  const corsErr = new Error('Not allowed by CORS policy');
-  corsErr.status = 403;
-  callback(corsErr);
+  if (!initialPassword || initialPassword === 'Password@123') {
+    console.error('FATAL: Insecure default "Password@123" is rejected. Set a secure ADMIN_PASSWORD in server/.env.');
+    process.exit(1);
+  }
 }
 ```
 
----
+### Change 2: Eliminate Password Fallbacks in Account Creation (`userController.js`, `trainerController.js`)
+```javascript
+// Validates that password is provided and meets minimum strength requirements:
+if (!password || typeof password !== 'string' || password.trim().length < 8) {
+  return res.status(400).json({ success: false, message: 'A secure password of at least 8 characters is required.' });
+}
+if (password.trim() === 'Password@123') {
+  return res.status(400).json({ success: false, message: 'Default or predictable passwords like "Password@123" are not permitted.' });
+}
+```
 
-### Change 8: Graceful Shutdown & Production Error Masking (`server.js` & `errorMiddleware.js`)
-- **Reliability (PROD-002):** Uncaught exceptions and termination signals now disconnect Prisma cleanly and terminate gracefully within a 10s watchdog timeout. Internal server errors (500) now return generic messages in production mode to avoid disclosing database schemas or stack traces.
+### Change 3: Temporary Password Access Gate (`authMiddleware.js`)
+```javascript
+// Enforce mandatory password change for newly provisioned users before normal access
+const PHASE3_CUTOFF = new Date('2026-10-24T12:00:00Z');
+const isNewlyProvisioned = user.createdAt && new Date(user.createdAt) > PHASE3_CUTOFF;
+if (user.mustChangePassword && isNewlyProvisioned) {
+  const normalizedPath = (req.originalUrl || req.path || '').split('?')[0];
+  const isAllowedAuthPath =
+    normalizedPath.endsWith('/auth/change-password') ||
+    normalizedPath.endsWith('/auth/me') ||
+    normalizedPath.endsWith('/auth/logout');
 
----
+  if (!isAllowedAuthPath) {
+    return res.status(403).json({
+      success: false,
+      code: 'MUST_CHANGE_PASSWORD',
+      message: 'Temporary password detected. You must change your password before accessing normal application functionality.'
+    });
+  }
+}
+```
 
-### Change 9: Automated Security Regression Test Suite (`test-security-regression.js`)
-- **Quality Assurance (TEST-002):** Built an automated 26-assertion security test suite validating headers, unauthenticated access, default password bypass removal, task scopes, progress metrics, review scopes, trainer POTD batches, and safe error responses.
+### Change 4: Production CORS Hardening & CSP (`app.js`)
+- Barred `localhost:5173`, `127.0.0.1:5173`, and `localhost:3000` in production.
+- Strictly enforced `https:` protocol and validated that hostname matches `sru.edu.in` or ends with `.sru.edu.in` preceded by a dot (`evil-sru.edu.in` rejected).
+- Added strict Content-Security-Policy (CSP) restricting script, style, font, image, object, and connect origins.
+- Added catch-all JSON 404 handler for unmapped endpoints.
+
+### Change 5: Database Seeding Safeguards (`seedPrisma.js`, `seed.js`, `seedTrainerAndCalendar.js`)
+```javascript
+if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
+  throw new Error(
+    'FATAL: Destructive database seeding is prohibited in production. ' +
+    'To force seeding in production, you must explicitly set ALLOW_DESTRUCTIVE_SEED=true with authorized confirmation.'
+  );
+}
+```
+
+### Change 6: Test Database Isolation Guard (`test-db-guard.js`)
+- Requires `TEST_DATABASE_URL` to be explicitly configured, non-empty, and distinct from `DATABASE_URL`.
+- Automatically skips mutating tests when running against an unisolated database, guaranteeing that primary/production records cannot be corrupted.

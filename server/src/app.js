@@ -38,38 +38,95 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+
+  // Content-Security-Policy (CSP) tailored for MentorHub React SPA
+  const cspDirectives = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: https: blob:",
+    "connect-src 'self' http://localhost:5001 http://localhost:5173 https://*.supabase.co https://*.sru.edu.in",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ');
+  res.setHeader('Content-Security-Policy', cspDirectives);
+
   if (ENV.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
   next();
 });
 
-// Production-aware CORS configuration
-const allowedOrigins = [
-  ENV.CLIENT_URL,
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:3000'
-].filter(Boolean);
+// Production-aware CORS origin validator
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  if (ENV.NODE_ENV === 'production') {
+    try {
+      const parsed = new URL(origin);
+      // In production, strictly require https protocol
+      if (parsed.protocol !== 'https:') {
+        return false;
+      }
+
+      // Check explicit CLIENT_URL
+      if (ENV.CLIENT_URL) {
+        try {
+          const clientParsed = new URL(ENV.CLIENT_URL);
+          if (parsed.origin === clientParsed.origin) return true;
+        } catch {
+          // ignore invalid client URL
+        }
+      }
+
+      // Validate exact university domain or exact subdomain of sru.edu.in
+      const hostname = parsed.hostname.toLowerCase();
+      if (hostname === 'sru.edu.in' || hostname.endsWith('.sru.edu.in')) {
+        // Ensure not evil-sru.edu.in: prefix must be dot
+        const suffix = '.sru.edu.in';
+        if (hostname === 'sru.edu.in' || (hostname.endsWith(suffix) && hostname.length > suffix.length)) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  // Development mode: permit explicitly configured local dev origins
+  const devAllowed = [
+    ENV.CLIENT_URL,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000'
+  ].filter(Boolean);
+
+  try {
+    const parsed = new URL(origin);
+    return devAllowed.includes(parsed.origin);
+  } catch {
+    return false;
+  }
+};
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      // Allow requests with no origin (e.g., server-to-server, mobile app native fetch, health checks)
       if (!origin) return callback(null, true);
 
-      if (ENV.NODE_ENV === 'production') {
-        const isAllowed = allowedOrigins.includes(origin) || origin.endsWith('.sru.edu.in');
-        if (isAllowed) {
-          return callback(null, true);
-        }
-        const corsErr = new Error(`CORS blocked: Origin ${origin} not permitted in production.`);
-        corsErr.statusCode = 403;
-        return callback(corsErr);
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
       }
 
-      // Development mode: permit localhost and dev environments
-      return callback(null, true);
+      const corsErr = new Error(`CORS blocked: Origin '${origin}' is not permitted.`);
+      corsErr.statusCode = 403;
+      return callback(corsErr);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -125,6 +182,14 @@ app.use('/api/v1/doubt-sessions', doubtSessionRoutes);
 app.use('/api/v1/trainer', trainerRoutes);
 app.use('/api/v1/announcements', announcementRoutes);
 app.use('/api/v1/weekly-targets', weeklyTargetRoutes);
+
+// 404 catch-all handler for unmapped API endpoints
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Endpoint ${req.method} ${req.originalUrl} not found.`
+  });
+});
 
 // Error handler
 app.use(errorHandler);

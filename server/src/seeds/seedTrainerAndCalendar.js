@@ -2,6 +2,13 @@ import bcrypt from 'bcryptjs';
 import prisma from '../config/prisma.js';
 
 async function seedTrainerAndCalendar() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
+    throw new Error(
+      'FATAL: Destructive seeding is prohibited in production. ' +
+      'To force seeding in production, you must explicitly set ALLOW_DESTRUCTIVE_SEED=true with authorized confirmation.'
+    );
+  }
+
   console.log('🌱 Seeding Trainers, Official Training Calendar, and Company POTDs...');
 
   // 1. Fetch existing batches
@@ -22,7 +29,8 @@ async function seedTrainerAndCalendar() {
   console.log(`Found ${batches.length} cohorts:`, Object.keys(batchMap).join(', '));
 
   // 2. Create or ensure Default Trainers
-  const passwordHash = await bcrypt.hash('Password@123', 10);
+  const seedPassword = process.env.SEED_DEFAULT_PASSWORD || 'DevSeed@2026!';
+  const passwordHash = await bcrypt.hash(seedPassword, 10);
 
   const trainersData = [
     {

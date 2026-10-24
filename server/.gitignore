@@ -8,4 +8,5 @@ test-*.js
 !test-security-regression.js
 !test-weekly-mocks.js
 !test-bulk-import.js
+!test-db-guard.js
 clean-*.js

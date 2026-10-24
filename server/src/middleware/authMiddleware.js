@@ -41,6 +41,25 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
+    // Enforce mandatory password change for newly provisioned users before accessing normal functionality
+    const PHASE3_CUTOFF = new Date('2026-10-24T12:00:00Z');
+    const isNewlyProvisioned = user.createdAt && new Date(user.createdAt) > PHASE3_CUTOFF;
+    if (user.mustChangePassword && isNewlyProvisioned) {
+      const normalizedPath = (req.originalUrl || req.path || '').split('?')[0];
+      const isAllowedAuthPath =
+        normalizedPath.endsWith('/auth/change-password') ||
+        normalizedPath.endsWith('/auth/me') ||
+        normalizedPath.endsWith('/auth/logout');
+
+      if (!isAllowedAuthPath) {
+        return res.status(403).json({
+          success: false,
+          code: 'MUST_CHANGE_PASSWORD',
+          message: 'Temporary password detected. You must change your password before accessing normal application functionality.'
+        });
+      }
+    }
+
     // Ensure backwards compatibility with _id and attach isSuperAdmin
     user._id = user.id;
     user.isSuperAdmin = user.role === 'ADMIN' && user.email?.toLowerCase() === 'admin@sru.edu.in';

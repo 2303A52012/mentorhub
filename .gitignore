@@ -72,5 +72,6 @@ server/test-*.js
 !server/test-security-regression.js
 !server/test-weekly-mocks.js
 !server/test-bulk-import.js
+!server/test-db-guard.js
 server/clean-*.js
 server/scratch*

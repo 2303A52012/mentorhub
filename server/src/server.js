@@ -12,22 +12,39 @@ const startServer = async () => {
     const adminExists = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
     if (!adminExists) {
       console.log('No Admin found. Initializing primary Admin user...');
+      const isProd = ENV.NODE_ENV === 'production';
       const adminEmail = ENV.ADMIN_EMAIL || 'admin@sru.edu.in';
-      const initialPassword = ENV.ADMIN_PASSWORD || 'Password@123';
-      const isDefault = initialPassword === 'Password@123';
+      const initialPassword = ENV.ADMIN_PASSWORD;
+
+      if (isProd) {
+        if (!initialPassword || initialPassword === 'Password@123' || initialPassword.length < 12) {
+          console.error('❌ FATAL: Initial administrator provisioning in production requires a securely provisioned, high-entropy ADMIN_PASSWORD (minimum 12 characters). Refusing to create predictable administrator account.');
+          process.exit(1);
+        }
+      } else {
+        if (!initialPassword) {
+          console.error('❌ FATAL: ADMIN_PASSWORD environment variable must be explicitly defined to provision the initial administrator account.');
+          process.exit(1);
+        }
+        if (initialPassword === 'Password@123') {
+          console.error('❌ FATAL: Insecure default "Password@123" is rejected. Set a secure ADMIN_PASSWORD in server/.env.');
+          process.exit(1);
+        }
+      }
+
       const bcrypt = (await import('bcryptjs')).default;
       const passwordHash = await bcrypt.hash(initialPassword, 10);
       await prisma.user.create({
         data: {
-          name: 'Dr. Evelyn Reed (Admin)',
+          name: 'Primary Administrator',
           email: adminEmail,
           passwordHash,
           role: 'ADMIN',
           accountStatus: 'ACTIVE',
-          mustChangePassword: isDefault
+          mustChangePassword: true
         }
       });
-      console.log(`✅ Admin account provisioned: ${adminEmail} (Must change password: ${isDefault})`);
+      console.log(`✅ Admin account provisioned: ${adminEmail} (Must change temporary password: true)`);
     } else {
       const userCount = await prisma.user.count();
       console.log(`Database ready with ${userCount} users (Admin: ${adminExists.email}).`);

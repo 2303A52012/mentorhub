@@ -46,6 +46,14 @@ const getComplaintAccessFilter = (user) => {
 export const getComplaints = async (req, res, next) => {
   try {
     const user = req.user;
+
+    if (user.role === 'TRAINER') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: Corporate trainers cannot access grievance redressal.'
+      });
+    }
+
     const { status, targetType, priority, category, search } = req.query;
 
     const accessFilter = getComplaintAccessFilter(user);

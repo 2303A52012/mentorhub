@@ -793,7 +793,21 @@ export const createTrainer = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'A user with this email already exists.' });
     }
 
-    const initialPassword = password || 'Password@123';
+    if (!password || typeof password !== 'string' || password.trim().length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'A secure password of at least 8 characters is required to provision a trainer.'
+      });
+    }
+
+    if (password.trim() === 'Password@123') {
+      return res.status(400).json({
+        success: false,
+        message: 'Default or predictable passwords like "Password@123" are not permitted.'
+      });
+    }
+
+    const initialPassword = password.trim();
     const passwordHash = await bcrypt.hash(initialPassword, 10);
 
     const trainer = await prisma.user.create({

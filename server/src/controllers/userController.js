@@ -1308,7 +1308,21 @@ export const createAdmin = async (req, res, next) => {
       });
     }
 
-    const tempPassword = password && password.trim().length >= 6 ? password.trim() : 'Password@123';
+    if (!password || typeof password !== 'string' || password.trim().length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'A secure password of at least 8 characters is required to provision an administrator.'
+      });
+    }
+
+    if (password.trim() === 'Password@123') {
+      return res.status(400).json({
+        success: false,
+        message: 'Default or predictable passwords like "Password@123" are not permitted.'
+      });
+    }
+
+    const tempPassword = password.trim();
     const passwordHash = await bcrypt.hash(tempPassword, 10);
 
     const newAdmin = await prisma.user.create({

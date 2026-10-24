@@ -13,6 +13,13 @@ import { Achievement, MenteeAchievement } from '../models/Achievement.js';
 import { Notification } from '../models/Notification.js';
 
 export const seedDatabase = async () => {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
+    throw new Error(
+      'FATAL: Destructive database seeding is prohibited in production. ' +
+      'To force seeding in production, you must explicitly set ALLOW_DESTRUCTIVE_SEED=true with authorized confirmation.'
+    );
+  }
+
   console.log('🌱 Seeding initial database data...');
 
   // 1. Clear existing records to ensure idempotent clean state
@@ -32,7 +39,8 @@ export const seedDatabase = async () => {
     Notification.deleteMany({})
   ]);
 
-  const defaultPasswordHash = await bcrypt.hash('Password@123', 10);
+  const seedPassword = process.env.SEED_DEFAULT_PASSWORD || 'DevSeed@2026!';
+  const defaultPasswordHash = await bcrypt.hash(seedPassword, 10);
 
   // 2. Create Users
   const admin = await User.create({
@@ -41,7 +49,7 @@ export const seedDatabase = async () => {
     passwordHash: defaultPasswordHash,
     role: 'ADMIN',
     accountStatus: 'ACTIVE',
-    mustChangePassword: false
+    mustChangePassword: true
   });
 
   const mentorAlan = await User.create({
