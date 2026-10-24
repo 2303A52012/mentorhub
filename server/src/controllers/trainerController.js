@@ -372,6 +372,32 @@ export const getDailyProblemById = async (req, res, next) => {
 
     if (!problem) return res.status(404).json({ success: false, message: 'Daily problem not found.' });
 
+    if (role === 'TRAINER') {
+      const access = await prisma.trainerBatch.findUnique({
+        where: { trainerId_batchId: { trainerId: userId, batchId: problem.batchId } }
+      });
+      if (!access) return res.status(403).json({ success: false, message: 'Access denied: You are not assigned to this batch.' });
+    } else if (role === 'MENTEE') {
+      const inBatch = await prisma.batchMentee.findUnique({
+        where: { batchId_menteeId: { batchId: problem.batchId, menteeId: userId } }
+      });
+      if (!inBatch) return res.status(403).json({ success: false, message: 'Access denied: Daily problem not assigned to your batch.' });
+    } else if (role === 'MENTOR') {
+      const hasMenteeInBatch = await prisma.batchMentee.findFirst({
+        where: {
+          batchId: problem.batchId,
+          mentee: {
+            mentorAssignments: {
+              some: { mentorId: userId, status: 'ACTIVE' }
+            }
+          }
+        }
+      });
+      if (!hasMenteeInBatch) {
+        return res.status(403).json({ success: false, message: 'Access denied: No assigned mentees in this batch.' });
+      }
+    }
+
     const totalStudents = problem.batch?._count?.mentees || 0;
     const solvedCount = problem._count?.submissions || 0;
     const pendingCount = Math.max(0, totalStudents - solvedCount);

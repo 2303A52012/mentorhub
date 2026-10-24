@@ -89,20 +89,7 @@ export const login = async (req, res, next) => {
       });
     }
 
-    let isMatch = await bcrypt.compare(password, user.passwordHash);
-
-    // Multi-fallback for default passwords (Password@123, Student@2024, Mentor@2027)
-    if (!isMatch) {
-      const defaultPasswords = ['Password@123', 'Student@2024', 'Mentor@2027'];
-      if (defaultPasswords.includes(password)) {
-        for (const defaultPwd of defaultPasswords) {
-          if (await bcrypt.compare(defaultPwd, user.passwordHash)) {
-            isMatch = true;
-            break;
-          }
-        }
-      }
-    }
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -543,9 +530,7 @@ export const getPasswordResetRequests = async (req, res, next) => {
 
     if (role === 'MENTOR') {
       formatted = formatted.filter(
-        (reqItem) =>
-          reqItem.role === 'MENTEE' &&
-          (reqItem.assignedMentorId === actorId || !reqItem.assignedMentorId)
+        (reqItem) => reqItem.role === 'MENTEE' && reqItem.assignedMentorId === actorId
       );
     }
 

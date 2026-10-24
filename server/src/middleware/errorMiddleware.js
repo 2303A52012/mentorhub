@@ -2,11 +2,14 @@ export const errorHandler = (err, req, res, next) => {
   console.error('API Error:', err);
 
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
+  const isProd = process.env.NODE_ENV === 'production';
+  const message = (isProd && statusCode === 500)
+    ? 'An unexpected internal server error occurred.'
+    : (err.message || 'Internal Server Error');
 
   res.status(statusCode).json({
     success: false,
     message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack
+    ...(isProd ? {} : { stack: err.stack })
   });
 };

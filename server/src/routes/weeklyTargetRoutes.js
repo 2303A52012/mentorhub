@@ -31,5 +31,6 @@ router.patch('/batch/:batchId/custom', authorize('TRAINER', 'ADMIN'), updateBatc
 
 // Update platform counters (+, -, custom increment) with auto-sync to Weekly Cumulative Targets
 router.patch('/counters', updateCodingCounters);
+router.put('/counters', updateCodingCounters);
 
 export default router;

@@ -9,7 +9,9 @@
     "seed": "node src/seeds/seedPrisma.js",
     "db:clean": "node clean-db.js",
     "test:mocks": "node test-weekly-mocks.js",
-    "test:bulk": "node test-bulk-import.js"
+    "test:bulk": "node test-bulk-import.js",
+    "test:security": "node test-security-regression.js",
+    "test": "node test-weekly-mocks.js && node test-bulk-import.js && node test-security-regression.js"
   },
   "keywords": [],
   "author": "",

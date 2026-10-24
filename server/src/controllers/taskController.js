@@ -136,6 +136,13 @@ export const createTask = async (req, res, next) => {
     const designatedReviewerId =
       reviewerId || (req.user.role === 'MENTOR' ? userId : null);
 
+    let cleanTargetType = 'ALL';
+    if (['INDIVIDUAL', 'SELECTED', 'BATCH', 'ALL'].includes(targetType)) {
+      cleanTargetType = targetType;
+    } else if (targetType === 'CUSTOM') {
+      cleanTargetType = 'SELECTED';
+    }
+
     const task = await prisma.task.create({
       data: {
         title: title.trim(),
@@ -145,7 +152,7 @@ export const createTask = async (req, res, next) => {
         instructions: instructions || '',
         createdById: userId,
         reviewerId: designatedReviewerId,
-        targetType,
+        targetType: cleanTargetType,
         targetIds: Array.isArray(targetIds) ? targetIds : [],
         status: 'PUBLISHED',
         problems: {
@@ -377,11 +384,11 @@ export const updateTask = async (req, res, next) => {
       });
     }
 
-    // Admin, Mentor, or creator of this task can edit it
-    if (existingTask.createdById !== userId && req.user.role !== 'ADMIN' && req.user.role !== 'MENTOR') {
+    // Only Admin or creator of this task can edit it
+    if (existingTask.createdById !== userId && req.user.role !== 'ADMIN') {
       return res.status(403).json({
         success: false,
-        message: 'Permission denied: Only mentors or administrators can edit this task.'
+        message: 'Permission denied: Only the creator of this task or an administrator can edit it.'
       });
     }
 
@@ -625,6 +632,7 @@ export const assignTaskToRecipients = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { targetType, targetIds } = req.body;
+    const userId = req.user.id || req.user._id;
 
     const task = await prisma.task.findUnique({
       where: { id },
@@ -638,14 +646,59 @@ export const assignTaskToRecipients = async (req, res, next) => {
       });
     }
 
-    let menteeIdsToAdd = [];
-    if (targetType === 'BATCH') {
-      const batchMentees = await prisma.batchMentee.findMany({
-        where: { batchId: { in: targetIds } }
+    if (task.createdById !== userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Permission denied: Only the creator of this task or an administrator can assign it to mentees.'
       });
-      menteeIdsToAdd = batchMentees.map((bm) => bm.menteeId);
+    }
+
+    let menteeIdsToAdd = [];
+    if (req.user.role === 'MENTOR') {
+      const myAssignments = await prisma.mentorMenteeAssignment.findMany({
+        where: { mentorId: userId, status: 'ACTIVE' },
+        select: { menteeId: true }
+      });
+      const authorizedMenteeIds = new Set(myAssignments.map((a) => a.menteeId));
+
+      if (targetType === 'BATCH') {
+        const batchMentees = await prisma.batchMentee.findMany({
+          where: { batchId: { in: targetIds } }
+        });
+        menteeIdsToAdd = batchMentees.map((bm) => bm.menteeId).filter((mid) => authorizedMenteeIds.has(mid));
+      } else {
+        menteeIdsToAdd = (targetIds || []).filter((mid) => authorizedMenteeIds.has(mid));
+      }
+    } else if (req.user.role === 'TRAINER') {
+      const myBatches = await prisma.trainerBatch.findMany({
+        where: { trainerId: userId },
+        select: { batchId: true }
+      });
+      const trainerBatchIds = myBatches.map((tb) => tb.batchId);
+      const batchMentees = await prisma.batchMentee.findMany({
+        where: { batchId: { in: trainerBatchIds } },
+        select: { menteeId: true }
+      });
+      const authorizedMenteeIds = new Set(batchMentees.map((bm) => bm.menteeId));
+
+      if (targetType === 'BATCH') {
+        const requestedBatchMentees = await prisma.batchMentee.findMany({
+          where: { batchId: { in: (targetIds || []).filter((bid) => trainerBatchIds.includes(bid)) } }
+        });
+        menteeIdsToAdd = requestedBatchMentees.map((bm) => bm.menteeId);
+      } else {
+        menteeIdsToAdd = (targetIds || []).filter((mid) => authorizedMenteeIds.has(mid));
+      }
     } else {
-      menteeIdsToAdd = targetIds || [];
+      // ADMIN
+      if (targetType === 'BATCH') {
+        const batchMentees = await prisma.batchMentee.findMany({
+          where: { batchId: { in: targetIds } }
+        });
+        menteeIdsToAdd = batchMentees.map((bm) => bm.menteeId);
+      } else {
+        menteeIdsToAdd = targetIds || [];
+      }
     }
 
     let createdCount = 0;
@@ -697,9 +750,54 @@ export const assignTaskToRecipients = async (req, res, next) => {
 export const getTaskProgress = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id || req.user._id;
+
+    const task = await prisma.task.findUnique({
+      where: { id }
+    });
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found.'
+      });
+    }
+
+    let progressWhere = { taskId: id };
+
+    if (req.user.role === 'MENTOR') {
+      const isCreator = task.createdById === userId;
+      const isReviewer = task.reviewerId === userId;
+      if (!isCreator && !isReviewer) {
+        // Mentor can only see progress for their assigned mentees on other tasks
+        const myAssignments = await prisma.mentorMenteeAssignment.findMany({
+          where: { mentorId: userId, status: 'ACTIVE' },
+          select: { menteeId: true }
+        });
+        const authorizedMenteeIds = myAssignments.map((a) => a.menteeId);
+        progressWhere.menteeId = { in: authorizedMenteeIds };
+      }
+    } else if (req.user.role === 'TRAINER') {
+      const isCreator = task.createdById === userId;
+      const isReviewer = task.reviewerId === userId;
+      if (!isCreator && !isReviewer) {
+        // Trainer can only see progress for their assigned batch mentees
+        const myBatches = await prisma.trainerBatch.findMany({
+          where: { trainerId: userId },
+          select: { batchId: true }
+        });
+        const trainerBatchIds = myBatches.map((tb) => tb.batchId);
+        const batchMentees = await prisma.batchMentee.findMany({
+          where: { batchId: { in: trainerBatchIds } },
+          select: { menteeId: true }
+        });
+        const authorizedMenteeIds = batchMentees.map((bm) => bm.menteeId);
+        progressWhere.menteeId = { in: authorizedMenteeIds };
+      }
+    }
 
     const assignments = await prisma.menteeTask.findMany({
-      where: { taskId: id },
+      where: progressWhere,
       include: {
         mentee: {
           select: {
@@ -766,10 +864,11 @@ export const extendTaskDeadline = async (req, res, next) => {
       });
     }
 
-    if (task.createdById !== userId && req.user.role !== 'ADMIN' && req.user.role !== 'MENTOR') {
+    // Only Admin or creator of this task can extend deadline
+    if (task.createdById !== userId && req.user.role !== 'ADMIN') {
       return res.status(403).json({
         success: false,
-        message: 'Permission denied: Only mentors or administrators can extend task deadlines.'
+        message: 'Permission denied: Only the creator of this task or an administrator can extend its deadline.'
       });
     }
 

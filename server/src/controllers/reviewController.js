@@ -146,6 +146,37 @@ export const getTaskReviewById = async (req, res, next) => {
       });
     }
 
+    if (req.user.role === 'MENTOR') {
+      const isReviewer = menteeTask.reviewerId === req.user.id;
+      const isCreator = menteeTask.task?.createdById === req.user.id;
+      const assignment = await prisma.mentorMenteeAssignment.findFirst({
+        where: { mentorId: req.user.id, menteeId: menteeTask.menteeId, status: 'ACTIVE' }
+      });
+      if (!isReviewer && !isCreator && !assignment) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: Mentee is not assigned to you.'
+        });
+      }
+    } else if (req.user.role === 'TRAINER') {
+      const isReviewer = menteeTask.reviewerId === req.user.id;
+      const isCreator = menteeTask.task?.createdById === req.user.id;
+      const myBatches = await prisma.trainerBatch.findMany({
+        where: { trainerId: req.user.id },
+        select: { batchId: true }
+      });
+      const trainerBatchIds = myBatches.map((tb) => tb.batchId);
+      const inBatch = await prisma.batchMentee.findFirst({
+        where: { menteeId: menteeTask.menteeId, batchId: { in: trainerBatchIds } }
+      });
+      if (!isReviewer && !isCreator && !inBatch) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: Mentee is not in your assigned batches.'
+        });
+      }
+    }
+
     const formattedTask = {
       _id: menteeTask.id,
       id: menteeTask.id,
@@ -210,6 +241,37 @@ export const submitReview = async (req, res, next) => {
         success: false,
         message: 'Task assignment not found.'
       });
+    }
+
+    if (req.user.role === 'MENTOR') {
+      const isReviewer = menteeTask.reviewerId === reviewerId;
+      const isCreator = menteeTask.task?.createdById === reviewerId;
+      const assignment = await prisma.mentorMenteeAssignment.findFirst({
+        where: { mentorId: reviewerId, menteeId: menteeTask.menteeId, status: 'ACTIVE' }
+      });
+      if (!isReviewer && !isCreator && !assignment) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: You can only review tasks for your assigned mentees.'
+        });
+      }
+    } else if (req.user.role === 'TRAINER') {
+      const isReviewer = menteeTask.reviewerId === reviewerId;
+      const isCreator = menteeTask.task?.createdById === reviewerId;
+      const myBatches = await prisma.trainerBatch.findMany({
+        where: { trainerId: reviewerId },
+        select: { batchId: true }
+      });
+      const trainerBatchIds = myBatches.map((tb) => tb.batchId);
+      const inBatch = await prisma.batchMentee.findFirst({
+        where: { menteeId: menteeTask.menteeId, batchId: { in: trainerBatchIds } }
+      });
+      if (!isReviewer && !isCreator && !inBatch) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied: You can only review tasks for students in your assigned batches.'
+        });
+      }
     }
 
     const latestSubmission = await prisma.taskSubmission.findFirst({

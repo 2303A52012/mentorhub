@@ -5,4 +5,7 @@ node_modules/
 *.log
 .prisma/
 test-*.js
+!test-security-regression.js
+!test-weekly-mocks.js
+!test-bulk-import.js
 clean-*.js

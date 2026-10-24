@@ -594,7 +594,7 @@ export const assignSlot = async (req, res, next) => {
       });
 
       return slot;
-    });
+    }, { timeout: 25000, maxWait: 10000 });
 
     // If section was already published, send notification to mentee
     if (section.status === 'PUBLISHED') {
@@ -756,7 +756,7 @@ export const updateSlot = async (req, res, next) => {
       });
 
       return s;
-    });
+    }, { timeout: 25000, maxWait: 10000 });
 
     // Notify mentee if section was published
     if (slot.section.status === 'PUBLISHED') {
@@ -819,7 +819,7 @@ export const cancelSlot = async (req, res, next) => {
       });
 
       return s;
-    });
+    }, { timeout: 25000, maxWait: 10000 });
 
     // If section was published, notify mentee
     if (slot.section.status === 'PUBLISHED') {
@@ -889,7 +889,7 @@ export const markSlotMissed = async (req, res, next) => {
       });
 
       return s;
-    });
+    }, { timeout: 25000, maxWait: 10000 });
 
     await prisma.notification.create({
       data: {
@@ -1089,7 +1089,7 @@ export const recordEvaluation = async (req, res, next) => {
       });
 
       return evalRecord;
-    });
+    }, { timeout: 25000, maxWait: 10000 });
 
     // Notify candidate
     await prisma.notification.create({

@@ -12,19 +12,22 @@ const startServer = async () => {
     const adminExists = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
     if (!adminExists) {
       console.log('No Admin found. Initializing primary Admin user...');
+      const adminEmail = ENV.ADMIN_EMAIL || 'admin@sru.edu.in';
+      const initialPassword = ENV.ADMIN_PASSWORD || 'Password@123';
+      const isDefault = initialPassword === 'Password@123';
       const bcrypt = (await import('bcryptjs')).default;
-      const defaultPasswordHash = await bcrypt.hash('Password@123', 10);
+      const passwordHash = await bcrypt.hash(initialPassword, 10);
       await prisma.user.create({
         data: {
           name: 'Dr. Evelyn Reed (Admin)',
-          email: 'admin@sru.edu.in',
-          passwordHash: defaultPasswordHash,
+          email: adminEmail,
+          passwordHash,
           role: 'ADMIN',
           accountStatus: 'ACTIVE',
-          mustChangePassword: false
+          mustChangePassword: isDefault
         }
       });
-      console.log('✅ Admin initialized: admin@sru.edu.in (Password: Password@123)');
+      console.log(`✅ Admin account provisioned: ${adminEmail} (Must change password: ${isDefault})`);
     } else {
       const userCount = await prisma.user.count();
       console.log(`Database ready with ${userCount} users (Admin: ${adminExists.email}).`);
@@ -41,22 +44,36 @@ const startServer = async () => {
       `);
     });
 
-    const shutdown = async () => {
-      console.log('Shutting down server gracefully...');
-      server.close(() => {
+    const shutdown = async (signal = 'SIGTERM') => {
+      console.log(`Shutting down server gracefully (${signal})...`);
+      server.close(async () => {
+        try {
+          await prisma.$disconnect();
+          await closeDB();
+          console.log('Database connections cleanly closed.');
+        } catch (e) {
+          console.error('Error during database disconnect:', e);
+        }
         process.exit(0);
       });
+
+      // Watchdog timeout to prevent hung processes
+      setTimeout(() => {
+        console.error('Forced shutdown due to timeout (10s elapsed).');
+        process.exit(1);
+      }, 10000).unref();
     };
 
-    process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
 
     process.on('unhandledRejection', (reason) => {
-      console.warn('⚠️ Non-fatal unhandled rejection caught:', reason?.message || reason);
+      console.error('Unhandled Promise Rejection:', reason?.message || reason);
     });
 
     process.on('uncaughtException', (err) => {
-      console.warn('⚠️ Non-fatal uncaught exception caught:', err?.message || err);
+      console.error('Fatal Uncaught Exception:', err?.message || err);
+      shutdown('uncaughtException');
     });
   } catch (error) {
     console.error('Fatal Server Startup Error:', error);

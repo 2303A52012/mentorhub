@@ -35,8 +35,11 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   if (ENV.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   }
   next();
 });
@@ -60,7 +63,9 @@ app.use(
         if (isAllowed) {
           return callback(null, true);
         }
-        return callback(new Error(`CORS blocked: Origin ${origin} not permitted in production.`));
+        const corsErr = new Error(`CORS blocked: Origin ${origin} not permitted in production.`);
+        corsErr.statusCode = 403;
+        return callback(corsErr);
       }
 
       // Development mode: permit localhost and dev environments
