@@ -70,7 +70,11 @@ export const ModalProvider = ({ children }) => {
       }
     } else if (typeof arg1 === 'object' && arg1 !== null) {
       config = arg1;
-      if (typeof arg2 === 'function') callback = arg2;
+      if (typeof arg2 === 'function') {
+        callback = arg2;
+      } else if (typeof arg1.onConfirm === 'function') {
+        callback = arg1.onConfirm;
+      }
     }
 
     const {

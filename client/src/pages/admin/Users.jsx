@@ -41,7 +41,17 @@ import { ResetUserPasswordModal } from '../../components/common/ResetUserPasswor
 export const AdminUsers = () => {
   const { user } = useAuth();
   const isSuperAdmin = user?.isSuperAdmin || user?.email?.toLowerCase() === 'admin@sru.edu.in';
-  const { showSuccess, showError, showConfirm } = useModal();
+  const { showSuccess, showError, showConfirm, showToast } = useModal();
+
+  // Secure temporary password generator (avoids static/forbidden defaults like Password@123)
+  const generateSecureTempPassword = (prefix = 'Temp') => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+    let rand = '';
+    for (let i = 0; i < 8; i++) {
+      rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `${prefix}@${rand}`;
+  };
 
   const [activeTab, setActiveTab] = useState('MENTEES'); // 'MENTEES' | 'MENTORS' | 'TRAINERS' | 'ADMINS'
   const [mentees, setMentees] = useState([]);
@@ -80,7 +90,7 @@ export const AdminUsers = () => {
     email: '',
     designation: 'Corporate Trainer',
     bio: '',
-    password: 'Password@123',
+    password: generateSecureTempPassword('Trainer'),
     batchIds: []
   });
 
@@ -113,7 +123,7 @@ export const AdminUsers = () => {
   const [adminForm, setAdminForm] = useState({
     name: '',
     email: '',
-    password: 'Password@123'
+    password: generateSecureTempPassword('Admin')
   });
 
   // New Mentor Form State
@@ -123,7 +133,7 @@ export const AdminUsers = () => {
     rollNumber: '',
     department: 'Computer Science & Engineering',
     designation: 'Technical Mentor',
-    password: 'Mentor@2027'
+    password: generateSecureTempPassword('Mentor')
   });
 
   // New Mentee Form State
@@ -136,7 +146,7 @@ export const AdminUsers = () => {
     batchId: '',
     mentorId: '',
     resumeUrl: '',
-    password: 'Student@2024'
+    password: generateSecureTempPassword('Student')
   });
 
   const fetchData = async () => {
@@ -197,7 +207,7 @@ export const AdminUsers = () => {
       if (res.data.success) {
         showSuccess('Administrator Created', res.data.message || 'Administrator account created successfully!');
         setShowAdminModal(false);
-        setAdminForm({ name: '', email: '', password: 'Password@123' });
+        setAdminForm({ name: '', email: '', password: generateSecureTempPassword('Admin') });
         const aRes = await api.get('/users/admins');
         if (aRes.data.success) setAdmins(aRes.data.admins || []);
         setActiveTab('ADMINS');
@@ -214,13 +224,14 @@ export const AdminUsers = () => {
       showError('Action Prohibited', 'The primary Super Administrator cannot be deactivated.');
       return;
     }
+    const targetId = admin.id || admin._id;
     const newStatus = admin.accountStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
-      const res = await api.patch(`/users/admins/${admin.id || admin._id}`, { accountStatus: newStatus });
+      const res = await api.patch(`/users/admins/${targetId}`, { accountStatus: newStatus });
       if (res.data.success) {
         showSuccess('Status Updated', `Administrator '${admin.name}' is now ${newStatus.toLowerCase()}.`);
         setAdmins((prev) =>
-          prev.map((a) => (a.id === admin.id || a._id === admin._id ? { ...a, accountStatus: newStatus } : a))
+          prev.map((a) => ((a.id || a._id) === targetId ? { ...a, accountStatus: newStatus } : a))
         );
       }
     } catch (err) {
@@ -228,28 +239,29 @@ export const AdminUsers = () => {
     }
   };
 
-  const handleDeleteAdmin = (admin) => {
+  const handleDeleteAdmin = async (admin) => {
     if (admin.email?.toLowerCase() === 'admin@sru.edu.in') {
       showError('Action Prohibited', 'The primary Super Administrator account cannot be deleted.');
       return;
     }
-    showConfirm({
+    const targetId = admin.id || admin._id;
+    const confirmed = await showConfirm({
       title: 'Delete Administrator',
       message: `Are you sure you want to permanently delete administrator '${admin.name}' (${admin.email})? They will lose all administrative privileges immediately.`,
       confirmText: 'Delete Administrator',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          const res = await api.delete(`/users/admins/${admin.id || admin._id}`);
-          if (res.data.success) {
-            showSuccess('Administrator Deleted', res.data.message || 'Administrator deleted successfully.');
-            setAdmins((prev) => prev.filter((a) => a.id !== admin.id && a._id !== admin._id));
-          }
-        } catch (err) {
-          showError('Delete Failed', err.response?.data?.message || 'Failed to delete administrator account.');
-        }
-      }
+      variant: 'danger'
     });
+    if (!confirmed) return;
+
+    try {
+      const res = await api.delete(`/users/admins/${targetId}`);
+      if (res.data?.success) {
+        showSuccess('Administrator Deleted', res.data.message || 'Administrator deleted successfully.');
+        setAdmins((prev) => prev.filter((a) => (a.id || a._id) !== targetId));
+      }
+    } catch (err) {
+      showError('Delete Failed', err.response?.data?.message || 'Failed to delete administrator account.');
+    }
   };
 
   const handleCreateTrainer = async (e) => {
@@ -265,7 +277,7 @@ export const AdminUsers = () => {
           email: '',
           designation: 'Corporate Trainer',
           bio: '',
-          password: 'Password@123',
+          password: generateSecureTempPassword('Trainer'),
           batchIds: []
         });
         fetchData();
@@ -324,24 +336,25 @@ export const AdminUsers = () => {
     }
   };
 
-  const handleDeleteTrainer = (trainer) => {
-    showConfirm({
+  const handleDeleteTrainer = async (trainer) => {
+    const targetId = trainer.id || trainer._id;
+    const confirmed = await showConfirm({
       title: 'Delete Trainer',
       message: `Are you sure you want to permanently delete trainer '${trainer.name}' (${trainer.email})? They will lose access to all assigned batches and training sessions immediately.`,
       confirmText: 'Delete Trainer',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          const res = await api.delete(`/trainers/${trainer.id || trainer._id}`);
-          if (res.data.success) {
-            showSuccess('Trainer Deleted', res.data.message || 'Trainer account deleted successfully.');
-            setTrainers((prev) => prev.filter((t) => t.id !== trainer.id && t._id !== trainer._id));
-          }
-        } catch (err) {
-          showError('Delete Failed', err.response?.data?.message || 'Failed to delete trainer.');
-        }
-      }
+      variant: 'danger'
     });
+    if (!confirmed) return;
+
+    try {
+      const res = await api.delete(`/trainers/${targetId}`);
+      if (res.data?.success) {
+        showSuccess('Trainer Deleted', res.data.message || 'Trainer account deleted successfully.');
+        setTrainers((prev) => prev.filter((t) => (t.id || t._id) !== targetId));
+      }
+    } catch (err) {
+      showError('Delete Failed', err.response?.data?.message || 'Failed to delete trainer.');
+    }
   };
 
   const handleCreateMentor = async (e) => {
@@ -351,6 +364,14 @@ export const AdminUsers = () => {
       if (res.data.success) {
         showSuccess('Mentor Created', 'Mentor account has been created successfully!');
         setShowMentorModal(false);
+        setMentorForm({
+          name: '',
+          email: '',
+          rollNumber: '',
+          department: 'Computer Science & Engineering',
+          designation: 'Technical Mentor',
+          password: generateSecureTempPassword('Mentor')
+        });
         fetchData();
       }
     } catch (err) {
@@ -365,6 +386,17 @@ export const AdminUsers = () => {
       if (res.data.success) {
         showSuccess('Mentee Created', 'Mentee account has been created successfully!');
         setShowMenteeModal(false);
+        setMenteeForm({
+          name: '',
+          email: '',
+          studentId: '',
+          rollNumber: '',
+          branch: 'Computer Science & Engineering',
+          batchId: '',
+          mentorId: '',
+          resumeUrl: '',
+          password: generateSecureTempPassword('Student')
+        });
         fetchData();
       }
     } catch (err) {
@@ -373,13 +405,14 @@ export const AdminUsers = () => {
   };
 
   const handleToggleMenteeStatus = async (mentee) => {
+    const targetId = mentee.id || mentee._id;
     const newStatus = mentee.accountStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
-      const res = await api.patch(`/mentees/${mentee.id || mentee._id}`, { accountStatus: newStatus });
+      const res = await api.patch(`/mentees/${targetId}`, { accountStatus: newStatus });
       if (res.data.success) {
         showSuccess('Status Updated', `Student '${mentee.name}' is now ${newStatus.toLowerCase()}.`);
         setMentees((prev) =>
-          prev.map((m) => (m.id === mentee.id || m._id === mentee._id ? { ...m, accountStatus: newStatus } : m))
+          prev.map((m) => ((m.id || m._id) === targetId ? { ...m, accountStatus: newStatus } : m))
         );
       }
     } catch (err) {
@@ -387,34 +420,36 @@ export const AdminUsers = () => {
     }
   };
 
-  const handleDeleteMentee = (mentee) => {
-    showConfirm({
+  const handleDeleteMentee = async (mentee) => {
+    const targetId = mentee.id || mentee._id;
+    const confirmed = await showConfirm({
       title: 'Delete Student',
       message: `Are you sure you want to permanently delete student '${mentee.name}' (${mentee.email})? All associated tasks, submissions, and mentor assignments will be removed.`,
       confirmText: 'Delete Student',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          const res = await api.delete(`/mentees/${mentee.id || mentee._id}`);
-          if (res.data.success) {
-            showSuccess('Student Deleted', res.data.message || 'Student removed successfully.');
-            setMentees((prev) => prev.filter((m) => m.id !== mentee.id && m._id !== mentee._id));
-          }
-        } catch (err) {
-          showError('Delete Failed', err.response?.data?.message || 'Failed to delete student.');
-        }
-      }
+      variant: 'danger'
     });
+    if (!confirmed) return;
+
+    try {
+      const res = await api.delete(`/mentees/${targetId}`);
+      if (res.data?.success) {
+        showSuccess('Student Deleted', res.data.message || 'Student removed successfully.');
+        setMentees((prev) => prev.filter((m) => (m.id || m._id) !== targetId));
+      }
+    } catch (err) {
+      showError('Delete Failed', err.response?.data?.message || 'Failed to delete student.');
+    }
   };
 
   const handleToggleMentorStatus = async (mentor) => {
+    const targetId = mentor.id || mentor._id;
     const newStatus = mentor.accountStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
-      const res = await api.patch(`/mentors/${mentor.id || mentor._id}`, { accountStatus: newStatus });
+      const res = await api.patch(`/mentors/${targetId}`, { accountStatus: newStatus });
       if (res.data.success) {
         showSuccess('Status Updated', `Faculty mentor '${mentor.name}' is now ${newStatus.toLowerCase()}.`);
         setMentors((prev) =>
-          prev.map((m) => (m.id === mentor.id || m._id === mentor._id ? { ...m, accountStatus: newStatus } : m))
+          prev.map((m) => ((m.id || m._id) === targetId ? { ...m, accountStatus: newStatus } : m))
         );
       }
     } catch (err) {
@@ -422,24 +457,25 @@ export const AdminUsers = () => {
     }
   };
 
-  const handleDeleteMentor = (mentor) => {
-    showConfirm({
+  const handleDeleteMentor = async (mentor) => {
+    const targetId = mentor.id || mentor._id;
+    const confirmed = await showConfirm({
       title: 'Delete Faculty Mentor',
       message: `Are you sure you want to permanently delete mentor '${mentor.name}' (${mentor.email})? If they have active assigned mentees, please reallocate them first.`,
       confirmText: 'Delete Mentor',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          const res = await api.delete(`/mentors/${mentor.id || mentor._id}`);
-          if (res.data.success) {
-            showSuccess('Mentor Deleted', res.data.message || 'Faculty mentor removed successfully.');
-            setMentors((prev) => prev.filter((m) => m.id !== mentor.id && m._id !== mentor._id));
-          }
-        } catch (err) {
-          showError('Delete Failed', err.response?.data?.message || 'Failed to delete mentor.');
-        }
-      }
+      variant: 'danger'
     });
+    if (!confirmed) return;
+
+    try {
+      const res = await api.delete(`/mentors/${targetId}`);
+      if (res.data?.success) {
+        showSuccess('Mentor Deleted', res.data.message || 'Faculty mentor removed successfully.');
+        setMentors((prev) => prev.filter((m) => (m.id || m._id) !== targetId));
+      }
+    } catch (err) {
+      showError('Delete Failed', err.response?.data?.message || 'Failed to delete mentor.');
+    }
   };
 
   // Available mentees for the chosen source mentor in reallocation modal
@@ -746,26 +782,38 @@ export const AdminUsers = () => {
           </button>
           {isSuperAdmin && (
             <button
-              onClick={() => setShowAdminModal(true)}
+              onClick={() => {
+                setAdminForm((prev) => ({ ...prev, password: generateSecureTempPassword('Admin') }));
+                setShowAdminModal(true);
+              }}
               className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-lg shadow-purple-600/20"
             >
               <ShieldCheck className="w-3.5 h-3.5" /> Add Admin
             </button>
           )}
           <button
-            onClick={() => setShowTrainerModal(true)}
+            onClick={() => {
+              setTrainerForm((prev) => ({ ...prev, password: generateSecureTempPassword('Trainer') }));
+              setShowTrainerModal(true);
+            }}
             className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/20"
           >
             <Plus className="w-3.5 h-3.5" /> Add Trainer
           </button>
           <button
-            onClick={() => setShowMentorModal(true)}
+            onClick={() => {
+              setMentorForm((prev) => ({ ...prev, password: generateSecureTempPassword('Mentor') }));
+              setShowMentorModal(true);
+            }}
             className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white text-xs font-semibold transition border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-sm"
           >
             <Plus className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Add Mentor
           </button>
           <button
-            onClick={() => setShowMenteeModal(true)}
+            onClick={() => {
+              setMenteeForm((prev) => ({ ...prev, password: generateSecureTempPassword('Student') }));
+              setShowMenteeModal(true);
+            }}
             className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
           >
             <Plus className="w-3.5 h-3.5" /> Add Mentee
@@ -1977,12 +2025,22 @@ export const AdminUsers = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-slate-700 dark:text-slate-300 font-medium">Initial Password</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-700 dark:text-slate-300 font-medium">Initial Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setTrainerForm((prev) => ({ ...prev, password: generateSecureTempPassword('Trainer') }))}
+                    className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <Sparkles className="w-3 h-3" /> Auto-Generate
+                  </button>
+                </div>
                 <input
                   type="text"
+                  required
                   value={trainerForm.password}
                   onChange={(e) => setTrainerForm({ ...trainerForm, password: e.target.value })}
-                  placeholder="Password@123"
+                  placeholder="e.g. Trainer@k9#d2"
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                 />
                 <p className="text-[10px] text-slate-400">User will be prompted to change password upon initial login.</p>
@@ -2236,6 +2294,27 @@ export const AdminUsers = () => {
                 />
               </div>
 
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-700 dark:text-slate-300 font-medium">Initial Temporary Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setMentorForm((prev) => ({ ...prev, password: generateSecureTempPassword('Mentor') }))}
+                    className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <Sparkles className="w-3 h-3" /> Auto-Generate
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={mentorForm.password}
+                  onChange={(e) => setMentorForm({ ...mentorForm, password: e.target.value })}
+                  placeholder="e.g. Mentor@a1#x9"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
@@ -2367,6 +2446,27 @@ export const AdminUsers = () => {
                 />
               </div>
 
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-700 dark:text-slate-300 font-medium">Initial Temporary Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setMenteeForm((prev) => ({ ...prev, password: generateSecureTempPassword('Student') }))}
+                    className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <Sparkles className="w-3 h-3" /> Auto-Generate
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={menteeForm.password}
+                  onChange={(e) => setMenteeForm({ ...menteeForm, password: e.target.value })}
+                  placeholder="e.g. Student@k4#m2"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
@@ -2458,13 +2558,22 @@ export const AdminUsers = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-slate-700 dark:text-slate-300 font-medium">Initial Temporary Password</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-700 dark:text-slate-300 font-medium">Initial Temporary Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setAdminForm((prev) => ({ ...prev, password: generateSecureTempPassword('Admin') }))}
+                    className="text-[11px] text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <Sparkles className="w-3 h-3" /> Auto-Generate
+                  </button>
+                </div>
                 <input
                   type="text"
                   required
                   value={adminForm.password}
                   onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                  placeholder="Password@123"
+                  placeholder="e.g. Admin@x7!m9"
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-slate-900 dark:text-white font-mono placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-purple-500"
                 />
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">

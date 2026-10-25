@@ -87,51 +87,74 @@ export const removeTrainerFromBatch = async (req, res, next) => {
 
 // ─── Training Sessions (Calendar) ────────────────────────────────────────────
 
+// Helper to reliably extract year, monthIndex (0-11), and day from any date format
+const parseDateParts = (input) => {
+  if (typeof input === 'string') {
+    const match = input.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return {
+        y: parseInt(match[1], 10),
+        m: parseInt(match[2], 10) - 1,
+        d: parseInt(match[3], 10)
+      };
+    }
+  }
+  const dt = new Date(input);
+  return {
+    y: dt.getUTCFullYear(),
+    m: dt.getUTCMonth(),
+    d: dt.getUTCDate()
+  };
+};
+
 export const getTrainingSessions = async (req, res, next) => {
   try {
     const { role, id: userId } = req.user;
     const { batchId, month, year } = req.query;
 
     let where = {};
-    if (batchId && batchId !== 'ALL' && batchId !== 'all') {
-      where.batchId = batchId;
-    }
 
-    // Restrict trainer to assigned batches
+    // Role-based batch access restrictions
     if (role === 'TRAINER') {
       const myBatches = await prisma.trainerBatch.findMany({ where: { trainerId: userId }, select: { batchId: true } });
       const allowedBatches = myBatches.map(b => b.batchId);
-      if (batchId && batchId !== 'ALL' && !allowedBatches.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
-      if (!batchId || batchId === 'ALL') where.batchId = { in: allowedBatches };
-    }
-
-    // Mentee: filter by enrolled batches if not specified
-    if (role === 'MENTEE') {
-      const myBatches = await prisma.batchMentee.findMany({ where: { menteeId: userId }, select: { batchId: true } });
-      const allowedBatches = myBatches.map(b => b.batchId);
-      if (batchId && batchId !== 'ALL') {
-        where.batchId = batchId;
-      } else if (allowedBatches.length > 0) {
-        where.batchId = { in: allowedBatches };
-      }
-    }
-
-    // Mentor: filter by assigned batches if not specified
-    if (role === 'MENTOR') {
-      if (batchId && batchId !== 'ALL') {
+      if (batchId && batchId !== 'ALL' && batchId !== 'all') {
+        if (!allowedBatches.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
         where.batchId = batchId;
       } else {
-        const myBatches = await prisma.batchMentor.findMany({ where: { mentorId: userId }, select: { batchId: true } });
-        const allowedBatches = myBatches.map(b => b.batchId);
-        if (allowedBatches.length > 0) {
-          where.batchId = { in: allowedBatches };
-        }
+        where.batchId = { in: allowedBatches };
+      }
+    } else if (role === 'MENTEE') {
+      const myBatches = await prisma.batchMentee.findMany({ where: { menteeId: userId }, select: { batchId: true } });
+      const allowedBatches = myBatches.map(b => b.batchId);
+      if (batchId && batchId !== 'ALL' && batchId !== 'all') {
+        if (!allowedBatches.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
+        where.batchId = batchId;
+      } else {
+        where.batchId = { in: allowedBatches };
+      }
+    } else if (role === 'MENTOR') {
+      const myBatches = await prisma.batchMentor.findMany({ where: { mentorId: userId }, select: { batchId: true } });
+      const allowedBatches = myBatches.map(b => b.batchId);
+      if (batchId && batchId !== 'ALL' && batchId !== 'all') {
+        if (!allowedBatches.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
+        where.batchId = batchId;
+      } else {
+        where.batchId = { in: allowedBatches };
+      }
+    } else {
+      // ADMIN
+      if (batchId && batchId !== 'ALL' && batchId !== 'all') {
+        where.batchId = batchId;
       }
     }
 
     if (month && year) {
-      const start = new Date(parseInt(year), parseInt(month) - 1, 1);
-      const end   = new Date(parseInt(year), parseInt(month), 1);
+      const m = parseInt(month, 10);
+      const y = parseInt(year, 10);
+      // UTC boundaries to prevent local timezone shifts across days/months
+      const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+      const end   = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
       where.date = { gte: start, lt: end };
     }
 
@@ -147,9 +170,113 @@ export const getTrainingSessions = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+export const scheduleTrainingDay = async (req, res, next) => {
+  try {
+    const { date, batchIds = [], allBatches = false } = req.body;
+    if (!date) return res.status(400).json({ success: false, message: 'date is required.' });
+
+    let targetBatchIds = [];
+    if (allBatches) {
+      const all = await prisma.batch.findMany({ select: { id: true } });
+      targetBatchIds = all.map(b => b.id);
+    } else {
+      targetBatchIds = Array.isArray(batchIds) ? batchIds : [batchIds];
+    }
+
+    if (targetBatchIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please select at least one batch or All Batches.' });
+    }
+
+    const { y, m, d } = parseDateParts(date);
+    const dayStart = new Date(Date.UTC(y, m, d, 0, 0, 0, 0));
+    const dayEnd   = new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0));
+    const canonicalDate = new Date(Date.UTC(y, m, d, 12, 0, 0, 0));
+
+    let fallbackTrainer = await prisma.user.findFirst({ where: { role: 'TRAINER', accountStatus: 'ACTIVE' } });
+    if (!fallbackTrainer) {
+      fallbackTrainer = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+    }
+
+    const scheduled = [];
+    for (const bId of targetBatchIds) {
+      const existing = await prisma.trainingSession.findFirst({
+        where: {
+          batchId: bId,
+          date: { gte: dayStart, lt: dayEnd }
+        }
+      });
+      if (existing) {
+        scheduled.push(existing);
+        continue;
+      }
+
+      const tb = await prisma.trainerBatch.findFirst({ where: { batchId: bId } });
+      const trainerId = tb?.trainerId || fallbackTrainer?.id;
+
+      const created = await prisma.trainingSession.create({
+        data: {
+          batchId: bId,
+          trainerId,
+          date: canonicalDate,
+          topicsTaught: [],
+          problemsSolved: [],
+          notes: ''
+        },
+        include: {
+          batch: { select: { id: true, name: true } },
+          trainer: { select: { id: true, name: true } }
+        }
+      });
+      scheduled.push(created);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: `Marked training day for ${scheduled.length} batch(es).`,
+      scheduled
+    });
+  } catch (err) { next(err); }
+};
+
+export const unscheduleTrainingDay = async (req, res, next) => {
+  try {
+    const { date, batchId } = req.query;
+    if (!date) return res.status(400).json({ success: false, message: 'date query parameter is required.' });
+
+    const { y, m, d } = parseDateParts(date);
+    const dayStart = new Date(Date.UTC(y, m, d, 0, 0, 0, 0));
+    const dayEnd   = new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0));
+
+    let deleteWhere = {
+      date: { gte: dayStart, lt: dayEnd }
+    };
+
+    if (batchId && batchId !== 'ALL' && batchId !== 'all') {
+      deleteWhere.batchId = batchId;
+    }
+
+    const result = await prisma.trainingSession.deleteMany({
+      where: deleteWhere
+    });
+
+    return res.json({
+      success: true,
+      message: `Removed training day schedule (${result.count} session entries deleted).`,
+      count: result.count
+    });
+  } catch (err) { next(err); }
+};
+
 export const createOrUpdateTrainingSession = async (req, res, next) => {
   try {
     const { id: userId, role } = req.user;
+    if (role === 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot write or edit training session content. Only assigned trainers can report class topics and problems solved.'
+      });
+    }
+
     const { batchId, date, topicsTaught = [], problemsSolved = [], notes = '', trainerId } = req.body;
 
     if (!batchId || !date) return res.status(400).json({ success: false, message: 'batchId and date are required.' });
@@ -158,46 +285,42 @@ export const createOrUpdateTrainingSession = async (req, res, next) => {
     if (role === 'TRAINER') {
       const access = await prisma.trainerBatch.findUnique({ where: { trainerId_batchId: { trainerId: userId, batchId } } });
       if (!access) return res.status(403).json({ success: false, message: 'Access denied to this batch.' });
-    } else if (role === 'ADMIN') {
-      if (trainerId) {
-        effectiveTrainerId = trainerId;
-      } else {
-        const tb = await prisma.trainerBatch.findFirst({ where: { batchId } });
-        if (tb) effectiveTrainerId = tb.trainerId;
-      }
     }
 
-    const sessionDate = new Date(date);
-    sessionDate.setHours(0, 0, 0, 0);
+    const { y, m, d } = parseDateParts(date);
+    const dayStart = new Date(Date.UTC(y, m, d, 0, 0, 0, 0));
+    const dayEnd   = new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0));
+    const canonicalDate = new Date(Date.UTC(y, m, d, 12, 0, 0, 0));
 
     const existing = await prisma.trainingSession.findFirst({
-      where: { batchId, date: sessionDate }
+      where: {
+        batchId,
+        date: { gte: dayStart, lt: dayEnd }
+      }
     });
 
     let session;
     if (existing) {
       session = await prisma.trainingSession.update({
         where: { id: existing.id },
-        data: { topicsTaught, notes, trainerId: effectiveTrainerId }
+        data: {
+          topicsTaught: Array.isArray(topicsTaught) ? topicsTaught : [],
+          problemsSolved: Array.isArray(problemsSolved) ? problemsSolved : [],
+          notes: notes || '',
+          trainerId: effectiveTrainerId
+        }
       });
-      if (Array.isArray(problemsSolved)) {
-        await prisma.$executeRawUnsafe(
-          `UPDATE "TrainingSession" SET "problemsSolved" = $1 WHERE "id" = $2`,
-          problemsSolved,
-          existing.id
-        );
-      }
     } else {
       session = await prisma.trainingSession.create({
-        data: { batchId, trainerId: effectiveTrainerId, date: sessionDate, topicsTaught, notes }
+        data: {
+          batchId,
+          trainerId: effectiveTrainerId,
+          date: canonicalDate,
+          topicsTaught: Array.isArray(topicsTaught) ? topicsTaught : [],
+          problemsSolved: Array.isArray(problemsSolved) ? problemsSolved : [],
+          notes: notes || ''
+        }
       });
-      if (Array.isArray(problemsSolved) && problemsSolved.length > 0) {
-        await prisma.$executeRawUnsafe(
-          `UPDATE "TrainingSession" SET "problemsSolved" = $1 WHERE "id" = $2`,
-          problemsSolved,
-          session.id
-        );
-      }
     }
 
     const fullSession = await prisma.trainingSession.findUnique({
@@ -215,39 +338,45 @@ export const createOrUpdateTrainingSession = async (req, res, next) => {
 export const updateTrainingSession = async (req, res, next) => {
   try {
     const { id: userId, role } = req.user;
+    if (role === 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot write or edit training session content. Only assigned trainers can report class topics and problems solved.'
+      });
+    }
+
     const { id } = req.params;
     const { topicsTaught, problemsSolved, notes, date } = req.body;
 
     const session = await prisma.trainingSession.findUnique({ where: { id } });
     if (!session) return res.status(404).json({ success: false, message: 'Session not found.' });
-    if (role === 'TRAINER' && session.trainerId !== userId) return res.status(403).json({ success: false, message: 'Permission denied.' });
+
+    if (role === 'TRAINER' && session.trainerId !== userId) {
+      const access = await prisma.trainerBatch.findUnique({
+        where: { trainerId_batchId: { trainerId: userId, batchId: session.batchId } }
+      });
+      if (!access) return res.status(403).json({ success: false, message: 'Permission denied.' });
+    }
+
+    let updateData = {};
+    if (topicsTaught !== undefined) updateData.topicsTaught = Array.isArray(topicsTaught) ? topicsTaught : [];
+    if (problemsSolved !== undefined) updateData.problemsSolved = Array.isArray(problemsSolved) ? problemsSolved : [];
+    if (notes !== undefined) updateData.notes = notes;
+    if (date) {
+      const { y, m, d } = parseDateParts(date);
+      updateData.date = new Date(Date.UTC(y, m, d, 12, 0, 0, 0));
+    }
 
     const updated = await prisma.trainingSession.update({
       where: { id },
-      data: {
-        ...(topicsTaught ? { topicsTaught } : {}),
-        ...(notes !== undefined ? { notes } : {}),
-        ...(date ? { date: new Date(date) } : {})
-      }
-    });
-
-    if (Array.isArray(problemsSolved)) {
-      await prisma.$executeRawUnsafe(
-        `UPDATE "TrainingSession" SET "problemsSolved" = $1 WHERE "id" = $2`,
-        problemsSolved,
-        id
-      );
-    }
-
-    const fullSession = await prisma.trainingSession.findUnique({
-      where: { id },
+      data: updateData,
       include: {
         trainer: { select: { id: true, name: true, email: true } },
         batch: { select: { id: true, name: true } }
       }
     });
 
-    return res.json({ success: true, session: fullSession });
+    return res.json({ success: true, session: updated });
   } catch (err) { next(err); }
 };
 
@@ -256,7 +385,14 @@ export const deleteTrainingSession = async (req, res, next) => {
     const { id: userId, role } = req.user;
     const session = await prisma.trainingSession.findUnique({ where: { id: req.params.id } });
     if (!session) return res.status(404).json({ success: false, message: 'Session not found.' });
-    if (role === 'TRAINER' && session.trainerId !== userId) return res.status(403).json({ success: false, message: 'Permission denied.' });
+
+    if (role === 'TRAINER' && session.trainerId !== userId) {
+      const access = await prisma.trainerBatch.findUnique({
+        where: { trainerId_batchId: { trainerId: userId, batchId: session.batchId } }
+      });
+      if (!access) return res.status(403).json({ success: false, message: 'Permission denied.' });
+    }
+
     await prisma.trainingSession.delete({ where: { id: req.params.id } });
     return res.json({ success: true, message: 'Session deleted.' });
   } catch (err) { next(err); }
@@ -945,4 +1081,364 @@ export const deleteTrainer = async (req, res, next) => {
     next(err);
   }
 };
+
+// ─── Mentor Interaction & Attendance Reports ────────────────────────────────
+
+export const getMentorSessionReports = async (req, res, next) => {
+  try {
+    if (req.user.role === 'TRAINER') {
+      return res.status(403).json({ success: false, message: 'Trainers are not permitted to view mentor attendance reports.' });
+    }
+
+    const { batchId, date } = req.query;
+    if (!batchId || !date) {
+      return res.status(400).json({ success: false, message: 'batchId and date are required.' });
+    }
+
+    const { y, m, d } = parseDateParts(date);
+    const dayStart = new Date(Date.UTC(y, m, d, 0, 0, 0, 0));
+    const dayEnd = new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0));
+
+    // 1. Fetch mentors assigned to this batch
+    const batchMentors = await prisma.batchMentor.findMany({
+      where: { batchId },
+      include: {
+        mentor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            mentorProfile: { select: { designation: true, department: true } }
+          }
+        }
+      }
+    });
+
+    // Also include any mentors with active assignments in this batch
+    const mentorAssignments = await prisma.mentorMenteeAssignment.findMany({
+      where: { batchId, status: 'ACTIVE' },
+      include: {
+        mentor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            mentorProfile: { select: { designation: true, department: true } }
+          }
+        }
+      }
+    });
+
+    const mentorMap = new Map();
+    batchMentors.forEach(bm => {
+      if (bm.mentor) mentorMap.set(bm.mentor.id, bm.mentor);
+    });
+    mentorAssignments.forEach(ma => {
+      if (ma.mentor) mentorMap.set(ma.mentor.id, ma.mentor);
+    });
+
+    let mentorsList = Array.from(mentorMap.values());
+
+    // If request is from a MENTOR, restrict strictly to their own mentor profile
+    if (req.user.role === 'MENTOR') {
+      mentorsList = mentorsList.filter(m => m.id === req.user.id);
+    }
+
+    // 2. Fetch existing reports for this batch on this date
+    const existingReports = await prisma.$queryRaw`
+      SELECT * FROM "MentorSessionReport"
+      WHERE "batchId" = ${batchId}
+        AND "date" >= ${dayStart}
+        AND "date" < ${dayEnd}
+    `;
+
+    const reportByMentorId = {};
+    if (Array.isArray(existingReports)) {
+      existingReports.forEach(r => {
+        reportByMentorId[r.mentorId] = r;
+      });
+    }
+
+    // 3. Count mentees for each mentor in this batch
+    const mentorSummaries = await Promise.all(
+      mentorsList.map(async (m) => {
+        const menteesCount = await prisma.mentorMenteeAssignment.count({
+          where: { batchId, mentorId: m.id, status: 'ACTIVE' }
+        });
+
+        const report = reportByMentorId[m.id];
+        const hasReport = !!report;
+        const totalMentees = menteesCount || (report ? report.totalMentees : 0);
+        const presentCount = report ? report.presentCount : 0;
+        const absentCount = report ? report.absentCount : 0;
+        const attendancePercentage = report
+          ? Number(report.attendancePercentage)
+          : (totalMentees > 0 && hasReport ? Math.round((presentCount / totalMentees) * 100) : 0);
+
+        const isMyReport = req.user.role === 'MENTOR' && req.user.id === m.id;
+        const canSubmit = isMyReport;
+
+        return {
+          mentorId: m.id,
+          name: m.name,
+          email: m.email,
+          profileImage: m.profileImage,
+          designation: m.mentorProfile?.designation || 'Technical Mentor',
+          department: m.mentorProfile?.department || 'Computer Science & Engineering',
+          totalMentees,
+          hasReport,
+          reportId: report ? report.id : null,
+          presentCount,
+          absentCount,
+          attendancePercentage,
+          submittedAt: report ? report.updatedAt : null,
+          generalNotes: report ? report.generalNotes : '',
+          isMyReport,
+          canSubmit
+        };
+      })
+    );
+
+    return res.json({
+      success: true,
+      batchId,
+      date,
+      reports: mentorSummaries
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getMentorSessionReportDetails = async (req, res, next) => {
+  try {
+    if (req.user.role === 'TRAINER') {
+      return res.status(403).json({ success: false, message: 'Trainers are not permitted to view mentor attendance reports.' });
+    }
+
+    const { mentorId } = req.params;
+    const { batchId, date } = req.query;
+
+    if (req.user.role === 'MENTOR' && mentorId !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Mentors are only permitted to view their own assigned mentees.' });
+    }
+
+    if (!batchId || !date) {
+      return res.status(400).json({ success: false, message: 'batchId and date are required.' });
+    }
+
+    const { y, m, d } = parseDateParts(date);
+    const dayStart = new Date(Date.UTC(y, m, d, 0, 0, 0, 0));
+    const dayEnd = new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0));
+
+    const mentor = await prisma.user.findUnique({
+      where: { id: mentorId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        mentorProfile: { select: { designation: true, department: true } }
+      }
+    });
+
+    if (!mentor) {
+      return res.status(404).json({ success: false, message: 'Mentor not found.' });
+    }
+
+    // Fetch all active mentees in this batch assigned to this mentor
+    const assignments = await prisma.mentorMenteeAssignment.findMany({
+      where: { batchId, mentorId, status: 'ACTIVE' },
+      include: {
+        mentee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            menteeProfile: {
+              select: {
+                studentId: true,
+                rollNumber: true,
+                branch: true,
+                section: true,
+                academicYear: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { mentee: { name: 'asc' } }
+    });
+
+    // Check if report exists
+    const reports = await prisma.$queryRaw`
+      SELECT * FROM "MentorSessionReport"
+      WHERE "batchId" = ${batchId}
+        AND "mentorId" = ${mentorId}
+        AND "date" >= ${dayStart}
+        AND "date" < ${dayEnd}
+      LIMIT 1
+    `;
+
+    const report = Array.isArray(reports) && reports.length > 0 ? reports[0] : null;
+
+    let recordsMap = {};
+    if (report) {
+      const records = await prisma.$queryRaw`
+        SELECT * FROM "MenteeAttendanceReport"
+        WHERE "reportId" = ${report.id}
+      `;
+      if (Array.isArray(records)) {
+        records.forEach(r => {
+          recordsMap[r.menteeId] = r;
+        });
+      }
+    }
+
+    const students = assignments.map(a => {
+      const rec = recordsMap[a.mentee.id];
+      return {
+        menteeId: a.mentee.id,
+        name: a.mentee.name,
+        email: a.mentee.email,
+        studentId: a.mentee.menteeProfile?.studentId || '',
+        rollNumber: a.mentee.menteeProfile?.rollNumber || 'N/A',
+        branch: a.mentee.menteeProfile?.branch || 'Computer Science & Engineering',
+        section: a.mentee.menteeProfile?.section || 'A',
+        status: rec ? rec.status : 'PRESENT',
+        comments: rec ? rec.comments : ''
+      };
+    });
+
+    const canEdit = req.user.role === 'MENTOR' && req.user.id === mentorId;
+
+    return res.json({
+      success: true,
+      mentor,
+      report,
+      students,
+      canEdit
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const submitMentorSessionReport = async (req, res, next) => {
+  try {
+    const { batchId, date, generalNotes = '', records = [] } = req.body;
+
+    if (req.user.role !== 'MENTOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only assigned mentors can submit mentee attendance and reviews. Admins cannot write or edit mentor reports.'
+      });
+    }
+
+    if (!batchId || !date) {
+      return res.status(400).json({ success: false, message: 'batchId and date are required.' });
+    }
+
+    const effectiveMentorId = req.user.id;
+
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ success: false, message: 'Attendance records for mentees are required.' });
+    }
+
+    // Validate that student comments are mandatory!
+    for (let i = 0; i < records.length; i++) {
+      const r = records[i];
+      if (!r.comments || !r.comments.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: `Comment / report on each student is mandatory. Please provide a review for student #${i + 1}.`
+        });
+      }
+    }
+
+    const { y, m, d } = parseDateParts(date);
+    const dayStart = new Date(Date.UTC(y, m, d, 0, 0, 0, 0));
+    const dayEnd = new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0));
+    const canonicalDate = new Date(Date.UTC(y, m, d, 12, 0, 0, 0));
+
+    // Calculate present and absent counts
+    let presentCount = 0;
+    records.forEach(r => {
+      if (r.status === 'PRESENT') presentCount++;
+    });
+    const totalMentees = records.length;
+    const absentCount = totalMentees - presentCount;
+    const attendancePercentage = totalMentees > 0 ? Math.round((presentCount / totalMentees) * 1000) / 10 : 0.0;
+
+    // Optional link to trainingSession
+    const session = await prisma.trainingSession.findFirst({
+      where: { batchId, date: { gte: dayStart, lt: dayEnd } }
+    });
+    const trainingSessionId = session ? session.id : null;
+
+    // Check existing report
+    const existingReports = await prisma.$queryRaw`
+      SELECT "id" FROM "MentorSessionReport"
+      WHERE "batchId" = ${batchId}
+        AND "mentorId" = ${effectiveMentorId}
+        AND "date" >= ${dayStart}
+        AND "date" < ${dayEnd}
+      LIMIT 1
+    `;
+
+    let reportId;
+    if (Array.isArray(existingReports) && existingReports.length > 0) {
+      reportId = existingReports[0].id;
+      await prisma.$executeRawUnsafe(
+        `UPDATE "MentorSessionReport"
+         SET "presentCount" = $1, "absentCount" = $2, "totalMentees" = $3,
+             "attendancePercentage" = $4, "generalNotes" = $5, "trainingSessionId" = $6,
+             "updatedAt" = CURRENT_TIMESTAMP
+         WHERE "id" = $7`,
+        presentCount,
+        absentCount,
+        totalMentees,
+        attendancePercentage,
+        generalNotes || '',
+        trainingSessionId,
+        reportId
+      );
+    } else {
+      const insertRes = await prisma.$queryRaw`
+        INSERT INTO "MentorSessionReport"
+          ("batchId", "mentorId", "trainingSessionId", "date", "status", "presentCount", "absentCount", "totalMentees", "attendancePercentage", "generalNotes", "createdAt", "updatedAt")
+        VALUES
+          (${batchId}, ${effectiveMentorId}, ${trainingSessionId}, ${canonicalDate}, 'SUBMITTED', ${presentCount}, ${absentCount}, ${totalMentees}, ${attendancePercentage}, ${generalNotes || ''}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING "id"
+      `;
+      reportId = insertRes[0].id;
+    }
+
+    // Upsert each mentee attendance and comment
+    for (const rec of records) {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "MenteeAttendanceReport" ("reportId", "menteeId", "status", "comments", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+         ON CONFLICT ("reportId", "menteeId")
+         DO UPDATE SET "status" = EXCLUDED."status", "comments" = EXCLUDED."comments", "updatedAt" = CURRENT_TIMESTAMP`,
+        reportId,
+        rec.menteeId,
+        rec.status || 'PRESENT',
+        rec.comments.trim()
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Mentor interaction attendance and student reviews submitted successfully.',
+      reportId,
+      presentCount,
+      absentCount,
+      totalMentees,
+      attendancePercentage
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 

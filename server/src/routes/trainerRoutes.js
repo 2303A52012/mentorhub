@@ -4,7 +4,9 @@ import { authorize } from '../middleware/authMiddleware.js';
 import {
   getTrainerProfile, updateTrainerProfile,
   assignTrainerToBatch, removeTrainerFromBatch,
-  getTrainingSessions, createOrUpdateTrainingSession, updateTrainingSession, deleteTrainingSession,
+  getTrainingSessions, scheduleTrainingDay, unscheduleTrainingDay,
+  createOrUpdateTrainingSession, updateTrainingSession, deleteTrainingSession,
+  getMentorSessionReports, getMentorSessionReportDetails, submitMentorSessionReport,
   getDailyProblems, getDailyProblemById, getDailyProblemSubmissions, submitDailyProblem,
   createDailyProblem, updateDailyProblem, deleteDailyProblem,
   getTrainerBatchStudents,
@@ -34,9 +36,16 @@ router.get('/batches/:batchId/students',        authorize('ADMIN','TRAINER'), ge
 
 // Training Sessions (calendar)
 router.get('/sessions',                         authorize('ADMIN','TRAINER','MENTOR','MENTEE'), getTrainingSessions);
-router.post('/sessions',                        authorize('ADMIN','TRAINER'), createOrUpdateTrainingSession);
-router.patch('/sessions/:id',                   authorize('ADMIN','TRAINER'), updateTrainingSession);
+router.post('/sessions/schedule-day',           authorize('ADMIN'), scheduleTrainingDay);
+router.delete('/sessions/schedule-day',         authorize('ADMIN'), unscheduleTrainingDay);
+router.post('/sessions',                        authorize('TRAINER'), createOrUpdateTrainingSession);
+router.patch('/sessions/:id',                   authorize('TRAINER'), updateTrainingSession);
 router.delete('/sessions/:id',                  authorize('ADMIN','TRAINER'), deleteTrainingSession);
+
+// Mentor Interaction & Attendance Reports (TRAINER excluded; write strictly for MENTOR)
+router.get('/sessions/mentor-reports',                        authorize('ADMIN','MENTOR','MENTEE'), getMentorSessionReports);
+router.get('/sessions/mentor-reports/:mentorId/details',      authorize('ADMIN','MENTOR','MENTEE'), getMentorSessionReportDetails);
+router.post('/sessions/mentor-reports',                       authorize('MENTOR'), submitMentorSessionReport);
 
 // Daily Problems
 router.get('/daily-problems',                   getDailyProblems);

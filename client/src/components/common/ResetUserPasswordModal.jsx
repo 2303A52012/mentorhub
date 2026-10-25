@@ -1,29 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useModal } from '../../context/ModalContext';
 import { Key, X, ShieldAlert, Sparkles, Check, RefreshCw } from 'lucide-react';
 
 export const ResetUserPasswordModal = ({ isOpen, onClose, targetUser, onSuccess }) => {
   const { showSuccess, showError } = useModal();
-  const [newPassword, setNewPassword] = useState('Student@2025');
+  const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  if (!isOpen || !targetUser) return null;
 
   const generateRandomPassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
-    let pass = '';
-    for (let i = 0; i < 10; i++) {
+    let pass = 'Temp@';
+    for (let i = 0; i < 8; i++) {
       pass += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setNewPassword(pass);
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      generateRandomPassword();
+    }
+  }, [isOpen, targetUser]);
+
+  if (!isOpen || !targetUser) return null;
+
   const handleReset = async (e) => {
     e.preventDefault();
 
-    if (newPassword.length < 6) {
-      showError('Validation Error', 'Password must be at least 6 characters long.');
+    if (newPassword.length < 8) {
+      showError('Validation Error', 'Password must be at least 8 characters long.');
       return;
     }
 
