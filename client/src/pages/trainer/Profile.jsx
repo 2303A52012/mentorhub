@@ -504,26 +504,6 @@ export const TrainerProfilePage = () => {
           </Link>
 
           <Link
-            to="/trainer/problems"
-            className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-amber-500/40 hover:bg-amber-50/20 dark:hover:bg-amber-950/20 transition group flex flex-col justify-between space-y-3"
-          >
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                <Zap className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition">
-                Daily Problems (POTD)
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Post company-tagged interview questions (Amazon, Google, Microsoft, Atlassian) to cohorts.
-              </p>
-            </div>
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 inline-flex items-center gap-1 pt-2">
-              Manage POTDs <ExternalLink className="w-3 h-3" />
-            </span>
-          </Link>
-
-          <Link
             to="/trainer/tasks"
             className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-violet-500/40 hover:bg-violet-50/20 dark:hover:bg-violet-950/20 transition group flex flex-col justify-between space-y-3"
           >
@@ -560,26 +540,6 @@ export const TrainerProfilePage = () => {
             </div>
             <span className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 inline-flex items-center gap-1 pt-2">
               Review Now <ExternalLink className="w-3 h-3" />
-            </span>
-          </Link>
-
-          <Link
-            to="/announcements"
-            className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:border-pink-500/40 hover:bg-pink-50/20 dark:hover:bg-pink-950/20 transition group flex flex-col justify-between space-y-3"
-          >
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-pink-50 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center">
-                <Megaphone className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 transition">
-                Broadcast Announcements
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Post important updates, session timings, and placement notices to cohort students.
-              </p>
-            </div>
-            <span className="text-xs font-semibold text-pink-600 dark:text-pink-400 inline-flex items-center gap-1 pt-2">
-              View Announcements <ExternalLink className="w-3 h-3" />
             </span>
           </Link>
         </div>

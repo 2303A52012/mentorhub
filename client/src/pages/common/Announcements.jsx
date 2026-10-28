@@ -65,7 +65,7 @@ function timeAgo(dt) {
 export const Announcements = () => {
   const { user } = useAuth();
   const role = user?.role;
-  const canPost = ['ADMIN', 'TRAINER', 'MENTOR'].includes(role);
+  const canPost = ['ADMIN', 'MENTOR'].includes(role);
 
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -1,7 +1,7 @@
 import prisma from '../config/prisma.js';
 
 async function isVisibleTo(announcement, userId, userRole) {
-  if (['ADMIN', 'TRAINER', 'MENTOR'].includes(userRole)) return true;
+  if (['ADMIN', 'MENTOR'].includes(userRole)) return true;
   const { audience, targetIds } = announcement;
   if (audience === 'ALL') return true;
   if (audience === 'INDIVIDUAL') return targetIds.includes(userId);
@@ -19,16 +19,15 @@ async function isVisibleTo(announcement, userId, userRole) {
 export const getAnnouncements = async (req, res, next) => {
   try {
     const { id: userId, role } = req.user;
+    if (role === 'TRAINER') {
+      return res.status(403).json({ success: false, message: 'Forbidden: Announcements are not available for trainers.' });
+    }
     const page = Math.max(parseInt(req.query.page) || 1, 1);
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const skip = (page - 1) * limit;
     let audienceWhere = {};
     if (role === 'ADMIN') {
       audienceWhere = {};
-    } else if (role === 'TRAINER') {
-      const trainerBatches = await prisma.trainerBatch.findMany({ where: { trainerId: userId }, select: { batchId: true } });
-      const batchIds = trainerBatches.map(b => b.batchId);
-      audienceWhere = { OR: [{ audience: 'ALL' }, { createdById: userId }, { audience: 'BATCH', targetIds: { hasSome: batchIds.length ? batchIds : ['__none__'] } }] };
     } else if (role === 'MENTOR') {
       audienceWhere = { OR: [{ audience: 'ALL' }, { createdById: userId }, { audience: 'MENTOR_GROUP', targetIds: { has: userId } }] };
     } else {
@@ -56,7 +55,7 @@ export const createAnnouncement = async (req, res, next) => {
     const { title, content, audience = 'ALL', targetIds = [], isPinned = false, expiresAt } = req.body;
     if (!title?.trim() || !content?.trim()) return res.status(400).json({ success: false, message: 'Title and content are required.' });
     if (role === 'MENTOR' && !['ALL', 'MENTOR_GROUP', 'INDIVIDUAL'].includes(audience)) return res.status(403).json({ success: false, message: 'Mentors can only post to their mentees.' });
-    if (role === 'TRAINER' && !['ALL', 'BATCH', 'INDIVIDUAL'].includes(audience)) return res.status(403).json({ success: false, message: 'Trainers can only post to batch or individual.' });
+    if (role === 'TRAINER') return res.status(403).json({ success: false, message: 'Trainers cannot post announcements.' });
     const resolvedTargetIds = audience === 'MENTOR_GROUP' && role === 'MENTOR' && targetIds.length === 0 ? [userId] : targetIds;
     const announcement = await prisma.announcement.create({ data: { title: title.trim(), content: content.trim(), createdById: userId, audience, targetIds: resolvedTargetIds, isPinned: role === 'ADMIN' ? isPinned : false, expiresAt: expiresAt ? new Date(expiresAt) : null }, include: { createdBy: { select: { id: true, name: true, role: true } } } });
     return res.status(201).json({ success: true, announcement });

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import {
   Zap,
   Plus,
@@ -33,8 +34,9 @@ const diffColor = {
 };
 
 export const DailyProblems = () => {
+  const { user } = useAuth();
   const [batches, setBatches] = useState([]);
-  const [selectedBatch, setSelectedBatch] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState('ALL');
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -53,9 +55,11 @@ export const DailyProblems = () => {
   const [submissionTab, setSubmissionTab] = useState('ALL'); // 'ALL' | 'SOLVED' | 'PENDING'
   const [submissionSearch, setSubmissionSearch] = useState('');
   const [copiedCodeId, setCopiedCodeId] = useState(null);
+  const [evaluatingSubId, setEvaluatingSubId] = useState(null);
+  const [evalNotesMap, setEvalNotesMap] = useState({});
 
   const defaultForm = {
-    batchId: '',
+    batchId: 'ALL',
     title: '',
     description: '',
     link: '',
@@ -79,21 +83,21 @@ export const DailyProblems = () => {
         const res = await api.get('/batches');
         const bList = res.data.batches || [];
         setBatches(bList);
-        if (bList.length > 0) setSelectedBatch(bList[0]._id || bList[0].id);
       } catch (err) {
-        console.error('Failed to load trainer batches:', err);
+        console.error('Failed to load batches:', err);
       }
     };
     fetchBatches();
   }, []);
 
   const fetchProblems = useCallback(async () => {
-    if (!selectedBatch) return;
     setLoading(true);
     try {
-      const res = await api.get(
-        `/trainer/daily-problems?batchId=${selectedBatch}&page=${page}&limit=20`
-      );
+      const url =
+        selectedBatch && selectedBatch !== 'ALL'
+          ? `/trainer/daily-problems?batchId=${selectedBatch}&page=${page}&limit=20`
+          : `/trainer/daily-problems?page=${page}&limit=20`;
+      const res = await api.get(url);
       setProblems(res.data.problems || []);
       setTotal(res.data.total || 0);
     } catch {
@@ -111,7 +115,7 @@ export const DailyProblems = () => {
     setEditTarget(null);
     setForm({
       ...defaultForm,
-      batchId: selectedBatch || (batches[0]?._id || batches[0]?.id || '')
+      batchId: selectedBatch || 'ALL'
     });
     setShowForm(true);
   };
@@ -119,7 +123,7 @@ export const DailyProblems = () => {
   const openEdit = (p) => {
     setEditTarget(p);
     setForm({
-      batchId: p.batchId || selectedBatch,
+      batchId: p.isAllBatches || p.tags?.includes('ALL_BATCHES') ? 'ALL' : (p.batchId || selectedBatch),
       title: p.title || '',
       description: p.description || '',
       link: p.link || '',
@@ -235,6 +239,46 @@ export const DailyProblems = () => {
     showToast('Code copied to clipboard', 'success');
   };
 
+  const handleEvaluate = async (submissionId, status) => {
+    try {
+      setEvaluatingSubId(submissionId);
+      const note = evalNotesMap[submissionId] || '';
+      const res = await api.patch(
+        `/trainer/daily-problems/${submissionsModalProblem.id}/submissions/${submissionId}`,
+        {
+          status,
+          evaluationNotes: note.trim()
+        }
+      );
+      if (res.data.success) {
+        showToast(`Submission evaluated as ${status}!`);
+        setSubmissionsData((prev) => {
+          if (!prev) return prev;
+          const nextSubs = prev.submissions.map((item) => {
+            if (item.submission && item.submission.id === submissionId) {
+              return {
+                ...item,
+                status,
+                submission: {
+                  ...item.submission,
+                  status,
+                  approach: res.data.submission?.approach || item.submission.approach
+                }
+              };
+            }
+            return item;
+          });
+          return { ...prev, submissions: nextSubs };
+        });
+        setEvalNotesMap((prev) => ({ ...prev, [submissionId]: '' }));
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to evaluate submission.', 'error');
+    } finally {
+      setEvaluatingSubId(null);
+    }
+  };
+
   const filtered = problems.filter((p) => {
     if (filterDiff && p.difficulty !== filterDiff) return false;
     if (
@@ -295,6 +339,9 @@ export const DailyProblems = () => {
                 }}
                 className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
               >
+                <option value="ALL" className="dark:bg-slate-900">
+                  All Cohorts &amp; Batches
+                </option>
                 {batches.map((b) => (
                   <option key={b._id || b.id} value={b._id || b.id} className="dark:bg-slate-900">
                     {b.name}
@@ -379,6 +426,39 @@ export const DailyProblems = () => {
                       {p.difficulty}
                     </span>
 
+                    {/* Who posted it tag */}
+                    {p.postedBy && (
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1 ${
+                          p.postedBy.role === 'MENTOR'
+                            ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                            : p.postedBy.role === 'TRAINER'
+                            ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                        }`}
+                      >
+                        <span>
+                          👤 {p.postedBy.role === 'MENTOR' ? 'Mentor' : p.postedBy.role === 'TRAINER' ? 'Trainer' : 'Admin'}: {p.postedBy.name}
+                        </span>
+                      </span>
+                    )}
+
+                    {/* Cohort Scope Badge */}
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                      {p.isAllBatches ? '🌐 All Batches (496 Students)' : `👥 Batch: ${p.batch?.name || 'Cohort'}`}
+                    </span>
+
+                    {/* 24-Hour Freeze / Active Badge */}
+                    {p.isFrozen ? (
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 inline-flex items-center gap-1">
+                        ❄️ Frozen (24h Window Closed)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 inline-flex items-center gap-1">
+                        ⏳ Active (24h Window)
+                      </span>
+                    )}
+
                     {p.company && (
                       <span className="text-[11px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 px-2.5 py-0.5 rounded-full">
                         {p.company}
@@ -396,23 +476,25 @@ export const DailyProblems = () => {
                     </span>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1.5 self-end sm:self-center">
-                    <button
-                      onClick={() => openEdit(p)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition"
-                      title="Edit problem"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(p.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition"
-                      title="Delete problem"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {/* Actions — strictly only author or admin can edit or delete */}
+                  {(p.canModify ?? (user?.id === p.postedById || user?.role === 'ADMIN')) && (
+                    <div className="flex items-center gap-1.5 self-end sm:self-center">
+                      <button
+                        onClick={() => openEdit(p)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition"
+                        title="Edit problem (Author only)"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition"
+                        title="Delete problem (Author only)"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Title & Description */}
@@ -568,6 +650,13 @@ export const DailyProblems = () => {
                 </div>
               </div>
 
+              {submissionsData?.isMentor && (
+                <div className="px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs text-purple-700 dark:text-purple-300 flex items-center gap-2 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                  <span>Mentor Evaluation Scope: You are viewing your assigned mentees only. Only you can evaluate and verify your mentees' work.</span>
+                </div>
+              )}
+
               {/* Tabs & Search */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-1.5 bg-slate-200/60 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
@@ -673,20 +762,27 @@ export const DailyProblems = () => {
 
                           <div>
                             {isSolved ? (
-                              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 inline-flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Solved
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold border inline-flex items-center gap-1 ${
+                                s.status === 'VERIFIED'
+                                  ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
+                                  : s.status === 'NEEDS_REVISION'
+                                  ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30'
+                                  : 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30'
+                              }`}>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {s.status === 'VERIFIED' ? 'Verified & Approved' : s.status === 'NEEDS_REVISION' ? 'Needs Revision' : 'Submitted (Review Pending)'}
                               </span>
                             ) : (
                               <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 inline-flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5" /> Pending
+                                <Clock className="w-3.5 h-3.5" /> Pending Solution
                               </span>
                             )}
                           </div>
                         </div>
 
-                        {/* Submission Details If Solved */}
+                        {/* Submission Details & Mentor Evaluation Controls */}
                         {isSolved && sub && (
-                          <div className="mt-3 pt-3 border-t border-emerald-100 dark:border-emerald-900/40 space-y-2 text-xs">
+                          <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3 text-xs">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               {sub.submissionUrl && (
                                 <a
@@ -718,7 +814,7 @@ export const DailyProblems = () => {
                             </div>
 
                             {sub.approach && (
-                              <div className="p-2.5 rounded-xl bg-white/70 dark:bg-slate-800/60 border border-emerald-100 dark:border-emerald-900/30 text-slate-700 dark:text-slate-300 text-xs">
+                              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 text-xs">
                                 <span className="font-semibold text-slate-500 dark:text-slate-400 text-[10px] uppercase block mb-0.5">Approach:</span>
                                 {sub.approach}
                               </div>
@@ -741,6 +837,42 @@ export const DailyProblems = () => {
                                 </pre>
                               </div>
                             )}
+
+                            {/* Mentor Evaluation Action Box */}
+                            <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/40 p-3 rounded-xl border">
+                              <div className="flex-1">
+                                <input
+                                  type="text"
+                                  value={evalNotesMap[sub.id] || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setEvalNotesMap((prev) => ({ ...prev, [sub.id]: val }));
+                                  }}
+                                  placeholder="Mentor review feedback / guidance note (optional)…"
+                                  className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500 shadow-xs"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                  type="button"
+                                  disabled={evaluatingSubId === sub.id}
+                                  onClick={() => handleEvaluate(sub.id, 'VERIFIED')}
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center gap-1 shadow-xs"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>{s.status === 'VERIFIED' ? 'Re-verify' : 'Verify & Approve'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={evaluatingSubId === sub.id}
+                                  onClick={() => handleEvaluate(sub.id, 'NEEDS_REVISION')}
+                                  className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center gap-1 shadow-xs"
+                                >
+                                  <AlertCircle className="w-3.5 h-3.5" />
+                                  <span>Needs Revision</span>
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -781,20 +913,25 @@ export const DailyProblems = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-                  Target Batch *
+                  Cohort / Batch
                 </label>
                 <select
-                  value={form.batchId || selectedBatch}
+                  value={form.batchId || (batches[0]?._id || batches[0]?.id || '')}
                   onChange={(e) => setForm((f) => ({ ...f, batchId: e.target.value }))}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 font-semibold"
-                  required
                 >
+                  <option value="ALL" className="dark:bg-slate-900">
+                    All Cohort Batches (Reflected to All Students)
+                  </option>
                   {batches.map((b) => (
                     <option key={b._id || b.id} value={b._id || b.id} className="dark:bg-slate-900">
                       {b.name} ({b.code})
                     </option>
                   ))}
                 </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  When posted, this problem will appear on every student's daily problem feed.
+                </p>
               </div>
 
               <div>

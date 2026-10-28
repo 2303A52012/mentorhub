@@ -283,27 +283,43 @@ export const getMenteeDashboard = async (req, res, next) => {
     const batchIds = menteeBatches.map(b => b.batchId);
 
     let latestDailyProblem = null;
-    if (batchIds.length > 0) {
-      const dp = await prisma.dailyProblem.findFirst({
-        where: { batchId: { in: batchIds } },
-        orderBy: { date: 'desc' },
-        include: {
-          postedBy: { select: { id: true, name: true } },
-          batch: { select: { id: true, name: true } },
-          submissions: {
-            where: { studentId: menteeId },
-            take: 1
-          }
+    const dp = await prisma.dailyProblem.findFirst({
+      where: {
+        OR: [
+          { tags: { has: 'ALL_BATCHES' } },
+          { batchId: { in: batchIds } }
+        ]
+      },
+      orderBy: { date: 'desc' },
+      include: {
+        postedBy: { select: { id: true, name: true, role: true } },
+        batch: { select: { id: true, name: true } },
+        submissions: {
+          where: { studentId: menteeId },
+          take: 1
         }
-      });
-      if (dp) {
-        latestDailyProblem = {
-          ...dp,
-          isSolved: dp.submissions && dp.submissions.length > 0,
-          mySubmission: dp.submissions?.[0] || null,
-          submissions: undefined
-        };
       }
+    });
+    if (dp) {
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      const problemTime = new Date(dp.createdAt || dp.date).getTime();
+      const ageMs = Date.now() - problemTime;
+      const isFrozen = ageMs > TWENTY_FOUR_HOURS;
+      const expiresAt = new Date(problemTime + TWENTY_FOUR_HOURS).toISOString();
+      const remainingMs = Math.max(0, TWENTY_FOUR_HOURS - ageMs);
+      const isAllBatches = dp.tags?.includes('ALL_BATCHES') || false;
+
+      latestDailyProblem = {
+        ...dp,
+        isAllBatches,
+        batchName: isAllBatches ? 'All Batches (496 Students)' : (dp.batch?.name || 'Cohort'),
+        isSolved: dp.submissions && dp.submissions.length > 0,
+        mySubmission: dp.submissions?.[0] || null,
+        isFrozen,
+        expiresAt,
+        remainingMs,
+        submissions: undefined
+      };
     }
 
     const formatTask = (t) => ({

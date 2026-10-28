@@ -8,7 +8,7 @@ import {
   createOrUpdateTrainingSession, updateTrainingSession, deleteTrainingSession,
   getMentorSessionReports, getMentorSessionReportDetails, submitMentorSessionReport,
   getDailyProblems, getDailyProblemById, getDailyProblemSubmissions, submitDailyProblem,
-  createDailyProblem, updateDailyProblem, deleteDailyProblem,
+  createDailyProblem, updateDailyProblem, deleteDailyProblem, evaluateDailyProblemSubmission,
   getTrainerBatchStudents,
   getTrainers, createTrainer, updateTrainer, deleteTrainer
 } from '../controllers/trainerController.js';
@@ -47,13 +47,14 @@ router.get('/sessions/mentor-reports',                        authorize('ADMIN',
 router.get('/sessions/mentor-reports/:mentorId/details',      authorize('ADMIN','MENTOR','MENTEE'), getMentorSessionReportDetails);
 router.post('/sessions/mentor-reports',                       authorize('MENTOR'), submitMentorSessionReport);
 
-// Daily Problems
+// Daily Problems (Managed by Mentors, Trainers, and Admins; Solved by Mentees; Evaluated by Mentors)
 router.get('/daily-problems',                   getDailyProblems);
 router.get('/daily-problems/:id',               getDailyProblemById);
-router.get('/daily-problems/:id/submissions',   authorize('ADMIN','TRAINER'), getDailyProblemSubmissions);
+router.get('/daily-problems/:id/submissions',   authorize('ADMIN', 'TRAINER', 'MENTOR'), getDailyProblemSubmissions);
 router.post('/daily-problems/:id/submit',        authorize('MENTEE'), submitDailyProblem);
-router.post('/daily-problems',                  authorize('ADMIN','TRAINER'), createDailyProblem);
-router.patch('/daily-problems/:id',             authorize('ADMIN','TRAINER'), updateDailyProblem);
-router.delete('/daily-problems/:id',            authorize('ADMIN','TRAINER'), deleteDailyProblem);
+router.post('/daily-problems',                  authorize('ADMIN', 'TRAINER', 'MENTOR'), createDailyProblem);
+router.patch('/daily-problems/:id',             authorize('ADMIN', 'TRAINER', 'MENTOR'), updateDailyProblem);
+router.delete('/daily-problems/:id',            authorize('ADMIN', 'TRAINER', 'MENTOR'), deleteDailyProblem);
+router.patch('/daily-problems/:id/submissions/:submissionId', authorize('ADMIN', 'MENTOR'), evaluateDailyProblemSubmission);
 
 export default router;

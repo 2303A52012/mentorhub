@@ -278,6 +278,39 @@ export const MenteeDailyProblems = () => {
                       {p.difficulty}
                     </span>
 
+                    {/* Who posted it tag */}
+                    {p.postedBy && (
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1 ${
+                          p.postedBy.role === 'MENTOR'
+                            ? 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                            : p.postedBy.role === 'TRAINER'
+                            ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                        }`}
+                      >
+                        <span>
+                          👤 {p.postedBy.role === 'MENTOR' ? 'Mentor' : p.postedBy.role === 'TRAINER' ? 'Trainer' : 'Admin'}: {p.postedBy.name}
+                        </span>
+                      </span>
+                    )}
+
+                    {/* Cohort Scope Badge */}
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                      {p.isAllBatches ? '🌐 All Batches (496 Students)' : `👥 Batch: ${p.batch?.name || 'Cohort'}`}
+                    </span>
+
+                    {/* 24-Hour Freeze Badge */}
+                    {p.isFrozen ? (
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 inline-flex items-center gap-1">
+                        ❄️ Frozen (24h Window Closed)
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 inline-flex items-center gap-1">
+                        ⏳ Active (24h Window)
+                      </span>
+                    )}
+
                     {p.platform && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         {p.platform}
@@ -285,7 +318,7 @@ export const MenteeDailyProblems = () => {
                     )}
 
                     <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-1">
-                      Posted {new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      Posted {new Date(p.date || p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   </div>
 
@@ -294,6 +327,10 @@ export const MenteeDailyProblems = () => {
                     {isCompleted ? (
                       <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1.5 shadow-xs">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Solved &amp; Completed
+                      </span>
+                    ) : p.isFrozen ? (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-xs">
+                        ❄️ Frozen
                       </span>
                     ) : (
                       <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 flex items-center gap-1.5 shadow-xs">
@@ -421,7 +458,19 @@ export const MenteeDailyProblems = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {isCompleted ? (
+                    {p.isFrozen && !isCompleted ? (
+                      <span className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-not-allowed">
+                        <span>❄️ Submission Closed (24h Expired)</span>
+                      </span>
+                    ) : p.isFrozen && isCompleted ? (
+                      <button
+                        onClick={() => handleOpenSolve(p)}
+                        className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5 shadow-xs"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>View Solution &amp; Evaluation</span>
+                      </button>
+                    ) : isCompleted ? (
                       <button
                         onClick={() => handleOpenSolve(p)}
                         className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5 shadow-xs"
@@ -476,6 +525,14 @@ export const MenteeDailyProblems = () => {
 
             {/* Modal Form */}
             <form onSubmit={handleSubmitSolution} className="p-6 space-y-4 overflow-y-auto flex-1">
+              {/* Problem Frozen Alert */}
+              {activeProblem.isFrozen && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2 font-medium">
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                  <span>Problem is frozen: The 24-hour window from posting has expired. Solutions can no longer be submitted or edited.</span>
+                </div>
+              )}
+
               {/* Problem Quick Link Ribbon */}
               {activeProblem.link && (
                 <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 flex items-center justify-between gap-3 text-xs">
@@ -604,11 +661,11 @@ export const MenteeDailyProblems = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || activeProblem.isFrozen}
                   className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-amber-600/30"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{submitting ? 'Submitting...' : 'Mark as Done & Submit'}</span>
+                  <span>{submitting ? 'Submitting...' : activeProblem.isFrozen ? '❄️ Submissions Closed' : 'Mark as Done & Submit'}</span>
                 </button>
               </div>
             </form>

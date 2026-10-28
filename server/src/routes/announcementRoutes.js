@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/authMiddleware.js';
 import {
@@ -13,12 +13,13 @@ import {
 const router = express.Router();
 
 router.use(authenticate);
+router.use(authorize('ADMIN', 'MENTOR', 'MENTEE'));
 
 router.get('/',        getAnnouncements);
-router.post('/',       authorize('ADMIN','TRAINER','MENTOR'), createAnnouncement);
+router.post('/',       authorize('ADMIN', 'MENTOR'), createAnnouncement);
 router.get('/:id',     getAnnouncementById);
-router.patch('/:id',   authorize('ADMIN','TRAINER','MENTOR'), updateAnnouncement);
-router.delete('/:id',  authorize('ADMIN','TRAINER','MENTOR'), deleteAnnouncement);
+router.patch('/:id',   authorize('ADMIN', 'MENTOR'), updateAnnouncement);
+router.delete('/:id',  authorize('ADMIN', 'MENTOR'), deleteAnnouncement);
 router.post('/:id/read', markAnnouncementRead);
 
 export default router;

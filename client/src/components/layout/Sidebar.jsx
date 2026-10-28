@@ -57,11 +57,10 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
       { to: '/trainer/students', label: 'Batch Students', icon: Users },
       { to: '/trainer/targets', label: 'Weekly Targets (W1-W12)', icon: Target },
       { to: '/trainer/calendar', label: 'Training Calendar', icon: Calendar },
+      { to: '/trainer/problems', label: 'Daily Problems (POTD)', icon: Zap },
       { to: '/trainer/tasks', label: 'Weekly Tasks', icon: CheckSquare },
       { to: '/trainer/reviews', label: 'Review Submissions', icon: FileCheck },
-      { to: '/trainer/problems', label: 'Daily Problems', icon: Zap },
       { to: '/trainer/batches', label: 'Batches', icon: FolderGit2 },
-      { to: '/announcements', label: 'Announcements', icon: Megaphone },
       { to: '/trainer/profile', label: 'Trainer Profile', icon: User }
     ];
   } else if (role === 'MENTOR') {
@@ -70,6 +69,7 @@ export const Sidebar = ({ mobileMenuOpen, onCloseMobileMenu }) => {
       { to: '/mentor/mentees', label: 'My Mentees', icon: Users },
       { to: '/mentor/targets', label: 'Weekly Targets (W1-W12)', icon: Target },
       { to: '/mentor/training-calendar', label: 'Training Calendar', icon: Calendar },
+      { to: '/mentor/problems', label: 'Daily Problems (POTD)', icon: Zap },
       { to: '/mentor/mocks', label: 'Weekly Mocks', icon: CalendarCheck },
       { to: '/mentor/doubt-sessions', label: 'Doubt Sessions', icon: BookOpen },
       { to: '/mentor/reviews', label: 'Review Submissions', icon: FileCheck },

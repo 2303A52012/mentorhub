@@ -319,6 +319,14 @@ export default function App() {
           }
         />
         <Route
+          path="mentor/problems"
+          element={
+            <ProtectedRoute allowedRoles={['MENTOR', 'ADMIN']}>
+              <DailyProblems />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="mentor/mocks/:id"
           element={
             <ProtectedRoute allowedRoles={['MENTOR', 'ADMIN']}>
@@ -465,11 +473,11 @@ export default function App() {
           }
         />
 
-        {/* Announcements — accessible by all logged in roles */}
+        {/* Announcements — accessible by admin, mentor, mentee */}
         <Route
           path="announcements"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN', 'TRAINER', 'MENTOR', 'MENTEE']}>
+            <ProtectedRoute allowedRoles={['ADMIN', 'MENTOR', 'MENTEE']}>
               <Announcements />
             </ProtectedRoute>
           }

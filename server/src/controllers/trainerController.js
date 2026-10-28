@@ -408,17 +408,23 @@ export const getDailyProblems = async (req, res, next) => {
     const limit = Math.min(parseInt(l), 100);
 
     let where = {};
-    if (batchId) where.batchId = batchId;
+    if (batchId && batchId !== 'ALL') {
+      where.OR = [
+        { batchId: batchId },
+        { tags: { has: 'ALL_BATCHES' } }
+      ];
+    }
 
-    if (role === 'TRAINER') {
-      const myBatches = await prisma.trainerBatch.findMany({ where: { trainerId: userId }, select: { batchId: true } });
-      const allowedBatches = myBatches.map(b => b.batchId);
-      if (batchId && !allowedBatches.includes(batchId)) return res.status(403).json({ success: false, message: 'Access denied.' });
-      if (!batchId) where.batchId = { in: allowedBatches };
-    } else if (role === 'MENTEE') {
-      const myBatches = await prisma.batchMentee.findMany({ where: { menteeId: userId }, select: { batchId: true } });
-      const batchIds = myBatches.map(b => b.batchId);
-      where.batchId = { in: batchIds };
+    if (role === 'MENTEE') {
+      const userBatches = await prisma.batchMentee.findMany({
+        where: { menteeId: userId },
+        select: { batchId: true }
+      });
+      const myBatchIds = userBatches.map(b => b.batchId);
+      where.OR = [
+        { tags: { has: 'ALL_BATCHES' } },
+        { batchId: { in: myBatchIds } }
+      ];
     }
 
     if (date) {
@@ -429,7 +435,8 @@ export const getDailyProblems = async (req, res, next) => {
       where.date = { gte: d, lt: next };
     }
 
-    const [total, rawProblems] = await Promise.all([
+    const [totalCohortStudents, total, rawProblems] = await Promise.all([
+      prisma.user.count({ where: { role: 'MENTEE', accountStatus: 'ACTIVE' } }),
       prisma.dailyProblem.count({ where }),
       prisma.dailyProblem.findMany({
         where,
@@ -437,7 +444,7 @@ export const getDailyProblems = async (req, res, next) => {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          postedBy: { select: { id: true, name: true, email: true } },
+          postedBy: { select: { id: true, name: true, email: true, role: true } },
           batch: {
             select: {
               id: true,
@@ -458,18 +465,36 @@ export const getDailyProblems = async (req, res, next) => {
       })
     ]);
 
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+
     const problems = rawProblems.map(p => {
-      const totalStudents = p.batch?._count?.mentees || 0;
+      const isAllBatches = p.tags?.includes('ALL_BATCHES') || false;
+      const totalStudents = isAllBatches ? totalCohortStudents : (p.batch?._count?.mentees || 0);
       const solvedCount = p._count?.submissions || 0;
       const pendingCount = Math.max(0, totalStudents - solvedCount);
       const mySubmission = p.submissions?.[0] || null;
+
+      const problemTime = new Date(p.createdAt || p.date).getTime();
+      const ageMs = now - problemTime;
+      const isFrozen = ageMs > TWENTY_FOUR_HOURS;
+      const expiresAt = new Date(problemTime + TWENTY_FOUR_HOURS).toISOString();
+      const remainingMs = Math.max(0, TWENTY_FOUR_HOURS - ageMs);
+
       return {
         ...p,
+        isAllBatches,
+        targetScope: isAllBatches ? 'ALL' : 'BATCH',
+        batchName: isAllBatches ? 'All Batches (496 Students)' : (p.batch?.name || 'Cohort'),
         totalStudents,
         solvedCount,
         pendingCount,
         isSolved: Boolean(mySubmission),
         mySubmission,
+        isFrozen,
+        expiresAt,
+        remainingMs,
+        canModify: p.postedById === userId || role === 'ADMIN',
         submissions: undefined
       };
     });
@@ -486,7 +511,7 @@ export const getDailyProblemById = async (req, res, next) => {
     const problem = await prisma.dailyProblem.findUnique({
       where: { id },
       include: {
-        postedBy: { select: { id: true, name: true, email: true } },
+        postedBy: { select: { id: true, name: true, email: true, role: true } },
         batch: {
           select: {
             id: true,
@@ -508,46 +533,50 @@ export const getDailyProblemById = async (req, res, next) => {
 
     if (!problem) return res.status(404).json({ success: false, message: 'Daily problem not found.' });
 
-    if (role === 'TRAINER') {
-      const access = await prisma.trainerBatch.findUnique({
-        where: { trainerId_batchId: { trainerId: userId, batchId: problem.batchId } }
-      });
-      if (!access) return res.status(403).json({ success: false, message: 'Access denied: You are not assigned to this batch.' });
-    } else if (role === 'MENTEE') {
-      const inBatch = await prisma.batchMentee.findUnique({
-        where: { batchId_menteeId: { batchId: problem.batchId, menteeId: userId } }
-      });
-      if (!inBatch) return res.status(403).json({ success: false, message: 'Access denied: Daily problem not assigned to your batch.' });
-    } else if (role === 'MENTOR') {
-      const hasMenteeInBatch = await prisma.batchMentee.findFirst({
-        where: {
-          batchId: problem.batchId,
-          mentee: {
-            mentorAssignments: {
-              some: { mentorId: userId, status: 'ACTIVE' }
-            }
-          }
-        }
-      });
-      if (!hasMenteeInBatch) {
-        return res.status(403).json({ success: false, message: 'Access denied: No assigned mentees in this batch.' });
+    const isAllBatches = problem.tags?.includes('ALL_BATCHES') || false;
+
+    if (!isAllBatches && role !== 'ADMIN') {
+      if (role === 'TRAINER') {
+        const access = await prisma.trainerBatch.findUnique({
+          where: { trainerId_batchId: { trainerId: userId, batchId: problem.batchId } }
+        });
+        if (!access && problem.postedById !== userId) return res.status(403).json({ success: false, message: 'Access denied: You are not assigned to this batch.' });
+      } else if (role === 'MENTEE') {
+        const inBatch = await prisma.batchMentee.findUnique({
+          where: { batchId_menteeId: { batchId: problem.batchId, menteeId: userId } }
+        });
+        if (!inBatch) return res.status(403).json({ success: false, message: 'Access denied: Daily problem not assigned to your batch.' });
       }
     }
 
-    const totalStudents = problem.batch?._count?.mentees || 0;
+    const totalCohortStudents = await prisma.user.count({ where: { role: 'MENTEE', accountStatus: 'ACTIVE' } });
+    const totalStudents = isAllBatches ? totalCohortStudents : (problem.batch?._count?.mentees || 0);
     const solvedCount = problem._count?.submissions || 0;
     const pendingCount = Math.max(0, totalStudents - solvedCount);
     const mySubmission = problem.submissions?.[0] || null;
+
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const ageMs = Date.now() - new Date(problem.createdAt || problem.date).getTime();
+    const isFrozen = ageMs > TWENTY_FOUR_HOURS;
+    const expiresAt = new Date(new Date(problem.createdAt || problem.date).getTime() + TWENTY_FOUR_HOURS).toISOString();
+    const remainingMs = Math.max(0, TWENTY_FOUR_HOURS - ageMs);
 
     return res.json({
       success: true,
       problem: {
         ...problem,
+        isAllBatches,
+        targetScope: isAllBatches ? 'ALL' : 'BATCH',
+        batchName: isAllBatches ? 'All Batches (496 Students)' : (problem.batch?.name || 'Cohort'),
         totalStudents,
         solvedCount,
         pendingCount,
         isSolved: Boolean(mySubmission),
         mySubmission,
+        isFrozen,
+        expiresAt,
+        remainingMs,
+        canModify: problem.postedById === userId || role === 'ADMIN',
         submissions: undefined
       }
     });
@@ -568,27 +597,72 @@ export const getDailyProblemSubmissions = async (req, res, next) => {
 
     if (!problem) return res.status(404).json({ success: false, message: 'Daily problem not found.' });
 
-    if (role === 'TRAINER') {
-      const access = await prisma.trainerBatch.findUnique({
-        where: { trainerId_batchId: { trainerId: userId, batchId: problem.batchId } }
-      });
-      if (!access) return res.status(403).json({ success: false, message: 'Access denied.' });
-    }
+    const isAllBatches = problem.tags?.includes('ALL_BATCHES') || false;
+    let targetStudents = [];
 
-    const batchMentees = await prisma.batchMentee.findMany({
-      where: { batchId: problem.batchId },
-      include: {
-        mentee: {
+    if (role === 'MENTOR') {
+      // Evaluation is strictly scoped to the mentor's own assigned mentees
+      const assignments = await prisma.mentorMenteeAssignment.findMany({
+        where: { mentorId: userId, status: 'ACTIVE' },
+        include: {
+          mentee: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              menteeProfile: true,
+              menteeBatches: {
+                include: {
+                  batch: { select: { id: true, name: true } }
+                }
+              }
+            }
+          }
+        },
+        orderBy: { mentee: { name: 'asc' } }
+      });
+      targetStudents = assignments.map(a => a.mentee).filter(Boolean);
+    } else {
+      // ADMIN or TRAINER
+      if (isAllBatches) {
+        targetStudents = await prisma.user.findMany({
+          where: { role: 'MENTEE', accountStatus: 'ACTIVE' },
           select: {
             id: true,
             name: true,
             email: true,
-            menteeProfile: true
-          }
-        }
-      },
-      orderBy: { mentee: { name: 'asc' } }
-    });
+            menteeProfile: true,
+            menteeBatches: {
+              include: {
+                batch: { select: { id: true, name: true } }
+              }
+            }
+          },
+          orderBy: { name: 'asc' }
+        });
+      } else {
+        const allMentees = await prisma.batchMentee.findMany({
+          where: problem.batchId ? { batchId: problem.batchId } : {},
+          include: {
+            mentee: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                menteeProfile: true,
+                menteeBatches: {
+                  include: {
+                    batch: { select: { id: true, name: true } }
+                  }
+                }
+              }
+            }
+          },
+          orderBy: { mentee: { name: 'asc' } }
+        });
+        targetStudents = allMentees.map(bm => bm.mentee).filter(Boolean);
+      }
+    }
 
     const submissions = await prisma.dailyProblemSubmission.findMany({
       where: { dailyProblemId: id }
@@ -597,8 +671,7 @@ export const getDailyProblemSubmissions = async (req, res, next) => {
     const submissionMap = new Map();
     submissions.forEach(s => submissionMap.set(s.studentId, s));
 
-    const studentList = batchMentees.map(bm => {
-      const student = bm.mentee;
+    const studentList = targetStudents.map(student => {
       const sub = submissionMap.get(student.id);
       return {
         studentId: student.id,
@@ -606,13 +679,14 @@ export const getDailyProblemSubmissions = async (req, res, next) => {
         email: student.email,
         rollNumber: student.menteeProfile?.rollNumber || '',
         section: student.menteeProfile?.section || 'A',
-        status: sub ? 'COMPLETED' : 'PENDING',
+        batchName: student.menteeBatches?.[0]?.batch?.name || '',
+        status: sub ? (sub.status || 'COMPLETED') : 'PENDING',
         submission: sub || null
       };
     });
 
-    const solvedCount = submissions.length;
-    const totalStudents = batchMentees.length;
+    const solvedCount = studentList.filter(s => s.status !== 'PENDING').length;
+    const totalStudents = studentList.length;
     const pendingCount = Math.max(0, totalStudents - solvedCount);
 
     return res.json({
@@ -623,14 +697,77 @@ export const getDailyProblemSubmissions = async (req, res, next) => {
         company: problem.company,
         difficulty: problem.difficulty,
         link: problem.link,
-        batchName: problem.batch?.name
+        batchName: role === 'MENTOR' ? 'My Assigned Mentees' : (isAllBatches ? 'All Batches (496 Students)' : (problem.batch?.name || 'Cohort'))
       },
       stats: {
         totalStudents,
         solvedCount,
         pendingCount
       },
-      submissions: studentList
+      submissions: studentList,
+      isMentor: role === 'MENTOR'
+    });
+  } catch (err) { next(err); }
+};
+
+export const evaluateDailyProblemSubmission = async (req, res, next) => {
+  try {
+    const { role, id: userId } = req.user;
+    const { id: dailyProblemId, submissionId } = req.params;
+    const { status, evaluationNotes } = req.body;
+
+    const sub = await prisma.dailyProblemSubmission.findUnique({
+      where: { id: submissionId },
+      include: { student: true, dailyProblem: true }
+    });
+
+    if (!sub || sub.dailyProblemId !== dailyProblemId) {
+      return res.status(404).json({ success: false, message: 'Submission not found for this problem.' });
+    }
+
+    // Only the mentor assigned to this mentee (or ADMIN) can evaluate their work!
+    if (role === 'MENTOR') {
+      const assignment = await prisma.mentorMenteeAssignment.findFirst({
+        where: {
+          mentorId: userId,
+          menteeId: sub.studentId,
+          status: 'ACTIVE'
+        }
+      });
+      if (!assignment) {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: You can only evaluate submissions from your own assigned mentees.'
+        });
+      }
+    } else if (role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Forbidden: Only mentors can evaluate mentee submissions.' });
+    }
+
+    const updatedSub = await prisma.dailyProblemSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: status || 'VERIFIED',
+        approach: evaluationNotes
+          ? `${sub.approach ? sub.approach + '\n\n' : ''}[Mentor Evaluation]: ${evaluationNotes}`
+          : sub.approach
+      }
+    });
+
+    // Notify mentee
+    await prisma.notification.create({
+      data: {
+        userId: sub.studentId,
+        type: 'TASK_REVIEWED',
+        title: 'Daily Problem Evaluated',
+        message: `Your solution for "${sub.dailyProblem?.title}" has been evaluated by your mentor (${status || 'VERIFIED'}).`
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Submission evaluated successfully.',
+      submission: updatedSub
     });
   } catch (err) { next(err); }
 };
@@ -646,11 +783,24 @@ export const submitDailyProblem = async (req, res, next) => {
     });
     if (!problem) return res.status(404).json({ success: false, message: 'Problem not found.' });
 
-    const inBatch = await prisma.batchMentee.findUnique({
-      where: { batchId_menteeId: { batchId: problem.batchId, menteeId: userId } }
-    });
-    if (!inBatch && role !== 'ADMIN') {
-      return res.status(403).json({ success: false, message: 'You are not enrolled in the batch for this daily problem.' });
+    // 24-hour expiration / freeze check: After 24 hrs of posting, student cannot submit!
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const ageMs = Date.now() - new Date(problem.createdAt || problem.date).getTime();
+    if (ageMs > TWENTY_FOUR_HOURS) {
+      return res.status(400).json({
+        success: false,
+        message: 'Problem is frozen: The 24-hour submission deadline has expired.'
+      });
+    }
+
+    const isAllBatches = problem.tags?.includes('ALL_BATCHES') || false;
+    if (!isAllBatches && role !== 'ADMIN') {
+      const inBatch = await prisma.batchMentee.findUnique({
+        where: { batchId_menteeId: { batchId: problem.batchId, menteeId: userId } }
+      });
+      if (!inBatch) {
+        return res.status(403).json({ success: false, message: 'You are not enrolled in the batch for this daily problem.' });
+      }
     }
 
     if (!submissionUrl?.trim() && !sourceCode?.trim() && !approach?.trim()) {
@@ -705,21 +855,22 @@ export const createDailyProblem = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Problem title is required.' });
     }
 
+    const isAllBatches = !batchId || batchId === 'ALL';
     let targetBatchId = batchId;
-    if (!targetBatchId && role === 'TRAINER') {
-      const myBatches = await prisma.trainerBatch.findMany({ where: { trainerId: userId }, select: { batchId: true } });
-      if (myBatches.length > 0) targetBatchId = myBatches[0].batchId;
+    let problemTags = Array.isArray(tags) ? [...tags] : [];
+
+    if (isAllBatches) {
+      if (!problemTags.includes('ALL_BATCHES')) {
+        problemTags.push('ALL_BATCHES');
+      }
+      const firstBatch = await prisma.batch.findFirst();
+      targetBatchId = firstBatch?.id;
+    } else {
+      problemTags = problemTags.filter(t => t !== 'ALL_BATCHES');
     }
 
     if (!targetBatchId) {
-      return res.status(400).json({ success: false, message: 'Target batch is required.' });
-    }
-
-    if (role === 'TRAINER') {
-      const access = await prisma.trainerBatch.findUnique({
-        where: { trainerId_batchId: { trainerId: userId, batchId: targetBatchId } }
-      });
-      if (!access) return res.status(403).json({ success: false, message: 'Access denied: You are not assigned to this batch.' });
+      return res.status(400).json({ success: false, message: 'No cohort batch found to attach the problem.' });
     }
 
     // Auto-detect platform from link
@@ -746,23 +897,32 @@ export const createDailyProblem = async (req, res, next) => {
         difficulty: cleanDiff,
         platform: cleanPlatform,
         link: (link || '').trim(),
-        tags: Array.isArray(tags) ? tags : [],
+        tags: problemTags,
         date: date ? new Date(date) : new Date()
       },
       include: {
-        postedBy: { select: { id: true, name: true } },
+        postedBy: { select: { id: true, name: true, email: true, role: true } },
         batch: { select: { id: true, name: true, _count: { select: { mentees: true } } } },
         _count: { select: { submissions: true } }
       }
     });
 
+    const totalCohortStudents = await prisma.user.count({ where: { role: 'MENTEE', accountStatus: 'ACTIVE' } });
+    const totalStudents = isAllBatches ? totalCohortStudents : (problem.batch?._count?.mentees || 0);
+
     const formattedProblem = {
       ...problem,
-      totalStudents: problem.batch?._count?.mentees || 0,
+      isAllBatches,
+      targetScope: isAllBatches ? 'ALL' : 'BATCH',
+      batchName: isAllBatches ? 'All Batches (496 Students)' : (problem.batch?.name || 'Cohort'),
+      totalStudents,
       solvedCount: 0,
-      pendingCount: problem.batch?._count?.mentees || 0,
+      pendingCount: totalStudents,
       isSolved: false,
-      mySubmission: null
+      mySubmission: null,
+      isFrozen: false,
+      remainingMs: 24 * 60 * 60 * 1000,
+      canModify: true
     };
 
     return res.status(201).json({ success: true, problem: formattedProblem });
@@ -774,7 +934,14 @@ export const updateDailyProblem = async (req, res, next) => {
     const { id: userId, role } = req.user;
     const problem = await prisma.dailyProblem.findUnique({ where: { id: req.params.id } });
     if (!problem) return res.status(404).json({ success: false, message: 'Problem not found.' });
-    if (role !== 'ADMIN' && problem.postedById !== userId) return res.status(403).json({ success: false, message: 'Permission denied.' });
+
+    // Only the author who posted the problem (or ADMIN) can edit it!
+    if (role !== 'ADMIN' && problem.postedById !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Permission denied: Only the author who posted this daily problem can edit it.'
+      });
+    }
 
     const { title, description, company, difficulty, platform, link, tags, date, batchId } = req.body;
 
@@ -787,6 +954,25 @@ export const updateDailyProblem = async (req, res, next) => {
       else if (lowerLink.includes('codeforces.com')) cleanPlatform = 'CODEFORCES';
     }
 
+    let problemTags = tags !== undefined ? (Array.isArray(tags) ? [...tags] : []) : undefined;
+    let targetBatchId = batchId;
+
+    if (batchId === 'ALL') {
+      if (problemTags && !problemTags.includes('ALL_BATCHES')) {
+        problemTags.push('ALL_BATCHES');
+      } else if (!problemTags) {
+        problemTags = [...(problem.tags || []).filter(t => t !== 'ALL_BATCHES'), 'ALL_BATCHES'];
+      }
+      const firstBatch = await prisma.batch.findFirst();
+      targetBatchId = firstBatch?.id;
+    } else if (batchId) {
+      if (problemTags) {
+        problemTags = problemTags.filter(t => t !== 'ALL_BATCHES');
+      } else {
+        problemTags = (problem.tags || []).filter(t => t !== 'ALL_BATCHES');
+      }
+    }
+
     const updated = await prisma.dailyProblem.update({
       where: { id: req.params.id },
       data: {
@@ -796,26 +982,33 @@ export const updateDailyProblem = async (req, res, next) => {
         ...(difficulty ? { difficulty } : {}),
         ...(cleanPlatform ? { platform: cleanPlatform } : {}),
         ...(link !== undefined ? { link: (link || '').trim() } : {}),
-        ...(tags !== undefined ? { tags: Array.isArray(tags) ? tags : [] } : {}),
+        ...(problemTags !== undefined ? { tags: problemTags } : {}),
         ...(date ? { date: new Date(date) } : {}),
-        ...(batchId ? { batchId } : {})
+        ...(targetBatchId ? { batchId: targetBatchId } : {})
       },
       include: {
-        postedBy: { select: { id: true, name: true } },
+        postedBy: { select: { id: true, name: true, email: true, role: true } },
         batch: { select: { id: true, name: true, _count: { select: { mentees: true } } } },
         _count: { select: { submissions: true } }
       }
     });
 
-    const totalStudents = updated.batch?._count?.mentees || 0;
+    const isAllBatches = updated.tags?.includes('ALL_BATCHES') || false;
+    const totalCohortStudents = await prisma.user.count({ where: { role: 'MENTEE', accountStatus: 'ACTIVE' } });
+    const totalStudents = isAllBatches ? totalCohortStudents : (updated.batch?._count?.mentees || 0);
     const solvedCount = updated._count?.submissions || 0;
+
     const formatted = {
       ...updated,
+      isAllBatches,
+      targetScope: isAllBatches ? 'ALL' : 'BATCH',
+      batchName: isAllBatches ? 'All Batches (496 Students)' : (updated.batch?.name || 'Cohort'),
       totalStudents,
       solvedCount,
       pendingCount: Math.max(0, totalStudents - solvedCount),
       isSolved: false,
-      mySubmission: null
+      mySubmission: null,
+      canModify: true
     };
 
     return res.json({ success: true, problem: formatted });
@@ -827,7 +1020,15 @@ export const deleteDailyProblem = async (req, res, next) => {
     const { id: userId, role } = req.user;
     const problem = await prisma.dailyProblem.findUnique({ where: { id: req.params.id } });
     if (!problem) return res.status(404).json({ success: false, message: 'Problem not found.' });
-    if (role !== 'ADMIN' && problem.postedById !== userId) return res.status(403).json({ success: false, message: 'Permission denied.' });
+
+    // Only the author who posted the problem (or ADMIN) can delete it!
+    if (role !== 'ADMIN' && problem.postedById !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Permission denied: Only the author who posted this daily problem can delete it.'
+      });
+    }
+
     await prisma.dailyProblem.delete({ where: { id: req.params.id } });
     return res.json({ success: true, message: 'Problem deleted.' });
   } catch (err) { next(err); }
