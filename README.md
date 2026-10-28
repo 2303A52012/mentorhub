@@ -132,22 +132,33 @@ All university member identities follow the standardized SRU institutional email
   - `BATCH`: Target an entire cohort batch (e.g. G6-B1).
   - `MENTOR_GROUP`: Target a specific mentor's assigned mentee group.
   - `INDIVIDUAL`: Target custom selected user IDs.
+- **Role Authority**: Authored by **Administrators** and **Faculty Mentors** to deliver official academic updates, mock notifications, and scheduling announcements. (Corporate Trainers focus exclusively on the Training Calendar and batch tasks).
 - **Superior Auto-CC Visibility Rule**:
-  - Whenever an announcement targets **Students**, their assigned **Mentor** and batch **Trainer** automatically receive visibility.
+  - Whenever an announcement targets **Students**, their assigned **Mentor** automatically receives visibility.
   - Platform Administrators maintain global audit visibility across all announcements.
 - **Engagement Tracking**: Individual read receipts recorded in `AnnouncementRead` with read timestamps.
 
 ---
 
-### 3. Training Calendar & Company POTD
+### 3. Training Calendar & Daily Problem of the Day (POTD)
 - **Official Training Date Schedules**:
   - Pre-seeded institutional training days across September, October, and November 2026.
   - Date-picker and batch dropdown allow switching cohorts to view topics covered, problems solved, and session notes.
-- **Company Daily Problem of the Day (POTD)**:
-  - Trainers publish company-tagged coding problems (Amazon, Google, Microsoft, Meta).
-  - **Platform Auto-Detection**: Pasting links automatically maps domains to database enums (`LEETCODE`, `CODECHEF`, `CODEFORCES`, `HACKERRANK`, `CUSTOM`).
-  - **Student Submissions**: Mentees write or paste solutions with language selection (C++, Java, Python, JavaScript), algorithmic complexities ($O(N)$ time / $O(1)$ space), and approach notes.
-  - **Submission Inspection Drawer**: Trainers view live submission status (Completed vs Pending) and inspect student code with 1-click clipboard copying.
+  - Corporate Trainers log topics taught, problems discussed, and session takeaways per training day.
+- **Problem of the Day (POTD) Ecosystem**:
+  - **Co-Authored by Mentors & Trainers**: Both Faculty Mentors and Corporate Trainers (as well as Admins) can publish daily competitive programming challenges (Amazon, Google, Microsoft, Meta).
+  - **Author Tag & Identity Badges**: Every problem card prominently displays who posted it with an official role badge (`👤 Mentor [Name]`, `👤 Trainer [Name]`, or `👤 Admin [Name]`).
+  - **Author-Only Permissions**: Strict backend and frontend safeguards ensure only the author who posted the problem (or an Administrator) can edit or delete it.
+  - **Cohort Scope (All Batches vs. Single Batch)**:
+    - Authors can target a specific batch (e.g., `G6-B1`) or select **"All Batches"** to broadcast across all 4 cohorts (496 total active students across `G6-B1`, `G6-B2`, `G6-B3`, `G6-B4`).
+  - **24-Hour Expiration & Freezing**:
+    - Each problem features a dynamic 24-hour active window from its creation timestamp.
+    - Active problems display `⏳ Active (Xh Ym remaining)`.
+    - Once 24 hours elapse, the problem automatically freezes: `❄️ Frozen (24h Window Closed)`. Student submission inputs are disabled, preserving submission integrity.
+  - **Mentee-Scoped Evaluation Engine**:
+    - Faculty Mentors can review submitted source code, inspect algorithmic complexities ($O(N)$ time / $O(1)$ space), and record evaluation decisions (`APPROVED` / `NEEDS_REVISION`) along with feedback.
+    - **Strict Mentor Scoping**: Mentors are strictly restricted to evaluating their own assigned mentees. Attempts to evaluate other mentors' students are blocked with HTTP 403 Forbidden.
+  - **Platform Auto-Detection**: Pasting problem links automatically maps domains to database enums (`LEETCODE`, `CODECHEF`, `CODEFORCES`, `HACKERRANK`, `CUSTOM`).
 
 ---
 
@@ -276,12 +287,12 @@ Strict data isolation rules protect student privacy and avoid conflicts of inter
 | **Weekly Targets (W1-W12)** | Track & Self-Report | Live Verify (Mentees) | Batch Audit & Custom | Batch Audit & Custom | Global Audit & Custom |
 | **Profile Platform Counters** | Adjust (+/-) | View Mentees | View Batch | View All | View All |
 | **Training Calendar** | View Syllabus | View Batch | Log Topics & Problems | Manage & Oversee | Manage & Oversee |
-| **Daily Problems (POTD)** | Solve & Submit | View Problem | Publish & Track Code | Manage All | Manage All |
+| **Daily Problems (POTD)** | Solve & Submit (24h Window) | Publish, Author Edit/Del, Evaluate Mentees | Publish, Author Edit/Del, Batch Analytics | Manage All (Create, Edit, Delete, Evaluate) | Manage All (Create, Edit, Delete, Evaluate) |
 | **Weekly Tasks (Practice & Notes)**| Submit & Notes | Review & Rubrics | Assign & Review | Create & Publish | Create & Publish |
 | **Weekly Mock Interviews** | View Slot & Report | Evaluate & Schedule | View Batch | Global Reports | Global Reports |
 | **1-on-1 Doubt Sessions** | Request & Join | Schedule & Conduct | *N/A* | *Disabled for privacy* | *Disabled for privacy* |
 | **Confidential Grievance Box** | Raise Ticket | Review Assigned | *N/A* | Resolve & Oversee | Resolve & Oversee |
-| **Multicast Announcements** | Read & Acknowledge | Post to Mentees | Post to Batch | Post Platform-wide | Post Platform-wide |
+| **Multicast Announcements** | Read & Acknowledge | Post to Mentees / Cohort | Read Only | Post Platform-wide | Post Platform-wide |
 | **Mentor Reallocation** | ❌ No | ❌ No | ❌ No | ✅ Full Access | ✅ Full Access |
 | **Administrator Delegation** | ❌ No | ❌ No | ❌ No | ❌ No | ✅ Exclusive Access |
 | **Bulk Excel / CSV Loader** | ❌ No | ❌ No | ❌ No | ✅ Full Access | ✅ Full Access |
@@ -420,19 +431,24 @@ All endpoints are mounted under `/api/v1` and protected with JWT Bearer authenti
 - `PATCH /batch/:batchId/custom`: (Trainer/Admin) Customize weekly target problem counts for a batch.
 - `PATCH /counters`: Increment, decrement, or set platform solved counters with live target sync.
 
-### 2. Trainer Portal & Daily Problems (`/api/v1/trainer`)
+### 2. Daily Problems of the Day (POTD) & Training Portal (`/api/v1/trainer`)
 - `GET /calendar`: Fetch scheduled training dates and syllabus logs.
 - `POST /sessions`: Log topics taught and problems discussed for a training date.
-- `GET /daily-problems`: Fetch published company daily problems.
-- `POST /daily-problems`: Publish new company-tagged coding challenge.
-- `POST /daily-problems/:id/submit`: (Mentee) Submit daily problem solution with code and complexity.
-- `GET /daily-problems/:id/submissions`: (Trainer/Admin) Inspect student submissions and source code.
+- `GET /daily-problems`: Fetch published daily problems (includes author tag, active countdown, freeze status, and submission progress).
+- `POST /daily-problems`: (Mentor/Trainer/Admin) Publish new coding challenge (supports specific batch or `batchId: 'ALL'` for all 496 students).
+- `PATCH /daily-problems/:id`: (Author/Admin) Edit daily problem details and cohort scope.
+- `DELETE /daily-problems/:id`: (Author/Admin) Remove daily problem.
+- `POST /daily-problems/:id/submit`: (Mentee) Submit daily problem solution (enforces 24-hour submission window).
+- `GET /daily-problems/:id/submissions`: (Mentor/Trainer/Admin) Inspect student submissions (mentors strictly view their assigned mentees).
+- `PATCH /daily-problems/:id/submissions/:submissionId`: (Mentor/Admin) Record mentee evaluation decision (`APPROVED` / `NEEDS_REVISION`) and review notes.
 - `GET /profile`: Retrieve trainer profile and assigned batches.
 - `PATCH /profile`: Update trainer profile details.
 
 ### 3. Hierarchical Announcements (`/api/v1/announcements`)
 - `GET /`: Retrieve announcements with audience filtering and superior auto-CC visibility.
-- `POST /`: Post targeted announcement (`ALL`, `BATCH`, `MENTOR_GROUP`, `INDIVIDUAL`).
+- `POST /`: (Mentor/Admin) Post targeted announcement (`ALL`, `BATCH`, `MENTOR_GROUP`, `INDIVIDUAL`).
+- `PATCH /:id`: (Mentor/Admin) Update an existing announcement.
+- `DELETE /:id`: (Mentor/Admin) Delete an announcement.
 - `POST /:id/read`: Mark announcement as read.
 
 ### 4. Authentication & Security (`/api/v1/auth`)
@@ -563,19 +579,34 @@ npm run dev
 
 ---
 
-## 🧪 Verification & Health Checks
+## 🧪 Verification & Automated Test Suite
+
+MentorHub incorporates comprehensive automated test suites enforcing role-based access control, security regression protection, and database isolation guards:
 
 ```bash
-# Validate frontend compilation & Tailwind CSS bundle:
-cd client
-npm run build
+# Run full backend test suite (Weekly Mocks, Bulk Import, Security Regression):
+cd server
+npm test
 
-# Verify backend syntax & route controllers:
-cd ../server
-node --check src/controllers/weeklyTargetController.js
-node --check src/controllers/trainerController.js
-node --check src/controllers/userController.js
+# Run individual test modules:
+npm run test:mocks     # Weekly mock interviews and slot allocations
+npm run test:bulk      # High-throughput bulk import and Excel template downloads
+npm run test:security  # 42 security & RBAC tests (CORS, CSP, Default Credentials, Isolation)
+
+# Validate frontend production compilation & bundle:
+cd ../client
+npm run build
 ```
+
+---
+
+## 🚀 Production Deployment & Hosting
+
+For complete end-to-end instructions on deploying MentorHub to production, refer to the [Production Deployment & Hosting Guide](DEPLOYMENT_GUIDE.md):
+- **Frontend**: Deploy to **Vercel** or **Cloudflare Pages** (SPA rewrites via `vercel.json` & `_redirects`).
+- **Backend API**: Deploy to **Render** or **Railway** (Node.js Express + Prisma).
+- **Database**: Hosted on **Supabase** (PostgreSQL with PgBouncer connection pooling).
+- **Security Pre-flight**: Environment variables checklist (`JWT_SECRET`, `CLIENT_URL`, `VITE_API_URL`, `DATABASE_URL`).
 
 ---
 

@@ -1,16 +1,40 @@
-# React + Vite
+# SRU MentorHub — Client Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The official frontend web application for **SRU MentorHub**, built with **React 19**, **Vite**, and **Tailwind CSS**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Available Scripts
 
-## React Compiler
+In the `client` directory, you can run:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `npm run dev` or `npm run start`  
+  Runs the app in development mode at `http://localhost:5173`. Automatic hot-reloading (HMR) is enabled.
+- `npm run build`  
+  Compiles and bundles the production app into the `dist/` directory.
+- `npm run preview`  
+  Locally previews the production build.
+- `npm run lint`  
+  Runs `oxlint` static code analysis.
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## 🎨 UI Architecture & Design System
+
+- **Dual Theme Support**: Light Slate canvas and Dark Obsidian/Slate-950 mode with smooth transitions and persistent state.
+- **Iconography**: `lucide-react` modern minimalist icons.
+- **Charts & Visualization**: `recharts` for student analytics, mock interview scoring, and weekly targets progress.
+- **Routing**: `react-router-dom` with strict Role-Based Access Control (RBAC) route guards (`ADMIN`, `TRAINER`, `MENTOR`, `MENTEE`).
+- **SPA Deployment**: Includes `vercel.json` and `public/_redirects` for zero-configuration client-side routing.
+
+---
+
+## ⚙️ Environment Variables
+
+Create a `.env` file based on `.env.example`:
+
+```env
+# In development, leave blank or empty to use Vite proxy (/api/v1 -> localhost:5001)
+# In production, specify the deployed backend API URL:
+VITE_API_URL="https://your-backend-api.onrender.com/api/v1"
+```
