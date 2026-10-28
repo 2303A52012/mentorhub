@@ -1142,6 +1142,18 @@ export const getMentorSessionReports = async (req, res, next) => {
     // If request is from a MENTOR, restrict strictly to their own mentor profile
     if (req.user.role === 'MENTOR') {
       mentorsList = mentorsList.filter(m => m.id === req.user.id);
+      if (mentorsList.length === 0) {
+        const selfUser = await prisma.user.findUnique({
+          where: { id: req.user.id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            mentorProfile: { select: { designation: true, department: true } }
+          }
+        });
+        if (selfUser) mentorsList = [selfUser];
+      }
     }
 
     // 2. Fetch existing reports for this batch on this date
@@ -1245,9 +1257,24 @@ export const getMentorSessionReportDetails = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Mentor not found.' });
     }
 
+    // If mentor has no assignments in the requested batch, auto-resolve to their assigned batch
+    let targetBatchId = batchId;
+    const directCount = await prisma.mentorMenteeAssignment.count({
+      where: { batchId: targetBatchId, mentorId, status: 'ACTIVE' }
+    });
+    if (directCount === 0) {
+      const fallback = await prisma.mentorMenteeAssignment.findFirst({
+        where: { mentorId, status: 'ACTIVE' },
+        select: { batchId: true }
+      });
+      if (fallback?.batchId) {
+        targetBatchId = fallback.batchId;
+      }
+    }
+
     // Fetch all active mentees in this batch assigned to this mentor
     const assignments = await prisma.mentorMenteeAssignment.findMany({
-      where: { batchId, mentorId, status: 'ACTIVE' },
+      where: { batchId: targetBatchId, mentorId, status: 'ACTIVE' },
       include: {
         mentee: {
           select: {

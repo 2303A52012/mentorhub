@@ -367,6 +367,13 @@ export const TrainingCalendar = () => {
     let initialBatchId = '';
     if (selectedBatch && selectedBatch !== 'ALL') {
       initialBatchId = selectedBatch;
+    } else if (role === 'MENTOR' && batches.length > 0) {
+      // For mentors, prioritize their own assigned batch
+      const mentorBatchIds = new Set(batches.map((b) => b.id || b._id));
+      const matchingSession = daySessions.find((s) => mentorBatchIds.has(s.batchId || s.batch?.id));
+      initialBatchId = matchingSession
+        ? (matchingSession.batchId || matchingSession.batch?.id)
+        : (batches[0].id || batches[0]._id);
     } else if (daySessions.length > 0) {
       initialBatchId = daySessions[0].batchId || daySessions[0].batch?.id;
     } else if (batches.length > 0) {

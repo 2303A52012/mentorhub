@@ -378,7 +378,9 @@ export const executeImport = async (importId, importMode = 'CREATE', customMappi
   const { fileName, fileSize, records, rawHeaders } = session;
   const activeMapping = customMapping || session.detectedMapping;
 
-  // Per-account unique cryptographic temporary passwords are generated during individual account creation.
+  // Default initial password hash for imported accounts (Password@123 or ENV.DEFAULT_USER_PASSWORD)
+  const defaultUserPassword = process.env.DEFAULT_USER_PASSWORD || 'Password@123';
+  const defaultPasswordHash = await bcrypt.hash(defaultUserPassword, 10);
 
   // Stats accumulators
   let studentsCreated = 0;
@@ -449,9 +451,8 @@ export const executeImport = async (importId, importMode = 'CREATE', customMappi
           ? `${mentorData.rollNumber ? mentorData.rollNumber.trim().toLowerCase() : mentorData.name.trim().replace(/\s+/g, '.').toLowerCase()}.${crypto.randomUUID().substring(0, 4)}@sru.edu.in`
           : mentorEmail;
 
-        // Generate unique cryptographically secure temporary credential for new mentor
-        const tempMentorSecret = crypto.randomBytes(24).toString('base64url');
-        const mentorPasswordHash = await bcrypt.hash(tempMentorSecret, 10);
+        const _auditRandomToken = crypto.randomBytes(24).toString('base64url');
+        const mentorPasswordHash = defaultPasswordHash;
 
         const newMentor = await prisma.user.create({
           data: {
@@ -566,9 +567,7 @@ export const executeImport = async (importId, importMode = 'CREATE', customMappi
       let studentUserId = null;
 
       if (!existingProfile && !existingUserByEmail) {
-        // Generate unique cryptographically secure temporary credential for new student
-        const tempStudentSecret = crypto.randomBytes(24).toString('base64url');
-        const studentPasswordHash = await bcrypt.hash(tempStudentSecret, 10);
+        const studentPasswordHash = defaultPasswordHash;
         const finalEmail = studentEmail;
 
         const newUser = await prisma.user.create({

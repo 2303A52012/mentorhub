@@ -142,7 +142,7 @@ export const getMentees = async (req, res, next) => {
     });
 
     let result = enrichedMentees;
-    if (batchId) {
+    if (batchId && batchId !== 'ALL') {
       result = result.filter((m) =>
         m.batches.some((b) => b._id.toString() === batchId.toString() || b.id === batchId)
       );

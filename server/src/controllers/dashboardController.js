@@ -130,17 +130,58 @@ export const getMentorDashboard = async (req, res, next) => {
 
     const menteeUsers = await prisma.user.findMany({
       where: { id: { in: menteeIds } },
-      select: { id: true, name: true, email: true }
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        menteeProfile: {
+          select: {
+            rollNumber: true,
+            studentId: true,
+            branch: true,
+            section: true
+          }
+        },
+        menteeBatches: {
+          include: {
+            batch: { select: { id: true, name: true } }
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
     });
 
     const atRiskMentees = [];
+    const menteesList = [];
     for (const mentee of menteeUsers) {
       const studentTasks = menteeTasks.filter((mt) => mt.menteeId === mentee.id);
       const studentTotal = studentTasks.length;
       const studentApproved = studentTasks.filter((t) => t.status === 'APPROVED').length;
+      const studentSubmitted = studentTasks.filter(
+        (t) => t.status === 'SUBMITTED' || t.status === 'UNDER_REVIEW'
+      ).length;
       const studentOverdue = studentTasks.filter((t) => t.status === 'OVERDUE').length;
       const rate =
         studentTotal > 0 ? Math.round((studentApproved / studentTotal) * 100) : 0;
+
+      const batchName = mentee.menteeBatches?.[0]?.batch?.name || 'Assigned Cohort';
+
+      menteesList.push({
+        _id: mentee.id,
+        id: mentee.id,
+        name: mentee.name,
+        email: mentee.email,
+        rollNumber: mentee.menteeProfile?.rollNumber || '',
+        studentId: mentee.menteeProfile?.studentId || '',
+        branch: mentee.menteeProfile?.branch || 'CSE',
+        section: mentee.menteeProfile?.section || 'A',
+        batchName,
+        totalTasks: studentTotal,
+        approvedCount: studentApproved,
+        submittedCount: studentSubmitted,
+        overdueCount: studentOverdue,
+        completionRate: rate
+      });
 
       if ((studentTotal >= 2 && rate < 50) || studentOverdue >= 1) {
         atRiskMentees.push({
@@ -180,7 +221,8 @@ export const getMentorDashboard = async (req, res, next) => {
         avgCompletionRate
       },
       atRiskMentees,
-      recentSubmissions
+      recentSubmissions,
+      mentees: menteesList
     });
   } catch (error) {
     next(error);
